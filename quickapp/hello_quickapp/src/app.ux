@@ -195,7 +195,9 @@
           total: result.total || 0,
           initFailed: result.initFailed || false,
           // v1.16.80 透传渐进式加载完成标记：页面用它判定「已显示全部」与是否继续翻页
-          allLoaded: result.allLoaded !== undefined ? result.allLoaded : true
+          allLoaded: result.allLoaded !== undefined ? result.allLoaded : true,
+          // v1.16.179 透传真实检索耗时（页面上显示「· 检索 XXms」，作为性能声明的可核对佐证）
+          elapsedMs: result.elapsedMs || 0
         }
       } catch(e) {
         console.error('[searchHistory] 错误:', e)

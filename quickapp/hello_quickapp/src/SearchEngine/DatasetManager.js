@@ -156,6 +156,9 @@ function decodeGlobalId(gid) {
 
 // 异步聚合（跨集分页语义 = 全局第 N 页：各集拉 1..page 页，按注册表顺序稳定排序后切片）
 async function searchAllAsync(query, options) {
+  // v1.16.178（大赛自查要求：性能数据须有可核对佐证）：记录本次跨集检索的真实耗时，
+  // 由页面显示在结果计数旁 —— 使「热缓存 66~138ms」这类声明可由界面直接观察与截图复现。
+  var _t0 = Date.now()
   options = options || {}
   var pageSize = options.pageSize || 20
   var page = options.page || 1
@@ -273,7 +276,8 @@ async function searchAllAsync(query, options) {
     return a._dsOrder - b._dsOrder
   })
   var start = (page - 1) * pageSize
-  return { results: merged.slice(start, start + pageSize), total: total, initFailed: initFailed, allLoaded: allLoaded }
+  return { results: merged.slice(start, start + pageSize), total: total, initFailed: initFailed,
+           allLoaded: allLoaded, elapsedMs: Date.now() - _t0 }
 }
 
 // 全局 ID 取详情（跨集路由）

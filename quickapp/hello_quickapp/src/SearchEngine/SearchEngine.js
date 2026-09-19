@@ -1472,6 +1472,9 @@ async _checkAllMapsCache() {
           parts.push(key + '=' + stepTimings[key])
         }
         global.addRuntimeLog(logMsg + parts.join(' | '), 'success')
+        // v1.16.178（大赛自查要求：性能数据须有可核对的佐证）：把耗时分解同时打到模拟器/真机控制台，
+        // 使「热缓存 66~138ms」这类声明可由模拟器日志原样复现（设备侧真实耗时，非 PC 估算）。
+        console.log('[PERF] ' + logMsg + parts.join(' | '))
       }
       
       return { results: results, total: total, allLoaded: allLoaded }
