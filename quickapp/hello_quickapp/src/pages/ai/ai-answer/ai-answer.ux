@@ -1,0 +1,298 @@
+<template>
+  <!-- AI 回答页（v1.16.90 两页式 AI 界面之二）：读 global.aiResult 展示回答与来源；
+       v1.16.91 起提问页并入主界面 AI 面板，本页由主界面 push 进入。
+       v1.16.155 出口拆分：「重新提问」= 返回并立刻重开麦克风；「直接返回」= 返回并关面板回主界面。
+       两者与右滑都经 global.aiReturnAction 桥接，由主界面 onShow 执行 -->
+  <div class="page-container">
+    <div class="page" @swipe="onSwipe">
+      <scroll class="answer-scroll" scroll-y="true">
+        <div class="top-spacer"></div>
+
+        <!-- 页头（对齐 detail.ux header 结构） -->
+        <div class="header"><text class="header-title">AI 回答</text></div>
+
+        <!-- ===== 状态卡（单节点三态，v1.16.125）=====
+             原实现用布尔字段作判据、初值 false → 错误卡（红字「回答丢失」）首帧即渲染，
+             onShow 读到 global.aiResult 后才隐藏 = 主人看到的「进入页面先闪一下红色」。
+             现 phase 三态：loading 灰字「加载中…」/ error 红字 / ok 时类切换为高度归零。
+             只用一个节点 + 类切换 —— 不插拔节点（铁律 #4），也不留占位（本运行时 show=false 仍占位） -->
+        <div class="{{stateCardClass}}">
+          <text class="{{stateTextClass}}">{{stateText}}</text>
+        </div>
+
+        <!-- ===== 正常态卡片（show 常驻节点只切 display，防 DOM 插拔乱序——项目铁律 #4） ===== -->
+        <!-- 问题回顾：小字灰色 -->
+        <div class="q-review" show="{{phase === 'ok'}}">
+          <text class="q-review-label">你的问题</text>
+          <text class="q-review-text">{{question}}</text>
+        </div>
+
+        <!-- AI 回答卡：有结构化 card 时渲染「结论段 + 分节卡 + 尾注」（仿词条详情页分节），
+             无 card 时退回 answer 纯文本（真机手机端可只回纯文本） -->
+        <div class="answer-card" show="{{phase === 'ok'}}">
+          <text class="answer-label">AI 回答</text>
+          <text class="answer-text" if="{{cardSummary}}">{{cardSummary}}</text>
+          <text class="answer-text" if="{{!cardSummary}}">{{answer}}</text>
+        </div>
+        <!-- 结构化小节卡（card.sections：小节名 + 要点列表） -->
+        <div class="section-card" for="{{cardSections}}">
+          <text class="section-name">{{$item.name}}</text>
+          <text class="section-body">{{$item.body}}</text>
+        </div>
+        <!-- 尾注（免责声明等）：v1.16.129 改类控制 —— show=false 在本运行时仍占位，
+             无尾注/无来源时会在「卡片详情」与「重新提问」之间留出大片空白（主人反馈） -->
+        <text class="{{noteClass}}">{{cardNote}}</text>
+
+        <!-- 来源条目卡列表：点击进词条详情 -->
+        <div class="{{srcBlockClass}}">
+          <text class="src-title">来源</text>
+          <div class="src-item" for="{{sourceList}}" @click="openSource($item)">
+            <text class="src-item-title">{{$item.title}}</text>
+            <text class="src-item-tag">{{$item.tagText}}</text>
+          </div>
+        </div>
+
+        <!-- 底部双按钮（v1.16.155 主人定案）：
+             左「重新提问」→ 返回主界面后立刻重开麦克风，直接接着问，不用再点一次麦克风；
+             右「直接返回」→ 返回并关掉 AI 面板，真正回到主界面。
+             两个动作经 global.aiReturnAction 桥接给主界面 onShow 执行（页面模块实例按页面作用域隔离，
+             不能直接调主界面的方法） -->
+        <div class="btn-row">
+          <div class="retry-btn" @click="goAskAgain">
+            <text class="retry-text">重新提问</text>
+          </div>
+          <div class="home-btn" @click="goHome">
+            <text class="home-text">直接返回</text>
+          </div>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </scroll>
+    </div>
+  </div>
+</template>
+
+<style>
+  /* ===== 基础样式（矩形 rect，designWidth 300 基准；沿用 detail.ux header-card/section-card 视觉） ===== */
+  .page-container { width: 100%; height: 100%; background-color: #000000; }
+  .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
+  .answer-scroll { width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 0 20px; }
+
+  /* v1.16.107 方屏密度强化（主人定案：回答尽量一屏尽收） */
+  .top-spacer { width: 100%; height: 12px; flex-shrink: 0; }
+  .bottom-spacer { width: 100%; height: 30px; flex-shrink: 0; }
+
+  .header { width: 90%; height: 40px; justify-content: center; align-items: center; margin-bottom: 8px; flex-shrink: 0; }
+  .header-title { font-size: 20px; font-weight: bold; color: #FFFFFF; text-align: center; }
+
+  /* 包裹层显式纵向（无 class div 默认横向排布——项目铁律 #2） */
+  .src-block { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
+
+  /* 问题回顾卡：小字灰色 */
+  .q-review { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 8px 16px; margin-bottom: 7px; flex-direction: column; flex-shrink: 0; }
+  .q-review-label { font-size: 13px; color: #757575; margin-bottom: 2px; }
+  .q-review-text { font-size: 16px; color: #BBBBBB; line-height: 22px; }
+
+  /* AI 回答卡：与 section-card 同视觉语言 */
+  .answer-card { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 10px 16px; margin-bottom: 7px; flex-direction: column; flex-shrink: 0; }
+  .answer-label { font-size: 17px; font-weight: bold; color: #4D9FEE; margin-bottom: 5px; }
+  .answer-text { font-size: 17px; line-height: 26px; color: #FFFFFF; }
+  /* 结构化小节卡（v1.16.101，仿详情页分节视觉） */
+  .section-card { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 9px 16px; margin-bottom: 7px; flex-direction: column; flex-shrink: 0; }
+  .section-name { font-size: 16px; font-weight: bold; color: #4D9FEE; margin-bottom: 4px; }
+  .section-body { font-size: 16px; line-height: 25px; color: #E5E5EA; }
+  .card-note { width: 100%; font-size: 13px; line-height: 19px; color: #6E7681; text-align: center; margin-bottom: 7px; }
+  /* 空态：高度/字号/下距全部归零，彻底不占位（本运行时 show=false 仍占位，故不能只靠 show） */
+  .card-note-empty { height: 0; font-size: 0; line-height: 0; margin-bottom: 0; overflow: hidden; }
+  .src-block-empty { height: 0; margin-bottom: 0; overflow: hidden; }
+
+  .src-title { font-size: 22px; color: #757575; margin-bottom: 10px; }
+  .src-item { width: 100%; background-color: #1C1C1E; border-radius: 18px; padding: 14px 22px; margin-bottom: 10px; flex-direction: column; flex-shrink: 0; }
+  .src-item-title { font-size: 24px; color: #FFFFFF; }
+  .src-item-tag { font-size: 18px; color: #757575; margin-top: 4px; }
+
+  /* 状态卡三态（v1.16.125）：loading 灰字 / error 红字 / ok 高度归零不占位。
+     注意本运行时 show=false 仍占位，故 ok 态用类把高度与内距一并归零，不依赖 show */
+  .state-card { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 10px 16px; margin-bottom: 7px; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .state-card-hidden { height: 0; padding: 0; margin-bottom: 0; overflow: hidden; background-color: transparent; }
+  .state-text { font-size: 17px; color: #757575; text-align: center; }
+  .state-text-error { font-size: 18px; font-weight: bold; color: #EA4335; text-align: center; }
+
+  /* 底部双按钮（v1.16.155）：横向排一行，各占 48%（本运行时 flex:1 不可靠，用显式宽度）。
+     重新提问 = 主操作蓝色描边式强调；直接返回 = 深灰次要色 */
+  .btn-row { width: 100%; flex-direction: row; justify-content: space-between; margin-top: 8px; flex-shrink: 0; }
+  .retry-btn { width: 48%; height: 44px; border-radius: 14px; background-color: #2C2C2E; justify-content: center; align-items: center; flex-shrink: 0; }
+  .retry-text { font-size: 18px; font-weight: bold; color: #4D9FEE; }
+  .home-btn { width: 48%; height: 44px; border-radius: 14px; background-color: #2C2C2E; justify-content: center; align-items: center; flex-shrink: 0; }
+  .home-text { font-size: 18px; font-weight: bold; color: #FFFFFF; }
+
+  /* ===== 胶囊 192x490：按比例放大（对齐 detail.ux 胶囊屏） ===== */
+  @media (shape: pill-shaped) {
+    .top-spacer { height: 30px; }
+    .header { height: 100px; margin-bottom: 20px; }
+    .header-title { font-size: 42px; }
+    .q-review { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
+    .q-review-label { font-size: 26px; margin-bottom: 10px; }
+    .q-review-text { font-size: 28px; line-height: 40px; }
+    .answer-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
+    .answer-label { font-size: 34px; margin-bottom: 14px; }
+    .answer-text { font-size: 28px; line-height: 42px; }
+    .section-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
+    .section-name { font-size: 32px; margin-bottom: 12px; }
+    .section-body { font-size: 28px; line-height: 44px; }
+    .card-note { width: 90%; font-size: 22px; line-height: 32px; margin-bottom: 14px; }
+    .card-note-empty { height: 0; font-size: 0; line-height: 0; margin-bottom: 0; }
+    .src-block-empty { height: 0; margin-bottom: 0; }
+    .src-title { font-size: 30px; margin-bottom: 14px; }
+    .src-item { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
+    .src-item-title { font-size: 30px; }
+    .src-item-tag { font-size: 24px; margin-top: 8px; }
+    .state-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
+    .state-text { font-size: 30px; }
+    .state-text-error { font-size: 34px; }
+    .btn-row { width: 90%; margin-top: 14px; }
+    .retry-btn { width: 48%; height: 112px; border-radius: 32px; }
+    .retry-text { font-size: 35px; }
+    .home-btn { width: 48%; height: 112px; border-radius: 32px; }
+    .home-text { font-size: 35px; }
+  }
+</style>
+
+<script>
+  import router from '@system.router'
+
+  export default {
+    computed: {
+      // 状态卡类（v1.16.125）：ok 时高度归零不占位；error 时红字
+      stateCardClass() {
+        if (this.phase === 'ok') return 'state-card state-card-hidden'
+        return 'state-card'
+      },
+      stateTextClass() { return this.phase === 'error' ? 'state-text state-text-error' : 'state-text' },
+      stateText() {
+        if (this.phase === 'error') return '回答丢失，请重新提问'
+        if (this.phase === 'loading') return '加载中…'
+        return ''
+      },
+      // v1.16.129：尾注/来源在无内容时高度归零（show=false 仍占位会导致卡片与按钮间留大片空白）
+      noteClass() {
+        return (this.phase === 'ok' && this.cardNote) ? 'card-note' : 'card-note card-note-empty'
+      },
+      srcBlockClass() {
+        return (this.phase === 'ok' && this.sourceList.length > 0) ? 'src-block' : 'src-block src-block-empty'
+      }
+    },
+
+    private: {
+      // v1.16.125 三态：loading（初值→显示「加载中…」）/ ok（有回答）/ error（红字提示）
+      // 原布尔判据初值 false 会让错误卡首帧即渲染 = 主人看到的「先闪一下红色」
+      phase: 'loading',
+      _errTimer: null,
+      isDestroyed: false,
+      question: '',
+      answer: '',
+      cardSummary: '',
+      cardSections: [],
+      cardNote: '',
+      // 来源条目（渲染字段 JS 预拼：tagText 兜底，模板纯变量插值）
+      sourceList: []
+    },
+
+    // global.aiResult 由主界面 AI 面板写入（跨页数据经 global 桥接——页面作用域模块实例隔离）
+    onShow() {
+      // 正常流程：主界面 AI 面板是拿到结果才 push 进来的，此处数据必然已就绪 → 直接进 ok，零闪烁
+      if (this._applyResult()) return
+      // 异常路径（数据缺失/被清）：先留在 loading 显示「加载中…」，
+      // 1.5s 内若数据仍未到才转 error 显红字（避免手机回调稍慢就报红）
+      var self = this
+      if (this._errTimer) { clearTimeout(this._errTimer); this._errTimer = null }
+      this._errTimer = setTimeout(function () {
+        self._errTimer = null
+        if (self.isDestroyed) return
+        if (!self._applyResult()) self.phase = 'error'
+      }, 1500)
+    },
+
+    onHide() {
+      if (this._errTimer) { clearTimeout(this._errTimer); this._errTimer = null }
+    },
+
+    onDestroy() {
+      this.isDestroyed = true
+      if (this._errTimer) { clearTimeout(this._errTimer); this._errTimer = null }
+    },
+
+    // 读取 global.aiResult 落页面状态；有数据返回 true（并把 phase 置 ok）
+    _applyResult() {
+      var r = (typeof global !== 'undefined') ? global.aiResult : null
+      if (r && r.answer) {
+        this.question = r.question || ''
+        this.answer = r.answer
+        // v1.16.101 结构化作答卡：summary/分节（body 预拼要点行）/尾注
+        var card = r.card || null
+        if (card && card.summary) {
+          this.cardSummary = card.summary
+          var secs = []
+          var src = card.sections || []
+          for (var s = 0; s < src.length; s++) {
+            var items = src[s].items || []
+            var lines = []
+            for (var k = 0; k < items.length; k++) lines.push('· ' + items[k])
+            secs.push({ name: src[s].name || '', body: lines.join('\n') })
+          }
+          this.cardSections = secs
+          this.cardNote = card.note || ''
+        } else {
+          this.cardSummary = ''
+          this.cardSections = []
+          this.cardNote = ''
+        }
+        var list = []
+        var src = r.sources || []
+        for (var i = 0; i < src.length; i++) {
+          list.push({
+            title: src[i].title || '资料条目',
+            tagText: src[i].tag || '来源条目',
+            gid: src[i].gid
+          })
+        }
+        this.sourceList = list
+        this.phase = 'ok'
+        return true
+      }
+      return false
+    },
+
+    // 来源条目 → 词条详情（gid=全局条目 id，与首页/资料页 gotoDetail 同款路由）
+    openSource(item) {
+      if (!item || item.gid === undefined || item.gid === null) return
+      if (this.$app.$def.isNavigating) return
+      global.selectedEventId = item.gid
+      router.push({ uri: '/pages/detail' })
+    },
+
+    // 重新提问（v1.16.155）：回主界面 + 让主界面立刻重开麦克风接着问。
+    // 跨页只能经 global 传意图（页面模块实例按页面作用域隔离），主界面 onShow 消费后即清空
+    goAskAgain() {
+      if (this.$app.$def.isNavigating) return
+      global.aiReturnAction = 'ask'
+      router.back()
+    },
+
+    // 直接返回（v1.16.155）：回主界面并关掉 AI 面板（否则返回后仍停在面板上，不算「回主界面」）
+    goHome() {
+      if (this.$app.$def.isNavigating) return
+      global.aiReturnAction = 'home'
+      router.back()
+    },
+
+    // 右滑返回（回主界面——本页由主界面 AI 面板 push 进入，等价于「直接返回」）
+    onSwipe(eve) {
+      if (eve.direction === 'left' || eve.direction === 'right') {
+        if (this.$app.$def.isNavigating) return
+        global.aiReturnAction = 'home'
+        router.back()
+      }
+    }
+  }
+</script>

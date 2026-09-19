@@ -1,0 +1,148 @@
+<template>
+  <div class="bt-page" @swipe="noop">
+    <!-- 蓝牙资料传输专用界面（v1.16.66 主人需求）：
+         显示接收状态与进度条；【传输中不允许退出】——无返回按钮、滑动手势被吞，
+         只能手机端停止（ds-abort）或传输完毕（自动进入加载页建缓存） -->
+    <div class="statusbar">
+      <div class="sb-block">
+        <text class="time">{{time}}</text>
+        <text class="app-title">蓝牙资料</text>
+      </div>
+    </div>
+
+    <div class="bt-body">
+      <div class="bt-icon-box">
+        <image class="bt-icon" src="/common/datasets/bt/icon.png"></image>
+      </div>
+      <text class="bt-status">{{statusText}}</text>
+      <text class="bt-name" if="{{dsName}}">{{dsName}}</text>
+
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: {{progressPercent}}%;"></div>
+      </div>
+      <text class="progress-text">{{percentText}}</text>
+      <text class="bt-detail">{{detailText}}</text>
+
+      <text class="bt-hint" if="{{isError}}">请在手机端重新发送，或停止传输</text>
+      <text class="bt-hint" if="{{!isError}}">传输中请勿退出</text>
+    </div>
+  </div>
+</template>
+
+<style>
+  .bt-page { width: 100%; height: 100%; background-color: #000000; flex-direction: column; align-items: center; }
+  .statusbar { width: 100%; height: 22px; flex-direction: row; justify-content: flex-end; align-items: center; padding-left: 30px; padding-right: 30px; flex-shrink: 0; }
+  .sb-block { flex: 1; flex-direction: column; align-items: flex-end; }
+  .time { font-size: 16px; color: #757575; font-weight: 400; }
+  .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
+
+  .bt-body { flex: 1; width: 100%; flex-direction: column; justify-content: center; align-items: center; }
+  .bt-icon-box { width: 88px; height: 88px; border-radius: 44px; background-color: #1C1C1E; justify-content: center; align-items: center; margin-bottom: 18px; }
+  .bt-icon { width: 56px; height: 56px; }
+  .bt-status { font-size: 24px; color: #FFFFFF; font-weight: 600; margin-bottom: 8px; }
+  .bt-name { font-size: 18px; color: #4D9FEE; margin-bottom: 10px; }
+
+  .progress-bar { width: 200px; height: 8px; border-radius: 4px; background-color: #333333; margin-top: 24px; margin-bottom: 16px; overflow: hidden; }
+  .progress-fill { height: 100%; background-color: #4D9FEE; border-radius: 4px; }
+  .progress-text { font-size: 20px; color: #FFFFFF; font-weight: 600; margin-bottom: 6px; }
+  .bt-detail { font-size: 14px; color: #8E8E93; margin-bottom: 10px; }
+  .bt-hint { font-size: 14px; color: #5b6472; }
+
+  @media (shape: pill-shaped) {
+    .statusbar { height: 91px; padding-top: 41px; justify-content: center; padding-left: 0; padding-right: 0; }
+    .sb-block { align-items: center; }
+    .time { font-size: 21px; }
+    .app-title { font-size: 22px; }
+    .bt-icon-box { width: 130px; height: 130px; border-radius: 65px; margin-bottom: 24px; }
+    .bt-icon { width: 84px; height: 84px; }
+    .bt-status { font-size: 34px; margin-bottom: 12px; }
+    .bt-name { font-size: 26px; }
+    .progress-bar { width: 300px; height: 14px; border-radius: 7px; margin-top: 32px; margin-bottom: 22px; }
+    .progress-text { font-size: 28px; }
+    .bt-detail { font-size: 22px; }
+    .bt-hint { font-size: 22px; }
+  }
+</style>
+
+<script>
+  import { getTransferState } from '../../SearchEngine/BtTransfer.js'
+  import router from '@system.router'
+
+  function pad2(n) { return n < 10 ? '0' + n : '' + n }
+
+  export default {
+    private: {
+      time: '00:00',
+      statusText: '等待资料…',
+      dsName: '',
+      progressPercent: 0,
+      percentText: '0%',
+      detailText: '',
+      isError: false,
+      timer: null,
+      timeTimer: null,
+      navigated: false
+    },
+
+    onShow() {
+      var self = this
+      this.updateTime()
+      this.timeTimer = setInterval(function() { self.updateTime() }, 30000)
+      // 轮询传输状态（300ms）：进度/完成/失败驱动 UI 与跳转
+      this.timer = setInterval(function() { self.poll() }, 300)
+      this.poll()
+    },
+
+    onDestroy() {
+      if (this.timer) { clearInterval(this.timer); this.timer = null }
+      if (this.timeTimer) { clearInterval(this.timeTimer); this.timeTimer = null }
+    },
+
+    updateTime() {
+      var now = new Date()
+      this.time = pad2(now.getHours()) + ':' + pad2(now.getMinutes())
+    },
+
+    // 状态 → UI；done 由本页跳 loading 建缓存（传输页职责内聚，BtTransfer 只维护状态）
+    poll() {
+      if (this.navigated) return
+      var st = getTransferState()
+      this.dsName = st.name || st.ds || ''
+      this.isError = st.phase === 'error'
+      if (st.phase === 'receiving') {
+        this.statusText = '正在接收资料…'
+        var p = st.total > 0 ? Math.round(st.done / st.total * 100) : 0
+        this.progressPercent = p
+        this.percentText = p + '%'
+        this.detailText = st.total > 0
+          ? ('已完成 ' + st.done + '/' + st.total + ' 个文件' + (st.currentFile ? '（' + st.currentFile + '）' : ''))
+          : '正在连接…'
+      } else if (st.phase === 'saving') {
+        this.statusText = '正在保存资料…'
+        this.progressPercent = 100
+        this.percentText = '100%'
+        this.detailText = '校验通过，正在写入存储'
+      } else if (st.phase === 'done') {
+        this.statusText = '传输完成'
+        this.progressPercent = 100
+        this.percentText = '100%'
+        this.detailText = '正在建立索引缓存…'
+        this.navigated = true
+        // 只给传输来的这个集建缓存（loading 单集模式）
+        router.replace({ uri: '/pages/loading', params: { source: 'bt', dsId: st.dsId } })
+      } else if (st.phase === 'error') {
+        this.statusText = '接收失败'
+        this.detailText = st.error || ''
+      } else if (st.phase === 'aborted') {
+        this.statusText = '已停止'
+        this.detailText = '手机端已停止传输'
+      } else {
+        this.statusText = '等待资料…'
+        this.detailText = '正在连接中'
+      }
+    },
+
+    // 吞掉滑动（传输中不允许退出——唯一退出途径：手机端停止 / 传输完毕）
+    noop() {}
+  }
+</script>

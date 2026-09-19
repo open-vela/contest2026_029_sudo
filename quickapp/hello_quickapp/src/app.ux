@@ -1,0 +1,326 @@
+<script>
+  // ========== 搜索引擎（全局引擎初始化，从原 splash.ux 提取到 app 生命周期）==========
+  import { getSearchEngine } from './SearchEngine/SearchEngine.js'
+  // 应用版本（与 src/manifest.json 的 versionName 保持同步——改版本时两处一起改）
+  const APP_VERSION = '1.16.163'  // ⚠️ 必须与 manifest.json versionName 同步（审查第二次发现脱节：1.16.71 落后 46 版）
+  // 发版检查项：改 manifest.json 的 versionName 时，同一提交内必须改这里（APP_VERSION 用于设置页「关于」展示）
+  import { searchAllAsync, getItemByGlobalId, getDatasetEntries, getGroupEntries, getDatasetInfo, warmupAllCaches } from './SearchEngine/DatasetManager.js'
+  import { initBtReceiver } from './SearchEngine/BtTransfer.js'
+
+  // ========== 日志系统（直接操作 storage）==========
+  var LOG_KEY = 'app_runtime_logs'
+  var MAX_LOGS = 30
+  var logQueue = []
+
+  // 导入 storage（注意：需要在函数内部 require）
+  function getStorage() {
+    return require('@system.storage')
+  }
+
+  // 保存日志到 storage
+  function saveLogsToStorage() {
+    try {
+      var storage = getStorage()
+      storage.set({
+        key: LOG_KEY,
+        value: JSON.stringify(logQueue.slice(0, MAX_LOGS))
+      })
+    } catch(e) {
+      console.log('日志保存失败:', e)
+    }
+  }
+
+  // 加载已有日志
+  function loadLogsFromStorage() {
+    try {
+      var storage = getStorage()
+      storage.get({
+        key: LOG_KEY,
+        success: function(data) {
+          try {
+            var saved = JSON.parse(data)
+            if (saved && saved.length) {
+              logQueue = saved
+            }
+          } catch(e) {}
+        },
+        fail: function() {}
+      })
+    } catch(e) {}
+  }
+
+  // 初始化：加载已有日志
+  loadLogsFromStorage()
+
+  // 手写补零（避免 padStart 的轻量运行时兼容风险——见 CC_BRIEF 已知坑 #5）
+  function pad2(n) {
+    return n < 10 ? '0' + n : '' + n
+  }
+
+  // 添加日志
+  var logSaveTimer = null
+  global.addRuntimeLog = function(msg, level) {
+    var now = new Date()
+    var time = pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ':' + pad2(now.getSeconds())
+
+    logQueue.unshift({
+      time: time,
+      msg: msg,
+      level: level || 'info'
+    })
+
+    if (logQueue.length > MAX_LOGS) {
+      logQueue.pop()
+    }
+
+    // ⚠️ 合并写入（v1.16.32 性能修复）：原先每条日志都立即 storage.set，
+    // 而引擎在搜索过程中会密集打日志 → 造成大量块设备 I/O（手环上体感为卡顿）。
+    // 改为 2 秒窗口内合并一次写入；页面退出时由 flushLogsNow 兜底。
+    if (!logSaveTimer) {
+      logSaveTimer = setTimeout(function() {
+        logSaveTimer = null
+        saveLogsToStorage()
+      }, 2000)
+    }
+  }
+
+  // 获取所有日志
+  global.getRuntimeLogs = function() {
+    return logQueue
+  }
+
+  // 清空日志
+  global.clearRuntimeLogs = function() {
+    logQueue = []
+    saveLogsToStorage()
+  }
+
+  // 记录应用启动
+  global.addRuntimeLog('应用启动', 'info')
+
+  // ========== 引擎初始化（从 splash.ux 提取，移入 app 生命周期）==========
+  var engineInstance = null
+
+
+  // 挂载全局接口（幂等，可在引擎就绪前后多次调用）
+  // 引擎就绪后刷新全局量（mapChunkSize / detailChunkSize 在 meta 加载后才准确）。
+  // 页面（loading）在 init 成功 / 懒初始化完成后调用它。
+  global.refreshEngineGlobals = function() { mountToGlobal() }
+
+  // v1.16.85 后台预热（首页启动后触发一次）：keepAlive 保留各集引擎实例（内存池不释放），
+  // 首次总搜索直接命中内存，不再冷读块文件（此前每次启动后首搜都「像重建一次」）。
+  // ⚠️ 必须挂在这里（app 作用域）：暖的引擎池必须与 global.searchHistory 用的同一批实例；
+  // 页面作用域各自有模块实例，在页面里调用会暖错对象。幂等，可安全重跑。
+  global.warmupBackground = function() {
+    try {
+      warmupAllCaches(null, true)
+      console.log('[APP] 后台预热已启动（keepAlive）')
+    } catch (e) {
+      console.log('[APP] 后台预热异常: ' + e.message)
+    }
+  }
+
+  function mountToGlobal() {
+    var engine = engineInstance
+    if (!engine) return
+
+    global.addRuntimeLog('挂载全局接口', 'info')
+
+    // mapChunkSize / detailChunkSize：meta 加载前取默认值，引擎就绪后再刷新
+    global.mapChunkSize = engine.mapChunkSize || 100
+    global.detailChunkSize = engine.detailChunkSize || 100
+
+    var regionMap = {
+      'asia': '亚洲',
+      'europe': '欧洲',
+      'africa': '非洲',
+      'north_america': '北美洲',
+      'south_america': '南美洲',
+      'other': '其他'
+    }
+
+    global.searchHistory = async function(query, options) {
+      // 动态取全局引擎：loading 页 init 成功后 global.searchEngine 指向已就绪实例；
+      // 避免 app.ux 作用域闭包实例与页面作用域实例不一致导致 isReady 恒为 false
+      var engine = global.searchEngine
+      if (!engine) return { results: [], total: 0 }
+      options = options || {}
+      var category = options.category !== undefined ? options.category : 'all'
+      var region = options.region !== undefined ? options.region : 'all'
+      var page = options.page || 1
+      var pageSize = options.pageSize || 20
+
+      try {
+        // ✅ 跨集聚合搜索（历史集 + 动态资料集，DatasetManager 统一编排）
+        var result = await searchAllAsync(query, {
+          category: category,
+          region: region,
+          page: page,
+          pageSize: pageSize,
+          datasetId: (options.datasetId !== undefined) ? options.datasetId : null,
+          // 大类入口搜索：只在 GROUP_MAP 该组的 datasets 范围内聚合（null = 不限）
+          groupId: (options.groupId !== undefined) ? options.groupId : null
+        })
+
+        // 防御性检查
+        if (!result || !result.results) {
+          return { results: [], total: 0 }
+        }
+
+        return {
+          results: result.results.map(function(item) {
+            var displayTitle = item.title
+            if (!displayTitle || displayTitle === '') {
+              displayTitle = item.yearDisplay + ' ' + (regionMap[item.region] || item.region)
+            }
+            return {
+              _id: item.globalId !== undefined ? item.globalId : item.id,
+              id: item.globalId !== undefined ? item.globalId : item.id,
+              datasetTag: item.datasetTag || '',
+              year: item.year,
+              yearDisplay: item.yearDisplay,
+              region: regionMap[item.region] || item.region,
+              regionTag: item.region,
+              category: item.category,
+              title: displayTitle,
+              keywords: [displayTitle],
+              cause: item.cause || '',
+              impact: item.impact || '',
+              // 卡片三行大小类（DatasetManager 按 meta.display.card 预拼完整类名，模板纯变量插值）
+              yearClass: item.yearClass || 'result-year',
+              titleClass: item.titleClass || 'result-title',
+              catClass: item.catClass || 'result-region'
+            }
+          }),
+          total: result.total || 0,
+          initFailed: result.initFailed || false,
+          // v1.16.80 透传渐进式加载完成标记：页面用它判定「已显示全部」与是否继续翻页
+          allLoaded: result.allLoaded !== undefined ? result.allLoaded : true
+        }
+      } catch(e) {
+        console.error('[searchHistory] 错误:', e)
+        return { results: [], total: 0 }
+      }
+    }
+
+    global.getItemById = async function(id) {
+      // 跨集路由：全局 ID = (datasetId << 20) | localId；历史集 datasetId=0 时数值上等于 localId
+      if (id >= 1048576) {
+        try {
+          var doc = await getItemByGlobalId(id)
+          if (doc) {
+            global.addRuntimeLog('[getItemById] 跨集取详情 gid=' + id + ' title=' + (doc.title || ''), 'info')
+            return doc
+          }
+        } catch (e) {
+          global.addRuntimeLog('[getItemById] 跨集失败 gid=' + id + ' ' + e.message, 'error')
+        }
+        return null
+      }
+      var engine = global.searchEngine
+      if (!engine) return null
+      var logs = []
+      logs.push('[global.getItemById] id=' + id)
+      try {
+        var result = await engine.getDoc(id)
+        if (result) {
+          logs.push('success, title=' + result.title)
+          global.addRuntimeLog(logs.join(' | '), 'success')
+        } else {
+          logs.push('result null')
+          global.addRuntimeLog(logs.join(' | '), 'warn')
+        }
+        return result
+      } catch(e) {
+        logs.push('error: ' + e.message)
+        global.addRuntimeLog(logs.join(' | '), 'error')
+        return null
+      }
+    }
+
+    global.getItemByIdSync = function(id) {
+      var engine = global.searchEngine
+      if (!engine) return null
+      var doc = engine.getDocSync(id)
+      if (!doc) return null
+      var displayTitle = doc.title
+      if (!displayTitle || displayTitle === '') {
+        displayTitle = doc.yearDisplay + ' ' + (regionMap[doc.region] || doc.region)
+      }
+      return {
+        _id: doc.id,
+        id: doc.id,
+        year: doc.year,
+        yearDisplay: doc.yearDisplay,
+        region: regionMap[doc.region] || doc.region,
+        regionTag: doc.region,
+        category: doc.category,
+        title: displayTitle,
+        keywords: null,
+        cause: null,
+        impact: null
+      }
+    }
+
+      global.searchEngine = engine
+  }
+
+
+  // ========== 防抖锁 ==========
+  export default {
+    isNavigating: false,
+
+    safeNavigate(fn) {
+      if (this.isNavigating) return
+      this.isNavigating = true
+      fn()
+      setTimeout(() => { this.isNavigating = false }, 300)
+    },
+
+    // ========== 全局初始化（onCreate 先于任何页面执行）==========
+    onCreate() {
+      global.appVersionName = APP_VERSION
+      // 资料集入口清单（index 页不再直接 import 库模块——webpack 双路径双实例坑）
+      // ⚠️ 两个清单各自独立 try：groupEntries 失败绝不能清空已成功的 datasetEntries
+      //（原先同一 try 内 getGroupEntries 抛错会走 catch 把 datasetEntries 重置为 []，
+      //  首页随即回退硬编码分类——资料入口「全部消失」的同源故障）
+      try {
+        global.datasetEntries = getDatasetEntries()
+      } catch (e) {
+        console.log('[APP-DS] datasetEntries 异常: ' + e.message)
+        global.datasetEntries = []
+      }
+      // 资料详情视图数据源（index 页不直接 import 库模块——webpack 双路径双实例坑）
+      global.getDatasetInfo = getDatasetInfo
+      // 蓝牙资料接收器（v1.16.46 应用级全局监听）：手机端经 interconnect 分片传输资料集，
+      // ds-end 收齐后自动注册并唤醒 loading 页只对该集建缓存。模拟器/无蓝牙环境静默。
+      try { initBtReceiver() } catch (e) { console.log('[APP-DS] 蓝牙接收器启动失败: ' + e.message) }
+      try {
+        global.groupEntries = getGroupEntries()
+      } catch (e) {
+        console.log('[APP-DS] groupEntries 异常: ' + e.message)
+        global.groupEntries = []
+      }
+      console.log('[APP-DS] entries=' + (global.datasetEntries ? global.datasetEntries.length : 'null'))
+      global.addRuntimeLog('app.ux onCreate 应用创建', 'info')
+
+      // 1. 立即创建引擎并挂载全局接口
+      //    即使引擎尚未就绪，global.searchHistory / global.getItemById /
+      //    global.searchEngine 等也已定义，页面调用不会 undefined
+      engineInstance = getSearchEngine()
+      mountToGlobal()
+
+      // 2. 读回「设置 → 蓝牙接收」开关（v1.16.120）
+      //    此前 confirm.ux 只写 global.bluetoothReceive + storage，全工程零读取点，
+      //    重启即失效且 BtTransfer 无条件接收 = 假开关（审查报告 #2）。undefined 视为开启。
+      //    注：原 loadSettingsAsync（5 个设置在工程内零读取点，每次启动白读 5 次 storage）已删。
+      try {
+        require('@system.storage').get({
+          key: 'bluetooth_receive',
+          success: function(d) { global.bluetoothReceive = (d !== 'false') },
+          fail: function() { global.bluetoothReceive = true }
+        })
+      } catch (e) { global.bluetoothReceive = true }
+    }
+  }
+</script>

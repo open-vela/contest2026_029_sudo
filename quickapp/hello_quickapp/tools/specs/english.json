@@ -1,0 +1,41 @@
+{
+  "_说明": "英语集 —— 源为制表符词条（单词<TAB>词性. 释义），四级在前六级在后，按小写单词跨文件去重，保序取前 750（高频基础词优先）。注意 regionList 为声明序（四级=0/六级=1），不做字母排序",
+  "name": "英语集",
+  "mode": "fresh",
+  "parser": { "type": "tsv" },
+  "sourcesBase": ".",
+  "sources": [
+    { "path": "cet4_raw.txt", "level": "四级" },
+    { "path": "cet6_raw.txt", "level": "六级" }
+  ],
+  "dedupe": true,
+  "sample": { "mode": "head", "target": 750 },
+  "mapLine": "{localId}|{year}|{regionIdx}|{title}",
+  "detailKeywords": "{title},{level}",
+  "detailFields": ["meaning"],
+  "bucketText": "{title}",
+  "regionField": "level",
+  "year": 0,
+  "mapChunkSize": 200,
+  "detailChunkSize": 100,
+  "bucketSize": 2048,
+  "regionList": ["四级", "六级"],
+  "metaVersion": "english-cet-2",
+  "outDir": "src/common/datasets/english",
+  "metaJson": {
+    "datasetId": 2,
+    "name": "英语集",
+    "version": 2,
+    "category": "英语",
+    "author": "sudo",
+    "totalCount": 0,
+    "fields": { "map": ["title", "year", "category"], "keyword": "keywords", "detail": ["释义"], "filter": ["category"] },
+    "mapChunkSize": 200,
+    "detailChunkSize": 100,
+    "blockCount": 1,
+    "bucketSize": 2048,
+    "yearIndex": false,
+    "icon": "icon.png"
+  },
+  "icon": { "char": "英", "bg": "#5DBB6C", "fg": "#FFFFFF" }
+}

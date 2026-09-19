@@ -1,0 +1,1 @@
+{"totalCount":800,"regionList":["学习效率","手机数码","百科"],"categoryList":[],"bucketSize":2048,"chunks":[{"id":0,"bucketStart":0,"bucketEnd":2047,"recordCount":800}],"maps":[{"startId":0,"endId":199},{"startId":200,"endId":399},{"startId":400,"endId":599},{"startId":600,"endId":799}],"mapChunkSize":200,"detailChunkSize":100,"version":"study-ds-1"}

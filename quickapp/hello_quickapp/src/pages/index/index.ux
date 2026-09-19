@@ -1,15 +1,1766 @@
+<import name="input-method" src="../../components/InputMethod/InputMethod.ux"></import>
+
 <template>
-  <div class="container">
-    <text>Hello QuickApp - contest 2026 team 000</text>
+  <div class="page-container" @swipe="onSwipe">
+    <!-- 整页纵向滚动：两块各占一屏，滑动停止后自动吸附（类似番茄钟分页）；每屏自带状态栏；搜索态结果随其滚动 -->
+    <scroll id="pageScroll" class="page-scroll" scroll-y="{{!voiceActive}}" onscroll="onPageScroll" onscrollbottom="onPageScrollBottom">
+      <!-- 第一块：顶部块。高度由 style 动态提供（screen1H）：非搜索态=整屏高（与第二屏构成
+           双屏吸附），搜索态=头部高（状态栏+搜索框）让结果区紧跟其后进入 pageScroll 内容流。
+           ⚠️ 结果列表不能放进固定高容器、也不能包内层 scroll（v1.16.11/v1.16.29 两次教训）：
+           嵌套 scroll 或 flex:1 失效都会造成「内容溢出不可见 + 手势死区 = 滑不动」。
+           现在结果区是 pageScroll 的直接子项，随内容自然撑高，单层滚动。 -->
+      <div class="screen1" style="height: {{screen1H}}px;">
+        <!-- 状态栏时间 + 应用名（每屏独立渲染，随内容滚动）；搜索态标题切换为 searchTitle -->
+        <div class="statusbar">
+          <!-- 矩形手表：左占位 + 顶部居中标题 + 右上时间（三栏 flex 均分保证标题绝对居中） -->
+          <!-- v1.16.127 蓝牙状态标识：项目既有图标（bluetooth_off/on，非自绘），放在**左槽内部** ——
+               ⚠️ v1.16.126 曾把它放在三栏之外，占了 flex 均分宽度 → 「资料库」标题被挤偏（主人反馈）；
+               放进 sb-left 后三栏重新等分，标题恢复绝对居中。
+               点击切换连接态（演示用，见 toggleBtDemo）。仅方屏显示（if 与 rect-title 同条件）。 -->
+          <div class="sb-left" if="{{showRectTitle}}">
+            <image class="sb-bt" src="{{btIconSrc}}" @click="toggleBtDemo"></image>
+          </div>
+          <text class="rect-title" if="{{showRectTitle}}">{{headerTitle}}</text>
+          <div class="sb-block">
+            <text class="time">{{time}}</text>
+            <text class="app-title" if="{{showAppTitle}}">{{headerTitle}}</text>
+          </div>
+        </div>
+
+        <!-- 搜索框：常驻顶部；非搜索态点击进入搜索，搜索态点击开/收键盘；有词显示输入内容与 ✕ -->
+        <div class="search-box {{searchBoxClass}}" @click="toggleSearchBox">
+          <image class="search-box-icon" src="/common/icons/search.png" if="{{!searchQuery && !voiceActive}}"></image>
+          <text class="search-placeholder" if="{{!searchActive && !voiceActive}}">{{homePlaceholder}}</text>
+          <text class="search-placeholder" if="{{searchActive && !searchQuery && !voiceActive}}">请输入</text>
+          <text class="search-input" if="{{searchActive && searchQuery && !voiceActive}}">{{displayQuery}}</text>
+          <text class="clear-btn" if="{{searchActive && searchQuery && !voiceActive}}" @click="clearSearch">✕</text>
+          <text class="voice-text" if="{{voiceActive}}">聆听中…</text>
+        </div>
+
+        <!-- 引导词：非搜索态、非语音态显示 -->
+        <div class="prompt-block" if="{{!searchActive && !voiceActive}}">
+          <image class="prompt-bt" show="{{showAppTitle}}" src="{{btIconSrc}}"></image>
+          <image class="prompt-img" src="/common/icons/prompt.png"></image>
+        </div>
+
+        <!-- 分类横滑行：非搜索态、非语音态显示 -->
+        <!-- v1.16.96：外边距用 style 插值驱动——搜索态该节点被 if 隐藏但运行时会保留其
+     margin-top 61px（实测搜索框与「共 N 条」间距多出 61px 即此），需显式清零 -->
+        <scroll id="catScroll" class="cat-scroll" if="{{!searchActive && !voiceActive}}" style="margin-top: {{catScrollMT}}px;" scroll-x="{{true}}" onscroll="onCatScroll">
+          <div class="cat-row">
+            <div class="cat-item" for="{{displayCats}}" @click="goCategory($item)">
+              <div class="cat-icon {{$item.colorClass}}">
+                <image class="cat-icon-img" src="{{$item.icon}}"></image>
+              </div>
+              <text class="cat-text">{{$item.name}}</text>
+            </div>
+          </div>
+        </scroll>
+    <!-- v1.16.112 引导提示（主人定案）：在资料图标下方、搜索按钮上方——「滑=浏览、点=进入」，
+         解决「看不懂图标有啥用」；随图标行同隐（搜索/语音态），键盘弹起时随流下移藏入键盘后 -->
+    <text class="cat-hint" if="{{!searchActive && !voiceActive}}">点图标进入资料</text>
+    <!-- 两个搜索按钮：矩形左右排列、胶囊/圆形上下排列；左「语音搜索」、右「AI搜索」 -->
+        <div class="search-btn-row" if="{{!searchActive && !showKeyboard && !voiceActive}}">
+          <div class="search-btn search-btn-l" @click="startVoiceSearch">
+            <image class="search-icon" src="/common/icons/voice.png"></image>
+            <text if="{{!isCircle}}" class="search-text">语音搜索</text>
+          </div>
+          <div class="search-btn search-btn-r" @click="enterAiMode">
+            <image class="search-icon" src="/common/icons/ai.png"></image>
+            <text if="{{!isCircle}}" class="search-text">AI搜索</text>
+          </div>
+        </div>
+
+        <!-- 语音聆听态：蓝牙未连接显示断开图标+提示，已连接显示波形动画（随音量）；取消按钮 -->
+        <div class="voice-panel" if="{{voiceActive}}">
+          <!-- v1.16.134：内容区固定高度 —— 已连接/未连接内容行数不同，靠固定高度保证取消按钮位置不漂移 -->
+          <div class="voice-info">
+            <image class="voice-bt-off" src="/common/icons/bluetooth_off.png" if="{{!bluetoothConnected}}"></image>
+            <text class="voice-tip" if="{{!bluetoothConnected}}">蓝牙未连接</text>
+            <!-- v1.16.140（主人要求）：未连接时如实标注当前为模拟链路 -->
+            <text class="voice-sim-tip" if="{{!bluetoothConnected}}">仅作为模拟参考</text>
+            <text class="voice-tip" if="{{bluetoothConnected}}">{{voiceStatusText}}</text>
+            <!-- v1.16.140：声波图标（模拟波动 —— 无真实音量源，见 startWave 注释） -->
+            <div class="voice-wave">
+              <div class="{{$item.cls}}" for="{{waveBars}}"></div>
+            </div>
+          </div>
+          <div class="voice-cancel" @click="exitVoiceSearch">
+            <text class="voice-cancel-text">取消</text>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 搜索结果区（v1.16.37 重构）：pageScroll 的直接子项，随内容自然撑高——
+           单层滚动（修复「搜完滑不动」），滚到底自动加载下一页（pageScroll 的 onscrollbottom）。
+           不再使用内层 scroll（v1.16.29 方案在手环轻量运行时 flex:1 失效 → 容器被内容
+           撑开成手势死区，主人实测「还是滑动不了」）。 -->
+      <div class="home-result" if="{{searchActive}}">
+        <!-- AI 回答卡（v1.16.33）：AI 搜索的问题回答；来源条目在其下方的结果列表 -->
+        <div class="ai-card" if="{{aiMode && (aiThinking || aiAnswer)}}">
+          <text class="ai-card-title">{{aiCardTitle}}</text>
+          <text class="ai-card-text">{{aiCardText}}</text>
+        </div>
+        <!-- 结果计数：键盘打开也保持显示（v1.16.38）——此前 !showKeyboard 条件让键盘弹出时
+             这行消失、下方卡片整体上顶一下；流式布局下保留它无任何副作用 -->
+        <text class="result-count" if="{{searched && !loading && !aiMode}}">{{resultCountText}}</text>
+        <text class="engine-tip" if="{{showEngineTip}}" @click="goSettings">数据未就绪 · 点此去设置检查</text>
+        <!-- v1.16.130（性能审查 T0①）：tid 指定稳定唯一键 —— 框架按 key diff，翻页 concat /
+             新搜索整表替换时，内容未变的节点不再逐个 setDomAttributes（手环固件此通道既慢又脆）。
+             列表项的 id 是跨集全局 id，天然唯一稳定 -->
+        <div class="result-item" tid="id" for="{{visibleList}}" @click="gotoDetail($item.id)">
+          <!-- 三行类名由 DatasetManager 按 meta.display.card 预拼完整类名（纯变量插值，禁拼接表达式） -->
+          <text class="{{$item.yearClass}}">{{$item.yearDisplay}}</text>
+          <text class="{{$item.titleClass}}">{{$item.title}}</text>
+          <text class="{{$item.catClass}}">{{$item.region}}</text>
+        </div>
+        <text class="empty-tip" if="{{searchError && !loading}}">搜索出错 · 请重试</text>
+        <text class="empty-tip" if="{{searched && displayList.length === 0 && !loading && !searchError}}">无结果</text>
+        <text class="empty-tip" if="{{!searched && displayList.length === 0}}">{{waitTip}}</text>
+        <!-- 显示更多（v1.16.26 主人要求：默认只渲染 5 条，点此追加）-->
+        <!-- v1.16.138：显示条件从「列表长于可见数」改为「还有未搜完的资料集」——
+             现在 visibleCount 恒等于 displayList.length（每批 5 条、列表上限 10 条），原条件永不成立 -->
+        <div class="more-btn" if="{{!allLoaded && displayList.length > 0}}" @click="showMore">
+          <text class="more-text">{{moreText}}</text>
+        </div>
+        <text class="empty-tip" if="{{allLoaded && displayList.length > 0}}">— 已显示全部 —</text>
+        <!-- v1.16.131（主人反馈）：结果区是滚动流末尾，原本没有任何底部留白 —— 滑到底时
+             「显示更多」按钮会被屏幕边缘裁掉一部分。补一段固定留白（if 不占位，故用常驻块） -->
+        <div class="list-bottom-pad"></div>
+      </div>
+
+      <!-- 第二块：状态栏 + 设置 / 收藏（一屏高）；搜索态隐藏（if 不占位） -->
+      <div class="screen2" if="{{!searchActive}}" style="height: {{screen1H}}px;">
+        <!-- 状态栏时间 + 应用名（第二屏顶部独立渲染，标题为「选项」） -->
+        <div class="statusbar">
+          <div class="sb-block">
+            <text class="time">{{time}}</text>
+            <text class="app-title" if="{{showAppTitle}}">{{secondTitle}}</text>
+          </div>
+        </div>
+
+        <!-- 设置 / 收藏卡片：占满剩余高度并垂直居中 -->
+        <div class="sec2-wrap">
+          <div class="sec2">
+            <div class="sec2-card sec2-card-first" @click="goSettings">
+              <image class="sec2-icon" src="/common/icons/set.png"></image>
+              <text class="sec2-text">设置</text>
+            </div>
+            <div class="sec2-card" @click="goFavorites">
+              <image class="sec2-icon" src="/common/icons/bookmark.png"></image>
+              <text class="sec2-text">{{favoriteText}}</text>
+            </div>
+          </div>
+        </div>
+      </div>
+    </scroll>
+
+    <!-- 右侧分页指示点：当前页白色、另一页灰色；搜索态隐藏 -->
+    <div class="page-dots" if="{{!searchActive}}" style="top: {{dotsTop}}px;">
+      <div class="{{dot0Class}}"></div>
+      <div class="{{dot1Class}}"></div>
+    </div>
+
+    <!-- AI 助手全屏遮罩面板（v1.16.92 语音直答版）：整体套用语音搜索的模子——
+         进面板即自动开麦 → 识别成功 → 「AI 正在思考中」→ 自动跳 AI 回答页。
+         砍掉键盘输入（真机连手机蓝牙语音，手环小屏无打字需求）。
+         z-index 15、绝对定位全屏、@swipe 滑动退出保持不变 -->
+    <div class="ai-panel" show="{{aiMode}}" @swipe="onAiSwipe">
+      <div class="ai-body">
+        <!-- 顶部语音搜索式大搜索框：聆听中/有问题/空态三块 if 互斥渲染（同一时刻仅一块可见） -->
+        <div class="ai-box">
+          <text class="ai-box-listening" if="{{aiListening}}">聆听中…</text>
+          <text class="ai-box-text" if="{{!aiListening && aiQuestion}}">{{aiQuestion}}</text>
+          <text class="ai-box-hint" if="{{!aiListening && !aiQuestion}}">点下方麦克风说话</text>
+        </div>
+        <!-- 中部圆形麦克风：聆听中蓝底、其余深灰（类名 JS 预拼）；点击重新开始语音识别 -->
+        <div class="ai-mid">
+          <div class="{{aiMicCircleClass}}" @click="startAiVoice">
+            <image class="ai-mic-img" src="/common/icons/voice.png"></image>
+          </div>
+          <text class="ai-status">{{aiStatusText}}</text>
+        </div>
+        <!-- 底部取消按钮：语音搜索同款 -->
+        <div class="ai-cancel" @click="exitAiMode"><text class="ai-cancel-text">取 消</text></div>
+      </div>
+    </div>
+
+    <!-- 键盘区：absolute 底部；搜索态弹出（rect 组件原生 / circle 外层 scale 0.625 / pill 撑满）。
+         v1.16.2 修复「键盘能开但按键全无反应」：v1.14.3 曾把 kb-wrap 移入 screen1（pageScroll 内），
+         其后的 home-result-scroll（常驻 DOM、flex:1 占满搜索框以下整屏、透明背景）在 DOM 顺序上压住键盘，
+         轻量运行时 z-index 不赢得命中测试 → 键盘可见但全部按键点击被 scroll 吞掉。
+         现移回 page-container 根层级 + DOM 末尾（v1.13.x / result.ux / historyband9 的已验证位置）：
+         绘制与命中都优先；几何不变（absolute 的包含块本来就是 page-container）。
+         v1.16.79 改 show→if：① 首页创建不再实例化 800 行键盘组件（冷启动更轻）；
+         ② show 写法在胶囊屏会先按 rect 初值建树、device.getInfo 异步切 pill 后组件内部分支重建，
+            重建出的树不可见且点击穿透（v1.16.78 在资料页实测：if 按需创建后键盘正常显示）。
+            openKeyboard 的 150ms 延迟足以吸收 if 的首次创建成本 -->
+    <div class="kb-wrap" if="{{showKeyboard}}">
+      <div class="kb-body kb-rect" if="{{screentype === 'rect'}}">
+        <input-method hide="{{!showKeyboard}}" keyboardtype="QWERTY" screentype="rect" maxlength="20" @complete="onInput" @delete="onDelete"></input-method>
+      </div>
+      <div class="kb-body kb-circle" if="{{screentype === 'circle'}}">
+        <input-method hide="{{!showKeyboard}}" keyboardtype="QWERTY" screentype="circle" maxlength="20" @complete="onInput" @delete="onDelete"></input-method>
+      </div>
+      <div class="kb-body kb-pill" if="{{screentype === 'pill-shaped'}}">
+        <input-method hide="{{!showKeyboard}}" keyboardtype="QWERTY" screentype="pill-shaped" maxlength="20" @complete="onInput" @delete="onDelete"></input-method>
+      </div>
+    </div>
   </div>
 </template>
 
 <style>
-.container { flex-direction: column; justify-content: center; align-items: center; }
+  /* ===== 基础样式（矩形 rect，designWidth 300 基准） ===== */
+  .page-container { position: relative; width: 100%; height: 100%; background-color: #000000; }
+  .page-scroll { width: 100%; height: 100%; flex-direction: column; }
+
+  /* 状态栏：每屏顶部普通块级（随内容滚动）；矩形时间靠右，下方小字应用名；左右对称 padding 保证三栏均分后标题落于屏正中 */
+  /* v1.16.86：padding-top 3px——rect 标题 20px 字号在 22px 栏内距顶仅 ~1px 贴顶（主人实测），加呼吸空间 */
+  /* v1.16.117：主人反馈「资料库标题太贴屏幕顶」+ 蓝牙改圆形角标。
+     实测结论：本运行时 height 为 border-box 语义（padding-top 不增加总高，只挤压内容区）——
+     故「状态栏内容下移」= 加 padding-top 且同时加 height（25→30 / 3→10），
+     内容中心由 14 变 20（标题下移 6px），搜索框 margin-top 回 14 使位置仍为 44（下游与垂直预算不变） */
+  /* v1.16.123：height 30→36 —— 原内容区仅 20px 装不下 26px 角标，靠负 margin 溢出且**余量 0px**
+     （圆底 30 = 容器底 30），主人实机截图里角标左上被直角裁掉（本机舍入恰好没裁）。
+     现内容区 26px，角标 24px + margin-top -12 → 实测圆 y6~32（容器底 36，余量 4px，距屏左/上 7/6px）；
+     search-box 上距 10→4 抵消增高 → 搜索框仍 y44-99。注：标准 CSS flex 推导与实测有偏差，
+     判断圆是否被裁以「逐行宽度分布」为准（完整圆 = 顶窄→中宽→底窄，被裁则首末行突然变宽） */
+  .statusbar { position: relative; overflow: visible; width: 100%; height: 36px; padding-top: 10px; flex-direction: row; justify-content: flex-end; align-items: center; padding-left: 30px; padding-right: 30px; flex-shrink: 0; }
+  .sb-left { flex: 1; flex-direction: row; align-items: center; }
+  /* v1.16.127 蓝牙状态标识：置于 sb-left 槽内（不占三栏等分之外的宽度，标题居中不受影响） */
+  .sb-bt { width: 22px; height: 22px; flex-shrink: 0; }
+  .sb-block { flex: 1; flex-direction: column; align-items: flex-end; }
+  .time { font-size: 16px; color: #757575; font-weight: 400; }
+  .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
+  /* 矩形手表：顶部应用名（大小约胶囊 3/4），三栏 flex 均分（sb-left/rect-title/sb-block）保证水平正中心，不干扰右上时间 */
+  .rect-title { flex: 1; text-align: center; font-size: 20px; color: #FFFFFF; font-weight: 500; }
+
+  /* 第一块：高度由模板 style 动态提供（screen1H：非搜索态=整屏高 / 搜索态=头部高），
+     CSS 不再固定——固定高是「搜完滑不动」的根因（结果溢出固定高容器不可滚） */
+  .screen1 { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
+
+  /* 分类横滑行：图标直径 58、间距 17、名称 13px；边缘留白 8.5（间距=2×边缘） */
+  /* margin-top 由模板 style 插值驱动（catScrollMT：常态 61 / 搜索态 0，v1.16.96） */
+  .cat-scroll { width: 100%; height: 82px; flex-shrink: 0; }
+  .cat-row { flex-direction: row; align-items: flex-start; padding-left: 8px; padding-right: 8px; }
+
+  .cat-item { width: 58px; flex-direction: column; align-items: center; margin-right: 17px; flex-shrink: 0; }
+  .cat-icon { width: 58px; height: 58px; border-radius: 29px; background-color: #1C1C1E; justify-content: center; align-items: center; }
+  /* Google/Material 鲜活配色图标底（语义化：健康绿/科学蓝/历史橙/生活青/急救红/运动黄） */
+  .ci-green { background-color: #34A853; }
+  .ci-blue { background-color: #4285F4; }
+  .ci-orange { background-color: #FB8C00; }
+  .ci-cyan { background-color: #24C1E0; }
+  .ci-red { background-color: #EA4335; }
+  .ci-yellow { background-color: #FBBC05; }
+  .ci-ds { background-color: #8B5CF6; }
+  .cat-icon-img { width: 33px; height: 33px; }
+  .cat-text { font-size: 13px; color: #e6edf3; margin-top: 6px; }
+
+  /* 引导词：灰色小字居中（位于分类图标上方，紧贴搜索框下方） */
+  /* v1.16.115：素材按 ink 收紧（482×230），显示 195×93（原 110 含空白边）——顺带省出 17px 垂直预算；
+     两行文字各自水平居中（原「Ask」偏左 11px）；蓝牙 glyph 左缘 == 第二行文字左缘，top 使图标与「Ask」视觉居中 */
+  .prompt-block { position: relative; margin-top: 16px; flex-shrink: 0; }
+  .prompt-img { width: 195px; height: 93px; }
+  .prompt-bt { position: absolute; left: 0; top: 8px; width: 37px; height: 37px; }
+  /* v1.16.112 图标行下方引导提示（弱化色，与上方 guide 成对） */
+  .cat-hint { width: 100%; text-align: center; font-size: 13px; color: #5b6472; letter-spacing: 2px; margin-top: 8px; flex-shrink: 0; }
+
+  /* 搜索框：位于状态栏下方，深色圆角输入框样式，放大镜靠左，带描边，点击进入搜索页 */
+  /* v1.16.103 方屏密度增大（主人定案）：搜索框 258×56→240×50 */
+  .search-box { width: 240px; height: 50px; border-radius: 25px; background-color: #1C1C1E; border: 2px solid #3A3A3C; flex-direction: row; justify-content: flex-start; align-items: center; padding-left: 16px; margin-top: 4px; flex-shrink: 0; }
+  .search-box-icon { width: 22px; height: 22px; }
+  .voice-text { font-size: 20px; color: #757575; flex: 1; margin-left: 10px; text-align: left; }
+
+  /* 搜索按钮行：矩形左右排列，胶囊/圆形上下排列 */
+  /* v1.16.83：矩形屏按钮下移贴近屏底（原 20px 留白过大；screen1H=429，加至 80 后底部余 ~15px 不溢出）。
+     胶囊/圆形各自媒体查询已覆盖 margin，不受影响 */
+  /* v1.16.95 修正按钮溢出：本运行时盒模型为 content-box，width:100% + 水平 padding
+     会把行撑到 356px 溢出屏幕（按钮两侧卡边）——去掉行内边距，靠按钮宽度控边距 */
+  /* v1.16.113：提示插入后按钮下移被裁 → 行上距 80→64 补偿（底部余量 0→15px 恢复原观感） */
+  .search-btn-row { width: 100%; flex-direction: row; justify-content: center; align-items: center; margin-top: 26px; flex-shrink: 0; }
+  /* v1.16.89 等宽修正：flex:1 在该运行时失效 → 两按钮按内容收缩不等宽（186 vs 153 实测），
+     改固定等宽 154px（336 = 行内边距20 + 间距8 + 154×2），文字/图标水平对齐 */
+  /* v1.16.95：content-box 下 136 + 左内边距 14 = 渲染 150；两钮+间距=308，屏幕两侧余 14px */
+  /* v1.16.109：内容居中（去左对齐+左内距）——文案精简后居中最均衡（主人定案） */
+  .search-btn { position: relative; width: 136px; height: 62px; border-radius: 31px; background-color: #4D9FEE; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
+  /* v1.16.110 配色：双彩底白标体系——语音=品牌绿、AI=紫罗兰（呼应 AI 星） */
+  .search-btn-l { margin-right: 4px; background-color: #34A853; }
+  .search-btn-r { margin-left: 4px; background-color: #7B5CFF; }
+  .search-icon { width: 22px; height: 22px; margin-right: 6px; flex-shrink: 0; }
+  /* v1.16.134（主人要求）：取消按钮贴屏幕底部 —— 面板撑满剩余高度，取消按钮用 margin-top:auto
+     推到底（绝对定位在本运行时的 flex 容器内不渲染，故走常规流） */
+  /* v1.16.134（主人要求）：取消按钮贴屏幕底部。面板在 scroll 内容流内，flex:1 撑不开
+     （项目铁律「flex:1 不可靠」）→ 用**固定高度**，容器有确定高度后 margin-top:auto 才有依据 */
+  /* v1.16.134：space-between —— 内容贴顶、取消按钮贴底；不依赖 flex:1 / auto margin
+     （两者在本运行时均实测无效），也不需按连接状态调间距 */
+  .voice-panel { width: 100%; height: 326px; flex-direction: column; justify-content: space-between; align-items: center; padding-top: 30px; padding-bottom: 24px; flex-shrink: 0; }
+  .voice-info { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .voice-tip { font-size: 24px; color: #FFFFFF; margin-bottom: 12px; }
+  .voice-bt-off { width: 50px; height: 50px; margin-bottom: 12px; }
+  .voice-cancel { width: 160px; height: 56px; border-radius: 28px; background-color: #3A3A3C; justify-content: center; align-items: center; flex-shrink: 0; }
+  /* v1.16.140：模拟提示字 + 声波图标（5 根竖条，高度档位类名由 JS 预拼切换） */
+  .voice-sim-tip { font-size: 14px; color: #757575; margin-bottom: 14px; }
+  .voice-wave { flex-direction: row; align-items: flex-end; height: 34px; margin-top: 4px; }
+  .wbar { width: 6px; margin-right: 5px; border-radius: 3px; background-color: #4D9FEE; flex-shrink: 0; }
+  .h1 { height: 8px; }
+  .h2 { height: 16px; }
+  .h3 { height: 24px; }
+  .h4 { height: 34px; }
+  .voice-cancel-text { font-size: 24px; color: #FFFFFF; }
+  .search-text { font-size: 22px; color: #FFFFFF; font-weight: 400; }
+
+  /* 第二块：状态栏固定高度在顶部，剩余空间由 sec2-wrap 撑起并让卡片垂直居中 */
+  .screen2 { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .sec2-wrap { width: 100%; flex: 1; justify-content: center; align-items: center; }
+  .sec2 { width: 100%; flex-direction: row; padding-left: 21px; padding-right: 21px; flex-shrink: 0; }
+  .sec2-card { flex: 1; height: 150px; border-radius: 21px; background-color: #1C1C1E; flex-direction: column; justify-content: center; align-items: center; }
+  .sec2-card-first { margin-right: 14px; }
+  .sec2-icon { width: 36px; height: 36px; }
+  .sec2-text { font-size: 17px; color: #FFFFFF; font-weight: 600; margin-top: 12px; }
+
+  /* 分页指示点：右边缘竖排两个小圆点 */
+  .page-dots { position: absolute; right: 4px; flex-direction: column; align-items: center; z-index: 10; }
+  .page-dot { width: 10px; height: 10px; border-radius: 5px; margin-bottom: 12px; background-color: #4a4a4a; }
+  .page-dot-active { background-color: #FFFFFF; }
+
+  /* ===== 主页内嵌搜索（搜索态结果区替换分类行，随外层 pageScroll 滚动） ===== */
+  /* 结果区独立滚动容器（v1.16.29）：占满 screen1（CSS 固定一屏高）剩余空间。
+     ⚠️ 此前 flex:1 与 flex-shrink:0 并存互相冲突——flex-shrink:0 使容器被内容撑开、
+     永远成不了滚动视图，结果超出后既不可见也滑不动（主人反馈「搜完滑不动」）。 */
+  .home-result { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
+
+  /* 搜索框内占位/输入/清空三件套（复用主页 .search-box 同名义尺寸；无独立 search-wrap 包裹） */
+  .search-placeholder { font-size: 20px; color: #757575; flex: 1; margin-left: 10px; text-align: left; }
+  .search-input { font-size: 22px; color: #FFFFFF; flex: 1; margin-left: 10px; text-align: left; }
+  .clear-btn { width: 28px; height: 28px; border-radius: 14px; background-color: #3A3A3C; color: #FFFFFF; text-align: center; font-size: 18px; line-height: 28px; margin-right: 14px; flex-shrink: 0; }
+
+  .result-count { width: 100%; text-align: center; font-size: 16px; color: #757575; margin-top: 4px; flex-shrink: 0; }
+
+  /* 引擎未加载提示：黄色醒目，点击跳设置 */
+  .engine-tip { width: 100%; text-align: center; font-size: 18px; color: #FBBC05; margin-top: 8px; flex-shrink: 0; }
+
+  /* 结果列表（搜索结果随外层 pageScroll 流式滚动，无需内嵌 scroll） */
+  /* v1.16.103：padding 10/14→8/12、间距 6→5、圆角 14→12（一屏 4 条） */
+  .result-item { width: 94%; margin-left: 3%; border-radius: 12px; background-color: #1C1C1E; padding: 5px 11px; margin-bottom: 3px; flex-direction: column; flex-shrink: 0; }
+  /* 「显示更多」按钮（v1.16.26）*/
+  /* AI 回答卡（v1.16.33）：区别于普通结果卡的强调样式 */
+  .ai-card { width: 94%; margin-left: 3%; border-radius: 14px; background-color: #1C2530; border: 1px solid #2A4A66; padding: 12px 14px; margin-bottom: 8px; flex-direction: column; flex-shrink: 0; }
+  .ai-card-title { font-size: 18px; color: #4D9FEE; font-weight: 600; margin-bottom: 6px; }
+  .ai-card-text { font-size: 18px; color: #E8E8E8; line-height: 26px; }
+  /* v1.16.131：与结果卡统一 —— 圆角 12（对齐 result-item）、文字 17px（对齐 result-title）、
+     高度 64→48（原比同屏卡片元素粗壮一圈） */
+  .more-btn { width: 94%; margin-left: 3%; height: 48px; border-radius: 12px; background-color: #2C2C2E; justify-content: center; align-items: center; margin-top: 3px; margin-bottom: 3px; flex-shrink: 0; }
+  .list-bottom-pad { width: 100%; height: 60px; flex-shrink: 0; }
+  .more-text { font-size: 17px; color: #4D9FEE; }
+  .result-year { font-size: 16px; font-weight: bold; color: #4D9FEE; margin-bottom: 1px; }
+  .result-title { font-size: 17px; color: #FFFFFF; margin-bottom: 1px; }
+  .result-region { font-size: 13px; color: #757575; }
+  /* 结果卡三行大小（meta.display.card.rows → DatasetManager 预拼 sz-* 类 → 模板纯变量插值）。
+     仅声明了 display.card 的集（英语集）会带 sz 类；未声明的集（历史/诗词）保持上方基准字号。
+     注意：sz 规则需在每个形态块内重复声明且位于 .result-* 之后，否则会被形态基准覆盖 */
+  .sz-large { font-size: 22px; }
+  .sz-medium { font-size: 17px; }
+  .sz-small { font-size: 13px; }
+
+  .empty-tip { width: 100%; text-align: center; font-size: 18px; color: #757575; margin-top: 40px; }
+
+  /* 键盘区：absolute 底部；rect 用原组件（255px 满宽）、circle 画布 480px 整体 scale 0.625、
+     pill 组件内部已按 300 基准重写，此处直接撑满（与 result.ux 同款） */
+  .kb-wrap { position: absolute; left: 0; bottom: 0; width: 100%; overflow: visible; z-index: 20; }
+  .kb-rect { position: relative; width: 100%; height: 255px; }
+  .kb-circle { position: relative; left: -90px; width: 480px; height: 321px; transform: scale(0.625); transform-origin: 240px 321px; }
+  .kb-pill { position: relative; width: 100%; height: 477px; }
+
+  /* ===== AI 助手全屏遮罩面板（v1.16.91，输入逻辑迁移自已删除的 pages/ai/ai 提问页，
+     类名加 ai- 前缀避免与首页既有样式冲突） ===== */
+  /* 绝对定位全屏盖住主界面：z-index 15 低于键盘区 20（键盘浮在面板上方）、高于分页点 10；
+     show 只切 display，主界面原有节点零插拔（项目铁律 #3） */
+  /* v1.16.102：像语音搜索一样自然——去掉 AI 助手标题与 ✕；面板从状态栏下方开始（状态栏自然可见），
+     盒子位置与语音搜索的搜索盒完全对齐；退出=底部取消/左右滑 */
+  /* v1.16.145：top 25→36 —— 原值按旧状态栏高度 30 定，v1.16.123 状态栏改成 36 后未同步，
+     黑色遮罩会盖住状态栏下半（「资料库」标题与时间被裁去下半截，主人反馈）；
+     height 455→444（36+444=480 铺满整屏） */
+  .ai-panel { position: absolute; left: 0; top: 36px; width: 100%; height: 444px; background-color: #000000; z-index: 15; flex-direction: column; }
+  /* 主体内容区：固定高（rect 整屏 429 - 头部 50；flex:1 不可靠——项目铁律 #2），
+     纵向居中——套语音搜索 voice-panel 的居中布局 */
+  .ai-body { width: 100%; height: 444px; flex-direction: column; justify-content: flex-start; align-items: center; }
+
+  /* 顶部语音搜索式大搜索框：同款圆角描边造型（258 宽 / 圆角 28 / 描边 2px #3A3A3C / 背景 #1C1C1E），
+     高度 110（比语音搜索框 56 大——AI 场景要放下完整问题文本），内容双向居中 */
+  .ai-box { width: 258px; height: 110px; border-radius: 28px; background-color: #1C1C1E; border: 2px solid #3A3A3C; flex-direction: column; justify-content: center; align-items: center; flex-shrink: 0; margin-top: 16px; }
+  .ai-box-listening { font-size: 20px; color: #8E8E93; }
+  .ai-box-text { font-size: 22px; color: #FFFFFF; line-height: 30px; text-align: center; padding-left: 14px; padding-right: 14px; }
+  .ai-box-hint { font-size: 20px; color: #757575; }
+
+  /* 中部：圆形麦克风 + 状态文字（复制语音搜索的垂直居中排布） */
+  /* v1.16.106：margin 90→50——状态文字换两行（错误/重试提示）时不再把取消顶出屏幕 */
+  .ai-mid { width: 258px; flex-direction: column; align-items: center; margin-top: 50px; flex-shrink: 0; }
+  /* 圆形麦克风 56px：聆听中蓝底 #4D9FEE、空闲/出错/思考深灰 #2C2C2E（类切换，禁动态 style） */
+  .ai-mic-circle { width: 56px; height: 56px; border-radius: 28px; justify-content: center; align-items: center; flex-shrink: 0; }
+  .ai-mic-on { background-color: #4D9FEE; }
+  .ai-mic-off { background-color: #2C2C2E; }
+  .ai-mic-img { width: 28px; height: 28px; }
+  .ai-status { font-size: 20px; color: #D0D0D4; text-align: center; line-height: 28px; margin-top: 18px; }
+
+  /* 底部取消按钮：语音搜索同款（160×56 圆角 28 #3A3A3C） */
+  .ai-cancel { width: 160px; height: 56px; border-radius: 28px; background-color: #3A3A3C; justify-content: center; align-items: center; margin-top: 50px; flex-shrink: 0; }
+  .ai-cancel-text { font-size: 22px; color: #FFFFFF; }
+
+  /* ===== AI 面板胶囊 192x490 放大（语音直答版；主体高 766 - 头部 80） ===== */
+  @media (shape: pill-shaped) {
+    .ai-panel { top: 91px; height: 675px; }
+    .ai-body { height: 675px; }
+    .ai-box { width: 246px; height: 150px; border-radius: 30px; border: 3px solid #3A3A3C; margin-top: 20px; }
+    .ai-box-text { font-size: 28px; line-height: 38px; }
+    .ai-box-listening { font-size: 26px; }
+    .ai-box-hint { font-size: 26px; }
+    /* v1.16.106：140→80，两行状态文字时取消仍在屏内 */
+    .ai-mid { width: 246px; margin-top: 80px; }
+    .ai-mic-circle { width: 88px; height: 88px; border-radius: 44px; }
+    .ai-mic-img { width: 44px; height: 44px; }
+    .ai-status { font-size: 30px; line-height: 40px; margin-top: 26px; }
+    .ai-cancel { width: 220px; height: 88px; border-radius: 44px; margin-top: 70px; }
+    .ai-cancel-text { font-size: 34px; }
+  }
+
+  /* ===== 圆屏 466（Watch S3/S4）：5 个图标整行居中，不横滑 ===== */
+  @media (shape: circle) {
+    .sb-bt { display: none; }
+  }
+    /* ===== 胶囊 192x490（手环 9）：设置/收藏上下两行全宽卡片 ===== */
+  @media (shape: pill-shaped) {
+    .prompt-bt { display: none; }
+    .statusbar { justify-content: center; padding-left: 0; padding-right: 0; }
+    .sb-block { align-items: center; }
+    .time { font-size: 21px; }
+    .app-title { font-size: 22px; }
+    .cat-scroll { height: 128px; }
+    .cat-row { padding-left: 28px; padding-right: 28px; }
+    .cat-item { width: 95px; margin-right: 55px; }
+    .cat-icon { width: 95px; height: 95px; border-radius: 47px; }
+    .cat-icon-img { width: 55px; height: 55px; }
+    .cat-text { font-size: 20px; margin-top: 6px; }
+    /* v1.16.116：提示块上距 14→25、图标行上距 40→29——实测上间隙 20 / 下间隙 44（CSS）不协和，
+       两者各让 8px 后上下各 31px 配平，且图标绝对位置不变（一加一减抵消） */
+    .prompt-block { margin-top: 15px; }
+    .prompt-img { width: 195px; height: 93px; }
+    .prompt-bt { top: 8px; width: 37px; height: 37px; }
+    .cat-hint { font-size: 23px; letter-spacing: 0px; margin-top: 6px; }
+    .search-box { width: 246px; height: 92px; border-radius: 46px; margin-top: 20px; border: 3px solid #3A3A3C; padding-left: 18px; }
+    .search-box-icon { width: 40px; height: 40px; }
+    .search-btn-row { flex-direction: column; padding-left: 0; padding-right: 0; margin-top: 0; }
+    /* v1.16.113：提示插入后按钮下移被裁 → margin 20→10 补偿（底部余量 0→20px） */
+    /* v1.16.115 按钮略缩 + 行上距 71→24：提示块占位后总高溢出 85px（胶囊屏 766 实测推算），
+       压缩行距与按钮高换回底部余量；图标行 margin 仍 40（主人要求图标下移给提示词留空间） */
+    /* v1.16.128（主人要求）：胶囊按钮再放大一点点 —— 200×78 → 212×86（v1.16.115 曾为腾垂直
+       预算缩到 78，现底部余量充足故加回并略宽）。圆角同步 39→43 */
+    .search-btn { width: 212px; height: 78px; border-radius: 39px; flex: none; margin-top: 8px; }
+    .search-btn-l { margin-right: 0; }
+    .search-btn-r { margin-left: 0; }
+    .search-icon { width: 34px; height: 34px; margin-right: 10px; }
+    .voice-tip { font-size: 36px; margin-bottom: 20px; }
+    .voice-bt-off { width: 80px; height: 80px; margin-bottom: 20px; }
+    .voice-panel { height: 470px; padding-top: 40px; padding-bottom: 40px; }
+    .voice-cancel { width: 220px; height: 88px; border-radius: 44px; }
+    .voice-cancel-text { font-size: 36px; }
+    .voice-text { font-size: 28px; }
+    .search-text { font-size: 35px; }
+    .statusbar { height: 91px; padding-top: 41px; }
+    .cat-scroll { margin-top: 28px; }
+    .search-btn-row { margin-top: 12px; }
+    .searchbox-voice { height: 130px; }
+    .sec2 { flex-direction: column; padding-left: 27px; padding-right: 27px; }
+    .sec2-card { width: 100%; height: 108px; border-radius: 54px; flex-direction: row; justify-content: center; align-items: center; flex: none; }
+    .sec2-card-first { margin-right: 0; margin-bottom: 14px; }
+    .sec2-icon { width: 40px; height: 40px; margin-right: 12px; }
+    /* 「收藏 · N」比「收藏」长，33px 会挤出卡片：降到 28px + 单行省略兜底 */
+    .sec2-text { font-size: 28px; margin-top: 0; }
+    /* 搜索层（胶囊屏）：与 result.ux 胶囊屏尺寸一致 */
+    .search-placeholder { font-size: 30px; margin-left: 16px; }
+    .search-input { font-size: 34px; margin-left: 16px; }
+    .clear-btn { width: 46px; height: 46px; border-radius: 23px; font-size: 28px; line-height: 46px; margin-right: 22px; }
+    .result-count { font-size: 20px; margin-top: 8px; }
+    /* 胶囊结果卡加大：一屏约 3 个符合腕上观感（原约 6-7 个过小） */
+    /* v1.16.93 卡片缩小适配：原 54px 标题+26px 内边距一张卡占满一屏（主人实测） */
+    .result-item { border-radius: 20px; padding: 14px 18px; margin-bottom: 10px; }
+    .ai-card { width: 94%; margin-left: 3%; border-radius: 30px; padding: 22px 26px; margin-bottom: 16px; }
+    .ai-card-title { font-size: 28px; margin-bottom: 10px; }
+    .ai-card-text { font-size: 28px; line-height: 40px; }
+    .more-btn { border-radius: 20px; height: 76px; margin-bottom: 10px; }
+    .list-bottom-pad { height: 90px; }
+    .more-text { font-size: 28px; }
+    .result-year { font-size: 26px; }
+    .result-title { font-size: 30px; }
+    .result-region { font-size: 21px; }
+    .empty-tip { font-size: 28px; margin-top: 60px; }
+    .engine-tip { font-size: 28px; }
+    .sz-large { font-size: 22px; }
+    .sz-medium { font-size: 23px; }
+    .sz-small { font-size: 17px; }
+  }
+  /* 搜索框状态类（手环9固件禁动态style，改类切换） */
+  .searchbox-voice { height: 80px; }
+  .searchbox-typed { padding-left: 6px; }
 </style>
 
 <script>
-export default {
-  data: { msg: 'hello' }
-}
+  // 语音搜索 / AI 搜索统一引擎（真链路=interconnect 手机 App；模拟链路=本地可运行模拟源）
+  import { getAssistant } from '../../SearchEngine/AssistantEngine.js'
+  import { isCacheBuilt } from '../../SearchEngine/DatasetManager.js'
+  import router from '@system.router'
+  import device from '@system.device'
+  import storage from '@system.storage'
+
+  // 手写补零（避免 padStart 的轻量运行时兼容风险）
+  function pad2(n) {
+    return n < 10 ? '0' + n : '' + n
+  }
+
+  export default {
+    private: {
+      time: '00:00',
+      timeTimer: null,
+      statusbarHeight: 17,
+      topBarPadTop: 0,
+      catsMarginTop: 43,
+      screen1H: 429,
+      screenAdjusted: false,
+      isCircle: false,
+      showAppTitle: false,
+      showRectTitle: false,
+      guideText: '左右滑动 · 切换分类',
+      curPage: 0,
+      dotsTop: 200,
+      catScrollTimer: null,
+      pageScrollTimer: null,
+      snapParams: { iconW: 58, spacing: 17, count: 6, padLeft: 8.5, enabled: true },
+      displayCats: [],
+      // 结果列表渐进显示：默认 6 条（v1.16.141 起与每批搜索结果数一致）
+      visibleCount: 6,
+      // v1.16.131：✕ 清除的时间戳（用于吞掉冒泡到搜索框的同一次点击）
+      _clearedAt: 0,
+      // v1.16.140：声波图标（5 根竖条，类名 JS 预拼 —— 模板禁复杂表达式）
+      waveBars: [{ cls: 'wbar h2' }, { cls: 'wbar h3' }, { cls: 'wbar h4' }, { cls: 'wbar h3' }, { cls: 'wbar h2' }],
+      _waveTimer: null,
+      // AI 搜索（v1.16.33）：aiMode=输入的问题将交给 AssistantEngine.answer 生成回答；
+      // aiThinking=等待回答；aiAnswer=回答文案（本地由检索结果真实拼出）
+      // v1.16.91 起 aiMode 语义改为「AI 助手全屏面板开启」；v1.16.92 面板改语音直答：
+      // aiThinking 兼任面板「思考中」标记（内嵌回答卡保留字段休眠不删）
+      aiMode: false,
+      aiThinking: false,
+      aiAnswer: '',
+      // AI 语音直答面板状态（v1.16.92，全布尔+纯文本——show/if 里禁 === 字符串比较，
+      // 布尔是全项目已验证形态）：aiListening=识别中；aiQuestion=识别出的问题；
+      // aiStatusText=状态提示；aiMicCircleClass=麦克风圆形图标类（JS 预拼，模板纯插值）
+      aiListening: false,
+      aiQuestion: '',
+      aiStatusText: '',
+      aiMicCircleClass: 'ai-mic-circle ai-mic-off',
+      // 资料入口清单（app.ux onCreate 挂 global）
+      // 首页只渲染 groupEntries（大类，≤6 个 image——24 个资料集全渲染真机直接卡死）
+      datasetEntries: [],
+      groupEntries: [],
+      activeGroupId: null,
+      secondTitle: '选项',
+      favoriteCount: 0,
+      // 搜索态 screen1 显式高度（运行时不支持 height:auto）：结果条数 × 卡片高 + 顶部/底部余量，最小不低于一屏
+      searchError: false,
+      searchSeq: 0,
+      // ===== 主页内嵌搜索层（状态/结果/键盘，逻辑参照 result.ux） =====
+      searchActive: false,
+      // 标题基础值（显示名由 computed headerTitle 按搜索态/资料视图状态合成）
+      baseTitle: '搜索',
+      activeDatasetId: null,
+      screentype: 'rect',
+      showKeyboard: false,
+      btOn: false,
+      btTimer: null,
+      shouldOpenKeyboard: false,
+      isDestroyed: false,
+      searchQuery: '',
+      displayList: [],
+      totalCount: 0,
+      currentPage: 1,
+      // v1.16.141（主人定案）：总搜索每批 6 条 —— 该值即 searchAllAsync 的 target
+      // （pageSize × page = 本轮要凑够的卡片数）；一个集凑不够会自动继续下一个集直到凑够
+      pageSize: 6,
+      loading: false,
+      allLoaded: false,
+      searched: false,
+      activeCategory: 'all',
+      activeRegion: 'all',
+      searchTimer: null,
+      isClearing: false,
+      showEngineTip: false,
+      voiceActive: false,
+      bluetoothConnected: true
+    },
+
+    computed: {
+      // 键盘上方提示：无词「正在等待输入」、有词引导收起键盘（收键盘才触发搜索）
+      waitTip() {
+        if (this.showKeyboard) {
+          return this.searchQuery && this.searchQuery.trim() ? '收起键盘开始搜索' : '请输入'
+        }
+        return '输入关键词开始搜索'
+      },
+      // 收藏卡片文案：有收藏显示「收藏 · N」，无收藏仍显示「收藏」
+      favoriteText() {
+        return this.favoriteCount > 0 ? '收藏 · ' + this.favoriteCount : '收藏'
+      },
+      // 键盘打开时追加光标（与输入组件内部光标一致，避免特殊字符缺字）
+      displayQuery() {
+        return this.searchQuery + (this.showKeyboard ? '_' : '')
+      },
+      // 搜索框状态类：语音态变高、有词缩边距（手环9固件禁动态style，改类切换）
+      // v1.16.111：分类行上边距改为 computed（自动跟随搜索态/键盘态，免手动同步）
+      // 胶囊屏键盘弹起（空词搜索框点击）时图标下移藏入键盘后——原 61 会从键盘上缘凸出 25px（主人反馈）；
+      // 100 = 203(盒底) + 100 = 303 > 键盘顶 289，完全隐藏且留 14px 余量
+      catScrollMT() {
+        if (this.aiMode || this.searchActive) return 0
+        if (this.showKeyboard && this.screentype === 'pill-shaped') return 100
+        // v1.16.114：提示块占位后重算——方屏 20 / 胶囊 40（原 61 是按无提示块版面调的）
+        // v1.16.116：胶囊 40→29（与 prompt-block 上距 +11 配平提示文字上下间隙，图标净位置不变）
+        return this.screentype === 'pill-shaped' ? 29 : 20
+      },
+      // v1.16.127：改用项目既有的一对图标（off=深红底红标 / on=浅蓝底蓝标）
+      btIconSrc() { return this.btOn ? '/common/icons/bluetooth_on.png' : '/common/icons/bluetooth_off.png' },
+      // v1.16.126：改用既有图标 bluetooth_off.png（自带圆底），不再需要拼圆底色类
+      homePlaceholder() { return this.screentype === 'pill-shaped' ? '搜点…' : '搜索诗词、历史…' },
+      searchBoxClass() {
+        var c = 'searchbox-normal'
+        if (this.voiceActive) c = 'searchbox-voice'
+        if (this.searchQuery) c += ' searchbox-typed'
+        return c   // 完整类名（模板纯变量插值，v1.16.48 消除拼接）
+      },
+      // v1.16.18：分页指示点由「动态 style + 三元」改为「纯变量类名」
+      //（交接块 #82 定稿：模板禁三元、动态 style 清零——否则滚动时反复重算属性，是卡顿来源）
+      dot0Class() { return this.curPage === 0 ? 'page-dot page-dot-active' : 'page-dot' },
+      dot1Class() { return this.curPage === 1 ? 'page-dot page-dot-active' : 'page-dot' },
+      // 渐进显示：只渲染前 visibleCount 条（模板禁表达式，故在此切片）
+      visibleList() {
+        var n = this.visibleCount || 5
+        return this.displayList.slice(0, n)
+      },
+      // 顶部标题合成（v1.16.37）：搜索态标题标注来源——资料视图内搜索显示「集名搜索」
+      // （v1.16.40 主人要求去掉间隔点），非搜索态在资料视图显示集名，其余显示应用名
+      headerTitle() {
+        return this.searchActive ? this.baseTitle : '资料库'
+      },
+      // 语音面板状态：真链路=「聆听中」，模拟链路=「聆听中（演示）」——识别链路真实运行
+      voiceStatusText() {
+        try {
+          var a = getAssistant()
+          return a.getMode() === 'real' ? '聆听中…' : '聆听中·演示'
+        } catch (e) { return '聆听中…' }
+      },
+      // AI 卡片文案（模板禁表达式，在此预拼）
+      aiCardTitle() {
+        return this.aiThinking ? 'AI 思考中…' : 'AI 回答'
+      },
+      aiCardText() {
+        if (this.aiThinking) return '正在检索本地资料并生成回答…'
+        return this.aiAnswer
+      },
+      // v1.16.143（诊断结论）：结果计数文案 —— 未搜完所有资料集时，totalCount 只是
+      // 「已搜部分的命中数」，用「共」会让人以为搜出了那么多；按状态分文案更诚实。
+      resultCountText() {
+        var n = this.totalCount || 0
+        // allLoaded=true 表示所有资料集都搜过（引擎权威值）
+        return this.allLoaded
+          ? ('共 ' + n + ' 条结果')
+          : ('已找到 ' + n + ' 条 · 点显示更多继续')
+      },
+      moreText() {
+        // v1.16.138：列表最多留 10 条，「还有 N 条」的语义已不适用（N 是分批累计的）；
+        // 保留按钮本意：继续从后面的资料集取下一批
+        return '显示更多'
+      }
+    },
+
+    onInit() {
+      // 资料入口动态化：显示真实安装的资料集（历史主集 + 蓝牙/内置资料集）
+      try {
+        // 入口清单由 app.ux onCreate 挂 global（避免 index 直接 import 库模块的双实例坑）
+        this.datasetEntries = global.datasetEntries || []
+        this.groupEntries = global.groupEntries || []
+        console.log('[DS] entries=' + this.datasetEntries.length + ' groups=' + this.groupEntries.length)
+      } catch (e) {
+        console.log('[DS] datasetEntries 异常: ' + e.message)
+      }
+      // 优先大类入口（≤6 个，真机渲染不卡）；无分组数据回退资料集入口；再回退硬编码分类
+      // 大 类入口（≤6 个，真机渲染不卡）；无分组数据回退资料集入口
+      this.displayCats = this.groupEntries.length > 0
+        ? this.groupEntries
+        : this.datasetEntries
+      this.updateTime()
+      this.timeTimer = setInterval(() => { this.updateTime() }, 30000)
+      // v1.16.46 主人定案：不在首页后台预热——缓存构建只在加载页单独执行
+      //（常规触发=设置页「重新加载」；蓝牙传输完成由 BtTransfer 自动唤醒 loading 单集加载）
+    },
+
+    // onShow 时 DOM 已 ready，获取屏幕信息做形态/安全偏移适配（仅执行一次）
+    onShow() {
+      // 每次回主页都刷新收藏数（详情页/收藏列表增删后返回即时更新；只在此做，避免 onInit 异步回调丢失）
+      this.refreshFavoriteCount()
+      this.refreshBtStatus()
+      // v1.16.155：消费 AI 回答页的返回意图（回答页底部双按钮写入 global.aiReturnAction）——
+      //   'ask'  重新提问 → 面板保持打开，并立刻重开麦克风，用户开口即接着问；
+      //   'home' 直接返回 → 关掉 AI 面板，真正回到主界面（否则返回后仍停在面板上）。
+      // ⚠️ 本块不得 return 跳出 onShow（下方 adjustForScreen 被跳过会导致屏幕适配整段失效）
+      if (typeof global !== 'undefined' && global.aiReturnAction) {
+        var aiAct = global.aiReturnAction
+        global.aiReturnAction = ''
+        if (aiAct === 'home') {
+          if (this.aiMode) this.exitAiMode()
+        } else if (aiAct === 'ask' && this.aiMode) {
+          // 延迟 250ms：让主界面先完成一次重排（返回瞬间 DOM 未稳定时开麦会丢状态）
+          var selfAi = this
+          setTimeout(function() {
+            if (selfAi.isDestroyed || !selfAi.aiMode) return
+            selfAi.startAiVoice()
+          }, 250)
+        }
+      }
+      // v1.16.68 首次加载判断（主人定案）：索引缓存未建（首次安装/数据更新/清缓存后）→
+      // 跳加载页建缓存；建完写标记，之后启动直进主界面不闪页；中断（标记没写）→ 下次自动重走。
+      // ⚠️ 必须放 onShow：onInit 阶段 DomPage 未 ready，router.replace 静默无效（v1.16.66 曾因此失效）。
+      // _firstChecked 保证一次会话只判断一次（否则从 loading 建完缓存回首页会被再跳回去）。
+      // v1.16.68 循环修复（三重保险，v1.16.70 修正致命笔误）：
+      //   内存快路径：loading 本次会话已建好 → 跳过判断
+      //   全局防重：一次会话只判断/只跳一次（防「回调丢失→超时→跳 loading→回来→再判断」死循环）
+      // ⚠️⚠️ 绝不能用 return 跳出 onShow！！（v1.16.68 曾如此，导致 adjustForScreen 屏幕适配
+      //   被整段跳过：胶囊屏 screen1H 停在初值 429（应 766）→ 两屏压缩、滑动错乱、点击失灵）
+      var skipLaunchCheck = (typeof global !== 'undefined') &&
+        (global._launchCacheReady || global._launchChecked)
+      if (!skipLaunchCheck && !this._firstChecked) {
+        this._firstChecked = true
+        if (typeof global !== 'undefined') global._launchChecked = true
+        var selfC = this
+        // v1.16.68：storage.get 回调在 onShow 早期可能丢失（快应用已知问题）——
+        // 延迟 300ms 发起 + 800ms 超时兜底（回调丢了也按「未建」跳加载页，
+        // loading 侧缓存命中会秒过，代价可接受）；不跳则视为已建直接主界面。
+        // v1.16.85 两项修正（主人反馈：每次进软件都触发建缓存 + 建完后总搜索仍慢）：
+        // ① 超时不再跳加载页——冷启动 storage 回调普遍超 800ms，旧逻辑每次启动都误判
+        //    「未建」→ 跳加载页真跑一遍完整初始化+预热（数秒）。现超时先留首页；
+        //    若稍后回调确认未建（真首次/数据更新），仍会进加载页（不漏真重建）。
+        // ② 留首页后触发一次后台预热（global.warmupBackground，app 作用域 keepAlive
+        //    填充各集引擎内存池）——首次总搜索不再冷读块文件（修复「感觉又重建一次」）。
+        setTimeout(function() {
+          if (selfC.isDestroyed) return
+          var navigated = false
+          var goLoading = function(why) {
+            if (navigated || selfC.isDestroyed) return
+            navigated = true
+            console.log('[DS] 进入加载页: ' + why)
+            router.replace({ uri: '/pages/loading' })
+          }
+          var timer = setTimeout(function() {
+            if (navigated) return
+            console.log('[DS] 缓存判断超时：留首页，回调后到再补判')
+            if (typeof global !== 'undefined' && typeof global.warmupBackground === 'function') {
+              global.warmupBackground()
+            }
+          }, 3000)
+          try {
+            isCacheBuilt().then(function(built) {
+              clearTimeout(timer)
+              if (selfC.isDestroyed || navigated) return
+              if (!built) {
+                goLoading('缓存未建')
+              } else {
+                if (typeof global !== 'undefined' && typeof global.warmupBackground === 'function') {
+                  global.warmupBackground()
+                }
+              }
+            })
+          } catch (e) { console.log('[DS] 缓存判断异常: ' + e.message) }
+        }, 300)
+      }
+      // 若此前提示「数据未加载」而引擎现已就绪（用户去设置加载完返回），自动清除提示并重搜
+      var eng = global.searchEngine
+      if (this.showEngineTip && eng && eng.isReady) {
+        this.showEngineTip = false
+        if (this.searchQuery && this.searchQuery.trim()) {
+          this.resetAndSearch()
+        }
+      }
+      // v1.16.95 返回主界面偶发布局畸形闪动（轻量运行时重排竞态，胶囊屏出现过）：
+      // 400ms 后补一次整屏吸附复位——位置已正确时为无害空操作，短暂偏差时立即校回
+      var selfSettle = this
+      setTimeout(function() {
+        if (!selfSettle.isDestroyed) selfSettle.snapPageScroll()
+      }, 400)
+      if (this.screenAdjusted) return
+      this.screenAdjusted = true
+      this.adjustForScreen()
+    },
+
+    onDestroy() {
+      this.isDestroyed = true
+      if (this.timeTimer) clearInterval(this.timeTimer)
+      if (this.btTimer) clearInterval(this.btTimer)
+      if (this.catScrollTimer) clearTimeout(this.catScrollTimer)
+      if (this.pageScrollTimer) clearTimeout(this.pageScrollTimer)
+      if (this.searchTimer) clearTimeout(this.searchTimer)
+      if (this._emptyExitTimer) clearTimeout(this._emptyExitTimer)
+      // AI 面板（v1.16.92）：清语音超时定时器 + 作废在途识别/问答请求
+      if (this._aiVoiceTimer) { clearTimeout(this._aiVoiceTimer); this._aiVoiceTimer = null }
+      getAssistant().cancel()
+    },
+
+    // v1.16.114 蓝牙状态刷新（实时查询；失败按未连接）
+    refreshBtStatus() {
+      var self = this
+      if (this.btTimer) { clearInterval(this.btTimer); this.btTimer = null }
+      var probe = function () {
+        getAssistant().checkBtStatus(function (on) { if (!self.isDestroyed) self.btOn = on })
+      }
+      probe()
+      this.btTimer = setInterval(probe, 10000)
+    },
+
+    updateTime() {
+      var now = new Date()
+      this.time = pad2(now.getHours()) + ':' + pad2(now.getMinutes())
+    },
+
+    // 屏幕形态判定（仅取键盘组件所需的 screentype；布局差异全部由 CSS @media 固化，
+    // 手环9固件不支持动态 style 绑定——见 AI_CONTEXT #69）
+    adjustForScreen() {
+      var self = this
+      device.getInfo({
+        success: function(data) {
+          var shape = data.screenShape
+          self.screentype = shape === 'circle' ? 'circle' : (shape === 'pill-shaped' ? 'pill-shaped' : 'rect')
+          // v1.16.3 补回 UI 状态（v1.14.0 精简时误删）：标题显隐 + 分页圆点位置
+          self.showAppTitle = (shape === 'pill-shaped') || (shape === 'circle')
+          self.showRectTitle = !self.showAppTitle
+          // v1.16.171（主人实测「胶囊屏没适配，按钮卡出去」）：胶囊屏高度不再硬编码 766。
+          // 设计画布宽 300（manifest designWidth），等比缩放下"可用设计高 = 屏高 × 300 ÷ 屏宽"。
+          // 公式自检：方屏 336×480 → 480×300÷336 = 429，正是原方屏硬编码值 ✓ 公式成立；
+          //           胶囊 212×520 → 736，原硬编码 766 超出 30 → 首页底部 AI 搜索按钮被裁。
+          // 拿不到分辨率时退回原值，保证不劣化。
+          var _dw = 300
+          var _sh = (data.screenWidth && data.screenHeight)
+            ? Math.round(data.screenHeight * _dw / data.screenWidth) : 0
+          var h = shape === 'pill-shaped' ? (_sh || 766) : (shape === 'circle' ? 300 : 429)
+          // ⚠️ screen1H 必须随形态更新：screen2 用 style="height:{{screen1H}}px" 定高，
+          // 若恒为 data 初值 429，则整页总高 = screen1 + 429，滚动范围严重不足
+          // → 第二屏底部（设置/收藏卡）永远滑不到（小米手环 pill 屏 766 上必现）
+          self._fullScreenH = h
+          self.screen1H = h
+          self.dotsTop = Math.round(h / 2) - 16
+          // ⚠️ 吸附参数随形态（审查修复）：snapParams 基准值是 rect 设计（58/17/8.5），
+          // pill（手环9）实际 cat-item 95px、间距 55、padding 28——用 rect 步长吸附
+          // 图标永远对不到屏幕中心
+          if (shape === 'pill-shaped') {
+            self.snapParams = { iconW: 95, spacing: 55, count: 6, padLeft: 28, enabled: true }
+          } else if (shape === 'circle') {
+            self.snapParams = { iconW: 58, spacing: 17, count: 6, padLeft: 8.5, enabled: false }
+          } else {
+            self.snapParams = { iconW: 58, spacing: 17, count: 6, padLeft: 8.5, enabled: true }
+          }
+          if (self.shouldOpenKeyboard) {
+            self.shouldOpenKeyboard = false
+            self.openKeyboardDelayed()
+          }
+        },
+        fail: function() {
+          if (self.shouldOpenKeyboard) {
+            self.shouldOpenKeyboard = false
+            self.openKeyboardDelayed()
+          }
+        }
+      })
+    },
+
+    // 整页滚动：实时更新当前页指示，停止（debounce 150ms）后吸附到最近的整屏位置；
+    // 搜索态下结果随外层滚动，不做双屏分页吸附
+    onPageScroll(e) {
+      var y = (e && e.scrollY) || 0
+      this._lastPageY = y   // 非响应式：滚动帧高频写入，绝不进 setState
+      if (this.searchActive) return
+      var h = this.screen1H || 429
+      var page = Math.round(y / h)
+      if (page < 0) page = 0
+      if (page > 1) page = 1
+      if (page !== this.curPage) this.curPage = page
+      var self = this
+      if (this.pageScrollTimer) clearTimeout(this.pageScrollTimer)
+      this.pageScrollTimer = setTimeout(function() {
+        self.snapPageScroll()
+      }, 100)
+    },
+
+    // 吸附到最近的整屏位置：目标 scrollY = page * 屏设计高
+    snapPageScroll() {
+      var h = this.screen1H || 429
+      var y = this._lastPageY || 0
+      var page = Math.round(y / h)
+      if (page < 0) page = 0
+      if (page > 1) page = 1
+      this.curPage = page
+      var target = page * h
+      // v1.16.64 滑动手感优化（v1.16.71 debounce 150→100）：偏离目标 < 屏高 18% 时不吸附——
+      // 留出自由滑动的余量，只有「跨过半屏意图」才触发一次平滑对齐
+      //（原实现任何小偏移都会被 smooth 拽回，是主人反馈「滑动卡卡的」的主要手感来源）
+      if (Math.abs(target - y) > h * 0.18) {
+        var el = this.$element('pageScroll')
+        if (el) {
+          el.scrollTo({ left: 0, top: target, behavior: 'smooth' })
+        }
+      }
+    },
+
+    // 分类横滑停止（debounce 100ms）后，把最近「两符号中点」对齐屏幕中心
+    onCatScroll(e) {
+      this._lastCatScrollX = (e && e.scrollX) || 0   // 非响应式：横滑每帧写入
+      var self = this
+      if (this.catScrollTimer) clearTimeout(this.catScrollTimer)
+      this.catScrollTimer = setTimeout(function() {
+        self.snapCatScroll()
+      }, 100)
+    },
+
+    // 步长法计算吸附目标：gap 中点 = padLeft + i*step + iconW + spacing/2（step = iconW + spacing），
+    // 目标 scrollX = gap - 视口中心(150)，钳制到 [0, 内容宽(含左右 padLeft) - 视口宽]
+    // 计算第 idx 位的对齐 scrollX（两符号中点对齐屏幕中心，钳制边界）
+    _catTargetX(idx) {
+      var p = this.snapParams
+      var step = p.iconW + p.spacing
+      var padLeft = p.padLeft || 0
+      var viewportW = 300
+      var maxX = Math.max(0, (2 * padLeft + p.count * p.iconW + (p.count - 1) * p.spacing) - viewportW)
+      var gap = padLeft + idx * step + p.iconW + p.spacing / 2
+      var target = gap - viewportW / 2
+      if (target < 0) target = 0
+      if (target > maxX) target = maxX
+      return target
+    },
+    // v1.16.82 主人定案：去掉 v1.16.65「翻页式归位」的一次一格限制——实测不够方便且无有效改良。
+    // 恢复自由横滑（随手势滑多格），停止（debounce 100ms）后吸附到最近的图标位（自动复位）。
+    // 吸附目标由 curX 直接反推 gap 序号（与 _catTargetX 的 gap 公式互逆），不再基于 _catIdx ±1 步进。
+    snapCatScroll() {
+      var p = this.snapParams
+      if (!p || !p.enabled) return
+      var scrollEl = this.$element('catScroll')
+      if (!scrollEl) return
+      var curX = this._lastCatScrollX || 0
+      var step = p.iconW + p.spacing
+      var padLeft = p.padLeft || 0
+      var viewportW = 300
+      // 逆运算：curX ≈ _catTargetX(idx) → idx = (curX + viewportW/2 - padLeft - iconW - spacing/2) / step
+      var rawIdx = (curX + viewportW / 2 - padLeft - p.iconW - p.spacing / 2) / step
+      var idx = Math.round(rawIdx)
+      if (idx < 0) idx = 0
+      if (idx > p.count - 1) idx = p.count - 1
+      this._catIdx = idx
+      var target = this._catTargetX(idx)
+      if (Math.abs(target - curX) > 1) {
+        scrollEl.scrollTo({ left: target, top: 0, behavior: 'smooth' })
+      }
+    },
+
+    // ===== AI 助手全屏面板（v1.16.92 语音直答版：进面板即开麦 → 思考 → 跳回答页，无键盘） =====
+
+    // AI搜索按钮：进入 AI 面板（无路由跳转——面板是主界面上的常驻遮罩节点，show 切显隐）。
+    // 主人定案：点 AI 搜索 = 默认开启语音识别，立即自动 startAiVoice
+    enterAiMode() {
+      if (this.$app.$def.isNavigating) return
+      if (this.aiMode) return
+      this.aiMode = true
+      this.aiQuestion = ''
+      this.aiListening = true
+      this.aiThinking = false
+      this.aiStatusText = '正在聆听，请说话'
+      this.aiMicCircleClass = 'ai-mic-circle ai-mic-on'
+      this.log('[AI-PANEL] 进入 AI 助手面板，自动开始语音识别')
+      this.startAiVoice()
+    },
+
+    // 退出面板（取消按钮/✕/左右滑）：停语音超时定时器 + 作废在途识别/问答
+    //（cancel 内含 cancelSim 清模拟定时器、清 chat 超时定时器与回调）
+    exitAiMode() {
+      this.aiMode = false
+      this.aiListening = false
+      this.aiThinking = false
+      this.aiMicCircleClass = 'ai-mic-circle ai-mic-off'
+      if (this._aiVoiceTimer) { clearTimeout(this._aiVoiceTimer); this._aiVoiceTimer = null }
+      this._aiVoiceBusy = false
+      getAssistant().cancel()
+      this.showKeyboard = false
+      this.log('[AI-PANEL] 退出 AI 助手面板')
+    },
+
+    // 语音识别（v1.16.92 直答链路第一环）：识别文本 → 自动 chat() → 自动 push 回答页。
+    // 模拟链路约 1.5s 返回；12s 超时兜底防真链路手机不回包时无限卡在聆听态。
+    // _aiVoiceBusy 为非响应式在途标记（识别进行中禁止重复开麦）；aiListening 只管显示态
+    startAiVoice() {
+      if (!this.aiMode || this.aiThinking || this._aiVoiceBusy) return
+      this._aiVoiceBusy = true
+      this.aiListening = true
+      this.aiStatusText = '正在聆听，请说话'
+      this.aiMicCircleClass = 'ai-mic-circle ai-mic-on'
+      var self = this
+      this._aiVoiceTimer = setTimeout(function() {
+        if (self.isDestroyed || !self._aiVoiceBusy) return
+        self._aiVoiceTimer = null
+        self._aiVoiceBusy = false
+        self.aiListening = false
+        self.aiStatusText = '没听清，点麦克风再说一次'
+        self.aiMicCircleClass = 'ai-mic-circle ai-mic-off'
+        getAssistant().cancel()
+      }, 12000)
+      getAssistant().recognize(function(r) {
+        if (self._aiVoiceTimer) { clearTimeout(self._aiVoiceTimer); self._aiVoiceTimer = null }
+        // 过期回调防护：已离页/已退出面板/已被取消（_aiVoiceBusy 复位）→ 直接丢弃
+        if (self.isDestroyed || !self.aiMode || !self._aiVoiceBusy) return
+        self._aiVoiceBusy = false
+        self.aiListening = false
+        if (r && r.ok && r.text) {
+          self.log('[AI-PANEL] 识别成功：' + r.text)
+          // 识别成功即问：aiThinking 兼任面板思考态标记（过期 chat 回调靠它校验）
+          self.aiQuestion = r.text
+          self.aiThinking = true
+          self.aiStatusText = 'AI 正在思考中'
+          self.aiMicCircleClass = 'ai-mic-circle ai-mic-off'
+          self.aiAsk()
+        } else {
+          // 没听清：状态文字提示，麦克风圆变回深灰可点重试
+          self.log('[AI-PANEL] 语音识别失败' + (r && r.reason ? '（' + r.reason + '）' : ''), 'warn')
+          self.aiStatusText = '没听清，点麦克风再说一次'
+          self.aiMicCircleClass = 'ai-mic-circle ai-mic-off'
+        }
+      })
+    },
+
+    // 提问（v1.16.92，识别成功后自动触发）：chat() → global.aiResult → push 回答页
+    aiAsk() {
+      var q = (this.aiQuestion || '').trim()
+      if (!q) return
+      var self = this
+      var searchFn = function(kw) {
+        // 复用既有搜索通道（global.searchHistory → searchAllAsync → 各集引擎），同 v1.16.90 提问页
+        return Promise.resolve().then(function() {
+          return global.searchHistory(kw, { page: 1, pageSize: 5, category: 'all', region: 'all' })
+        })
+      }
+      getAssistant().chat(q, searchFn, function(r) {
+        // 过期回调防护：已离页/已退出面板/已不在思考态（被取消）→ 直接丢弃，
+        // 防旧答案把面板从失败态/聆听态拽回回答跳转
+        if (self.isDestroyed || !self.aiMode || self.aiThinking !== true) return
+        if (r && r.ok) {
+          // 结果经 global 桥接传给回答页（模块实例按页面作用域隔离，不能靠页面间 import 共享）
+          global.aiResult = { question: q, answer: r.answer, card: r.card || null, sources: r.sources || [] }
+          self.aiThinking = false
+          // 跳页前同步状态文案：从回答页返回时面板仍显示本条（否则停留在「正在思考中」）
+          self.aiStatusText = '点麦克风再问一次'
+          self.aiMicCircleClass = 'ai-mic-circle ai-mic-off'
+          // push（非 replace）：回答页返回即回主界面——AI 面板仍在、显示上次问题，点麦克风可再问
+          router.push({ uri: '/pages/ai/ai-answer' })
+        } else {
+          self.aiThinking = false
+          self.aiStatusText = 'AI 暂时不可用，点麦克风重试'
+          self.aiMicCircleClass = 'ai-mic-circle ai-mic-off'
+        }
+      })
+    },
+
+    // 面板自身滑动：左右滑退出 AI 模式（exitAiMode 内清定时器、作废在途请求）
+    onAiSwipe(eve) {
+      if (eve.direction === 'left' || eve.direction === 'right') {
+        this.exitAiMode()
+      }
+    },
+
+    // 语音搜索（v1.16.33）：进入聆听态 → AssistantEngine.recognize ——
+    // 真链路=interconnect 发到手机 App 做 ASR 后回传文本；模拟链路=本地演示词源。
+    // 两条链路共用此回调：识别文本真实填入搜索框并触发本地搜索（整条链路真实执行）。
+    startVoiceSearch() {
+      if (this.$app.$def.isNavigating) return
+      if (this.voiceActive) return
+      this.voiceActive = true
+      this.startWave()   // v1.16.140：进入聆听即播放声波
+      this.log('[HOME-SEARCH] 语音搜索：进入聆听状态')
+      this.checkBluetooth()
+      var self = this
+      // v1.16.57 清理：删除「随机波形动画」演示代码（无真实音量数据源，凑数渲染）
+      // 超时兜底（审查修复）：真链路手机不回包时，聆听态会无限卡死——12s 自动退出
+      // v1.16.124 审查建议#3：存句柄并在 exitVoiceSearch 清除 —— 原匿名定时器在「退出后
+      // 12s 内重进聆听」时，到期会把新一轮聆听误杀（dataset.ux 早已是正确写法）
+      if (this._voiceTimer) { clearTimeout(this._voiceTimer); this._voiceTimer = null }
+      this._voiceTimer = setTimeout(function () {
+        if (self && !self.isDestroyed && self.voiceActive) {
+          self.log('[HOME-SEARCH] 语音识别超时，自动退出聆听', 'warn')
+          self.exitVoiceSearch()
+        }
+      }, 12000)
+      getAssistant().recognize(function (r) {
+        if (self.isDestroyed || !self.voiceActive) return
+        if (!r || !r.ok || !r.text) {
+          self.log('[HOME-SEARCH] 语音识别失败' + (r && r.reason ? '（' + r.reason + '）' : ''), 'warn')
+          self.exitVoiceSearch()
+          return
+        }
+        if (r && r.ok && r.text) {
+          self.log('[HOME-SEARCH] 语音识别（' + r.mode + '）：' + r.text)
+          // 识别成功：退出聆听态 → 【先填词再进搜索态】（审查严重#1：原顺序
+          // enterSearch 时旧词为空 → searchActive=false → 结果区不渲染，首用必现）
+          self.exitVoiceSearch()
+          self.activeDatasetId = null
+          self.activeGroupId = null
+          self._resetSearchFilters()
+          self.aiMode = false
+          self.searchQuery = r.text
+          global.searchQuery = r.text
+          self.enterSearch(true)   // v1.16.98：语音填词后不唤醒键盘（主人定案）
+          self.resetAndSearch()
+        }
+      })
+    },
+
+    // 退出语音聆听态（同时取消在途的识别请求）
+    exitVoiceSearch() {
+      this.voiceActive = false
+      this.stopWave()    // v1.16.140：退出聆听即停声波（防定时器泄漏）
+      // v1.16.124 审查建议#3：清掉 12s 超时定时器，否则退出后重进会被旧定时器误杀
+      if (this._voiceTimer) { clearTimeout(this._voiceTimer); this._voiceTimer = null }
+      getAssistant().cancel()
+      this.log('[HOME-SEARCH] 语音搜索结束')
+    },
+
+    // 演示用（v1.16.127 主人指定）：点击状态栏蓝牙图标手动切换连接/未连接，
+    // 同时停掉 10s 轮询 —— 否则真实状态会在下一次轮询把演示切换覆盖回去。
+    // 下次进入页面 onShow 会重新 refreshBtStatus，恢复正常轮询。
+    // 声波动画（v1.16.140，模拟）：**拿不到真实音量** —— 手环侧音频经 interconnect 送手机 App
+    // 做 ASR，快应用侧无任何音频数据（v1.16.57 曾因「无真实音量数据源，凑数渲染」删过同款代码）。
+    // 故按随机高度档位轮换模拟，并由「仅作为模拟参考」提示字如实告知。
+    // 主人若要真实随声波动：需手机端在回包时附带音量序列，届时把 waveBars 改为按该序列取档即可。
+    startWave() {
+      var self = this
+      this.stopWave()
+      var tick = function () {
+        if (self.isDestroyed || !self.voiceActive) return
+        var bars = []
+        for (var i = 0; i < 5; i++) {
+          bars.push({ cls: 'wbar h' + (1 + Math.floor(Math.random() * 4)) })
+        }
+        self.waveBars = bars
+      }
+      tick()
+      this._waveTimer = setInterval(tick, 220)
+    },
+
+    stopWave() {
+      if (this._waveTimer) { clearInterval(this._waveTimer); this._waveTimer = null }
+    },
+
+    toggleBtDemo() {
+      if (this.btTimer) { clearInterval(this.btTimer); this.btTimer = null }
+      this.btOn = !this.btOn
+      if (typeof global.addRuntimeLog === 'function') {
+        global.addRuntimeLog('[首页] 演示：蓝牙状态切换为 ' + (this.btOn ? '已连接' : '未连接'), 'info')
+      }
+    },
+
+    // 检查蓝牙连接状态（未连接则提示并进入演示）
+    checkBluetooth() {
+      var self = this
+      try {
+        var interconnect = require('@system.interconnect')
+        var conn = interconnect.instance()
+        conn.getReadyState({
+          success: function(data) {
+            self.bluetoothConnected = data.status === 1
+            if (!self.bluetoothConnected) {
+              self.log('[HOME-SEARCH] 蓝牙未连接，进入演示', 'warn')
+            }
+          },
+          fail: function() {
+            self.bluetoothConnected = false
+            self.log('[HOME-SEARCH] 蓝牙状态查询失败，进入演示', 'warn')
+          }
+        })
+      } catch (e) {
+        self.bluetoothConnected = false
+        self.log('[HOME-SEARCH] interconnect 不可用，进入演示', 'warn')
+      }
+    },
+
+    // 搜索框点击：键盘关着→进入搜索（弹键盘）；键盘开着→收起键盘（按键盘状态判断）；语音态不响应
+    toggleSearchBox() {
+      if (this.voiceActive) return
+      // v1.16.131：点 ✕ 清除内容时事件冒泡到搜索框 —— 原实现会因此误开（或误关）键盘，
+      // 开键盘又带来一次卡顿（主人反馈）。400ms 内视为同一次点击，直接吞掉。
+      if (this._clearedAt && (Date.now() - this._clearedAt) < 400) { this._clearedAt = 0; return }
+      if (this.showKeyboard) {
+        this.toggleKeyboard()
+      } else {
+        this.enterSearch()
+      }
+    },
+
+    goCategory(item) {
+      // 大类入口(isGroup)：限定只搜该大类下所有集；资料集入口(isDataset)：只搜该集；
+      // 普通分类：按分类名搜索（历史语义）。两条限定入口共用同一段进搜索层逻辑
+      var isDs = !!(item && item.isDataset)
+      var isGrp = !!(item && item.isGroup)
+      if (isDs || isGrp) {
+        // v1.16.31（主人需求）：点资料不再直接进搜索态，而是切到「资料详情视图」，
+        // 展示该资料的图标/简介/标签；在此输入关键词、或点标签缩小范围后再搜。
+        // v1.16.12 起 6 标签与 6 资料集是 1:1 对应（GROUP_MAP 的 datasets 均为单元素），
+        // 故大类入口可直接用 groupId 作为资料集 id，无需访问 GROUP_MAP（index 页不可见库模块）
+        var dsId = isDs ? item.dsId : (isGrp ? item.groupId : null)
+        if (dsId !== null) {
+          // v1.16.67：资料详情独立成页（根治首页多节点条件翻转致塌陷）——跳转展示
+          global.dsViewTarget = dsId
+          router.push({ uri: '/pages/dataset' })
+          return
+        }
+        this.activeDatasetId = isDs ? item.dsId : null
+        this.activeGroupId = isGrp ? item.groupId : null
+        this.baseTitle = item.name
+        // 清空旧词与旧结果，直接显示结果区空态引导（不能走 enterSearch('')：
+        // 空串走 else 分支会把 searchTitle 覆盖回「搜索」、searchActive 取决于残留旧词，
+        // 且旧 displayList 不会被清掉——资料集空态里残留上一次搜索结果）
+        this.searchQuery = ''
+        global.searchQuery = ''
+        this.displayList = []
+        this.totalCount = 0
+        this.currentPage = 1
+        this.allLoaded = false
+        this.searched = false
+        this.searchError = false
+        this.showEngineTip = false
+        this.searchSeq++   // 作废在途搜索（审查修复）
+        this.loading = false   // 审查中#8：作废路径的丢弃分支在置 false 前返回，需在此复位
+        this.searchActive = true
+        this._applySearchLayout(true)
+        this.log('[HOME-SEARCH] 进入' + (isGrp ? '大类 ' : '资料集 ') + item.name +
+          (isDs ? ' dsId=' + item.dsId : ' groupId=' + item.groupId))
+        var pageScrollEl = this.$element('pageScroll')
+        if (pageScrollEl) {
+          pageScrollEl.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
+        }
+        if (this.screenAdjusted && this.screentype) {
+          this.openKeyboardDelayed()
+        } else {
+          this.shouldOpenKeyboard = true
+        }
+        return
+      }
+      this.enterSearch()   // 审查修复：未标记项兜底（原传 item 会污染 global.searchCategory）
+    },
+
+    // 复位全部筛选条件（标签/分类/地区）——否则「点标签筛选 → 退出搜索」会把限定
+    // 带到下一次普通搜索，其他 5 个集全部为空，用户会以为搜索坏了。
+    _resetSearchFilters() {
+      this.activeRegion = 'all'
+      this.activeCategory = 'all'
+    },
+
+    goSettings() {
+      if (this.$app.$def.isNavigating) return
+      router.push({ uri: '/pages/settings' })
+    },
+
+    // 读收藏列表数量：JSON.parse 后取 length，解析异常/读取失败按 0
+    refreshFavoriteCount() {
+      var self = this
+      storage.get({
+        key: 'favorite_list',
+        success: function(data) {
+          var count = 0
+          try {
+            var list = JSON.parse(data) || []
+            count = list.length
+          } catch(e) {
+            count = 0
+          }
+          self.favoriteCount = count
+        },
+        fail: function() {
+          self.favoriteCount = 0
+        }
+      })
+    },
+
+    goFavorites() {
+      if (this.$app.$def.isNavigating) return
+      router.push({ uri: '/pages/favorites' })
+    },
+
+    // ===== 主页内嵌搜索层（逻辑照搬 result.ux，不跳转 result 页） =====
+
+    // 统一日志：console + runtime log（level 默认 info）
+    log(msg, level) {
+      console.log(msg)
+      if (typeof global.addRuntimeLog === 'function') {
+        global.addRuntimeLog(msg, level || 'info')
+      }
+    },
+
+    // ===== 布局切换节流（v1.16.39，渲染竞态防护）=====
+    // 搜索态进/出会同时翻转 ds-view、结果区、按钮行、第二屏等多个条件节点；
+    // 主人实测快速连点下轻量运行时有概率 DOM 重排错乱（返回资料视图时按钮行弹到
+    // 顶部、资料介绍塌到下方、返回键消失）。切换后 300ms 内的再次触发直接忽略。
+    _layoutGuard(where) {
+      var now = Date.now()
+      if (this._lastLayoutAt && now - this._lastLayoutAt < 300) {
+        this.log('[HOME-SEARCH] 布局节流(' + (now - this._lastLayoutAt) + 'ms) 忽略: ' + where, 'warn')
+        return true
+      }
+      this._lastLayoutAt = now
+      return false
+    },
+
+    // ===== 搜索态布局切换（v1.16.37）=====
+    // screen1 高度：非搜索态=整屏（与第二屏双屏吸附）；搜索态=头部高（状态栏+搜索框），
+    // 让结果区（pageScroll 直接子项）紧跟头部，随内容自然撑高、单层滚动。
+    // 头部高与 CSS 联动（rect: statusbar 22 + searchbox 16+56；pill: statusbar 91+padding 41 + searchbox 20+92），
+    // 改这两处 CSS 时必须同步这里；取保守上限（宁多勿少，多了只是搜索框下多几px空隙，少了会裁搜索框）
+    _searchHeaderH() {
+      // v1.16.97：搜索结果区是 screen1 的兄弟节点——搜索态 screen1 的固定高度决定
+      // 搜索框与「共 N 条」的间距。胶囊屏原 260 按语音态盒子（130 高）定，
+      // 打字搜索态盒子仅 92 高 → 空留 57px（主人反馈间距过大，要求贴住）。
+      // 现按打字盒贴合：状态栏 91 + 盒上距 20 + 盒 92 = 203，+7 余量 = 210。
+      if (this.screentype === 'pill-shaped') return 210
+      if (this.screentype === 'circle') return 130
+      // v1.16.103：随搜索盒缩小 56→50 → 104→96（25+14+50+7）
+      return 96
+    },
+    _applySearchLayout(searching) {
+      // 翻转即记录时间：节流窗口覆盖全部布局变更源（含 clearSearch/onDelete 等未接 guard 的入口）
+      this._lastLayoutAt = Date.now()
+      var full = this._fullScreenH || 429
+      var h = searching ? this._searchHeaderH() : full
+      // v1.16.130（性能审查 T1④）：同值短路 —— 打字时每字符都会调到这里，而值通常不变；
+      // 每次都赋 screen1H 会触发一次布局重算（真机上可观）
+      if (this.screen1H === h) return
+      this.screen1H = h
+    },
+
+    // 进入搜索：搜索框/搜索按钮只弹键盘（分类行保留、被键盘盖住，无内容替换切换感）；
+    // 分类图标进入则清空词并显示结果区；统一延迟 150ms 弹键盘（先让组件 mount）
+    enterSearch(skipKeyboard) {
+      // v1.16.58 审查清理：删除 category 参数分支（displayCats 全部带 isGroup/isDataset
+      // 标记已走 goCategory 专用路径，该分支不可达；且传对象会把 item 写进 global.searchCategory）
+      // v1.16.98：skipKeyboard——语音识别入口用（识别文本已自动填词，不该再弹键盘唤醒输入，
+      // 主人定案：语音搜索不再唤醒键盘）
+      if (this._layoutGuard('enterSearch')) return
+      // v1.16.60：取消待执行的空词自动退出（防「退出中又点搜索框」的状态竞态）
+      if (this._emptyExitTimer) { clearTimeout(this._emptyExitTimer); this._emptyExitTimer = null }
+      this.activeCategory = 'all'
+      // v1.16.67：资料详情已独立成页——普通搜索入口一律清掉资料集限定
+      this.activeDatasetId = null
+      this.activeGroupId = null
+      this.baseTitle = '搜索'
+      // 搜索框/搜索按钮进入：不切换下方内容（搜索框/分类行保持），仅弹键盘；
+      // 有残留搜索词才显示结果区，无词保持分类行可见 → 无「内容替换」切换感
+      this.searchActive = !!(this.searchQuery && this.searchQuery.trim())
+      this._applySearchLayout(this.searchActive)
+      this.log('[HOME-SEARCH] 进入搜索层 词=' + this.searchQuery)
+      // 回滚到顶部
+      var pageScrollEl = this.$element('pageScroll')
+      if (pageScrollEl) {
+        pageScrollEl.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
+      }
+      // 进入搜索态统一弹键盘（无词引导输入；有词可继续编辑）——语音入口 skipKeyboard 跳过
+      if (skipKeyboard) return
+      if (this.screenAdjusted && this.screentype) {
+        this.openKeyboardDelayed()
+      } else {
+        this.shouldOpenKeyboard = true
+      }
+    },
+
+    // 延迟 150ms 弹键盘：先让 input-method 组件完成 mount（构建 DOM + 加载键盘图）再显示
+    openKeyboardDelayed() {
+      var self = this
+      setTimeout(function() {
+        if (self && !self.isDestroyed) {
+          self.showKeyboard = true
+          self.log('[HOME-SEARCH] 键盘开')
+        }
+      }, 100)
+    },
+
+    // 退出搜索：清空搜索状态回主页（下次点击重新开始）；回滚到顶部。
+    // 从资料视图进入的搜索：退出后回到该资料视图（保留集限定与标题），不回顶层分类行
+    exitSearch() {
+      if (this._layoutGuard('exitSearch')) return
+      this.searchActive = false
+      this._applySearchLayout(false)
+      this.showKeyboard = false
+      this.searchQuery = ''
+      global.searchQuery = ''
+      this.activeDatasetId = null
+      this.activeGroupId = null
+      this.baseTitle = '搜索'
+      this._resetSearchFilters()
+      this.aiMode = false
+      this.aiThinking = false
+      this.aiAnswer = ''
+      this.searchSeq++
+      this.loading = false
+      this.searchError = false
+      this.displayList = []
+      this.totalCount = 0
+      this.currentPage = 1
+      this.allLoaded = false
+      this.searched = false
+      this.showEngineTip = false
+      this.log('[HOME-SEARCH] 退出搜索层')
+      var pageScrollEl = this.$element('pageScroll')
+      if (pageScrollEl) {
+        pageScrollEl.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
+      }
+    },
+
+    // 点搜索框：开/收键盘，收起时触发搜索
+    toggleKeyboard() {
+      if (this.isClearing) return
+      this.shouldOpenKeyboard = false // 用户已手动操作，getInfo 回调不再自动弹键盘
+      this.showKeyboard = !this.showKeyboard
+      if (this.showKeyboard) {
+        this.log('[HOME-SEARCH] 键盘开')
+      } else {
+        this.finishInput() // 内部会记「键盘关」并搜索
+      }
+    },
+
+    // 收起键盘并搜索（搜索为同步阻塞计算，界面在返回前不会刷新，故不做加载动画）
+    finishInput() {
+      this.showKeyboard = false
+      this.log('[HOME-SEARCH] 键盘关')
+      // v1.16.91 AI 面板模式：收键盘只收键盘，绝不触发主界面搜索（aiMode 语义已由
+      // v1.16.33 内嵌 AI 搜索改为 AI 助手面板；内嵌 runAiSearch 链路保留休眠不删）
+      if (this.aiMode) return
+      this.resetAndSearch()
+    },
+
+    // AI 搜索执行：问题交给 AssistantEngine（真链路=手机云端应答；模拟=本地理解+检索+摘要）
+    runAiSearch() {
+      var self = this
+      var q = (this.searchQuery || '').trim()
+      if (!q) { this.aiMode = false; this.resetAndSearch(); return }
+      this.aiThinking = true
+      this.aiAnswer = ''
+      this.log('[HOME-SEARCH] AI 搜索：' + q + '（链路=' + getAssistant().getMode() + '）')
+      var searchFn = function (kw) {
+        // 复用既有搜索通道（走 global.searchHistory → searchAllAsync → 六集引擎）
+        return Promise.resolve().then(function () {
+          return global.searchHistory(kw, { page: 1, pageSize: 5, category: 'all', region: 'all' })
+        })
+      }
+      getAssistant().answer(q, searchFn, function (r) {
+        if (self.isDestroyed) return
+        self.aiThinking = false
+        if (r && r.ok) {
+          self.aiAnswer = r.answer
+          // AI 回答附带的来源条目直接进入结果列表（点击可看详情，与普通结果一致）
+          var items = r.results || []
+          var formatted = items.map(function (item) {
+            return {
+              id: item.id || item._id,
+              yearDisplay: item.yearDisplay || (r.keyword || ''),
+              title: (item.title || '').split(/[，,]/)[0],
+              region: item.region || 'AI 来源',
+              yearClass: item.yearClass || 'result-year',
+              titleClass: item.titleClass || 'result-title',
+              catClass: item.catClass || 'result-region'
+            }
+          })
+          self.displayList = formatted
+          self.visibleCount = 5
+          self.totalCount = r.total || formatted.length
+          self.searched = true
+          self.allLoaded = true
+          self.log('[HOME-SEARCH] AI 回答就绪：' + r.answer)
+        } else {
+          self.aiAnswer = 'AI 搜索暂不可用，请稍后再试。'
+          self.searched = true
+        }
+      })
+    },
+
+
+    // 清空关键词（清空时保持键盘打开状态，可继续输入）；
+    // v1.16.40：清词后【保持搜索态】（搜索空态引导），不再回分类行——✕ 连点/清词不再触发
+    // 多节点翻转（防塌陷），退出搜索统一走右滑
+    clearSearch() {
+      // v1.16.131（主人反馈）：✕ 的点击会冒泡到 .search-box 的 @click（= toggleSearchBox，会开键盘），
+      // 这里打时间戳供 toggleSearchBox 识别「同一次点击」，从而吞掉冒泡。
+      this._clearedAt = Date.now()
+      this.isClearing = true
+      this.searchQuery = ''
+      global.searchQuery = ''
+      // 作废在途搜索请求，避免清空后旧结果又写回列表
+      this.searchSeq++
+      this.loading = false
+      this.searchError = false
+      this.displayList = []
+      this.totalCount = 0
+      this.currentPage = 1
+      this.allLoaded = false
+      this.searched = false
+      var self = this
+      setTimeout(function() { self.isClearing = false }, 200)
+      // v1.16.132（主人要求）：搜索栏为空 → 自动回主界面。
+      // 延迟 300ms 与进入搜索的布局翻转错开（防两轮翻转在半秒内连续发生，v1.16.39/40 教训）；
+      // 期间又输入词则取消。与「空词搜索」分支的差异：本场景是用户主动清空，
+      // 故键盘开着也退出（先收键盘）—— 若用户清空后立刻点搜索框，enterSearch 会
+      // clearTimeout 掉这个定时器（v1.16.60 既有守卫），不会误退。
+      if (this._emptyExitTimer) clearTimeout(this._emptyExitTimer)
+      this._emptyExitTimer = setTimeout(function() {
+        self._emptyExitTimer = null
+        if (self.isDestroyed) return
+        if (!self.searchActive) return
+        if (self.searchQuery && self.searchQuery.trim()) return   // 期间又输入了 → 留在搜索态
+        self.showKeyboard = false
+        self.log('[HOME-SEARCH] 搜索栏已清空，自动回主界面')
+        self.exitSearch()
+      }, 300)
+    },
+
+    // @complete：键盘逐字符提交，仅追加关键词（不实时搜索——收起键盘才搜一次）；有词时切结果区
+    // v1.16.91：AI 面板打开时键盘输入追加进 aiQuestion（不进搜索框、不触发搜索态）
+    onInput(evt) {
+      var content = evt.detail.content
+      // v1.16.130（性能审查 T1④）：删掉每字符一次的 console.log —— 真机上 console 走日志通道，
+      // 而打字是最频繁的交互，这条日志是确定性开销
+      if (content === undefined || content === null) return
+      if (this.aiMode) {
+        this.aiQuestion += content
+        return
+      }
+      this.searchQuery += content
+      global.searchQuery = this.searchQuery
+      if (this.searchQuery.trim()) {
+        this.searchActive = true
+        this._applySearchLayout(true)
+      }
+    },
+
+    // @delete：键盘内部缓冲已空时，删除页面关键词末字符；删空【保持搜索态】
+    //（v1.16.40 防塌陷：搜索空态显示引导词，退出只走右滑——避免删空瞬间的多节点翻转）
+    // v1.16.91：AI 面板打开时删的是 aiQuestion
+    onDelete() {
+      if (this.aiMode) {
+        this.aiQuestion = this.aiQuestion.slice(0, -1)
+        return
+      }
+      this.searchQuery = this.searchQuery.slice(0, -1)
+      global.searchQuery = this.searchQuery
+    },
+
+    // 重置分页并搜索第 1 页；引擎未初始化时由 search 内部懒初始化（自动读缓存建缓存），
+    // 不再需要手动「加载数据」；数据缺失时 search 返回 initFailed，由 loadPage 显示提示
+    resetAndSearch() {
+      var eng = global.searchEngine
+      if (!eng) {
+        this.showEngineTip = true
+        this.displayList = []
+        this.totalCount = 0
+        this.currentPage = 1
+        this.allLoaded = false
+        this.searched = true
+        this.searchActive = true
+        this._applySearchLayout(true)
+        this.log('[HOME-SEARCH] 引擎实例不存在，提示检查')
+        return
+      }
+      this.showEngineTip = false
+      if (!this.searchQuery || !this.searchQuery.trim()) {
+          this.displayList = []
+        this.totalCount = 0
+        this.currentPage = 1
+        this.allLoaded = false
+        this.searched = false
+        // 空词收键盘 → 自动退回（v1.16.60 主人需求）：资料视图内回资料视图、主搜索回主页。
+        // ⚠️ 延迟 300ms 执行：与进入搜索的布局翻转错开（防「连点搜索栏」两轮翻转在半秒内
+        // 连续发生 → 轻量运行时 DOM 重排塌陷，v1.16.39/40 的教训）；期间若重新开键盘或
+        // 输入词则取消退出。
+        this.searchSeq++      // 作废在途搜索
+        this.loading = false
+        this.searchError = false
+        var self = this
+        if (this._emptyExitTimer) clearTimeout(this._emptyExitTimer)
+        this._emptyExitTimer = setTimeout(function() {
+          self._emptyExitTimer = null
+          if (self.isDestroyed) return
+          if (self.searchQuery && self.searchQuery.trim()) return   // 期间又输入了
+          if (self.showKeyboard) return                             // 期间又开键盘了
+          if (!self.searchActive) return
+          self.log('[HOME-SEARCH] 空词收键盘，自动退回')
+          self.exitSearch()
+        }, 300)
+        return
+      }
+      this.currentPage = 1
+      this.allLoaded = false
+      this.searched = true
+      this.searchActive = true
+      this._applySearchLayout(true)
+      this.searchError = false
+      this.loadPage(1, true)
+    },
+
+    // force=true：新搜索第 1 页，不受 loading/allLoaded 守卫限制（否则旧请求在途时
+    // 新搜索被静默吞掉，界面残留旧词的结果）；翻页走 onPageScrollBottom 不带 force
+    async loadPage(page, force) {
+      if (!force && (this.loading || this.allLoaded)) return
+      if (!this.searchQuery || !this.searchQuery.trim()) return
+      this.loading = true
+      // 请求代际号：await 期间若用户又发起新搜索/清空/退出，代际号变化，
+      // 旧响应直接丢弃，防止旧词结果覆盖新词（快速连续搜索竞态）
+      var seq = ++this.searchSeq
+      var startTime = Date.now()
+      try {
+        // ⚠️ 超时保险（v1.16.23）：快应用下 @system.file.readText 回调可能丢失（见 AI_CONTEXT
+        // #18/#84 记载的 jsc 模式雷）。任一集的读文件卡住 → searchAllAsync 的 Promise.all
+        // 永久挂起 → 此 await 永不返回 → this.loading 恒为 true，页面表现为「一直搜索中、
+        // 连『无结果』提示都不出现」。这里 10s 兜底，超时按空结果处理并给出提示。
+        var result = await Promise.race([
+          global.searchHistory(this.searchQuery, {
+            category: this.activeCategory,
+            region: this.activeRegion,
+            page: page,
+            pageSize: this.pageSize,
+            datasetId: this.activeDatasetId,
+            groupId: this.activeGroupId
+          }),
+          new Promise(function(resolve) {
+            setTimeout(function() { resolve({ results: [], total: 0, timedOut: true }) }, 10000)
+          })
+        ])
+        if (seq !== this.searchSeq) return // 已被更新的搜索取代，丢弃过期结果
+        // 超时兜底提示（审查修复）：区分「真没搜到」与「卡死兜底」
+        if (result && result.timedOut) {
+          this.searchError = true
+          this.loading = false
+          this.log('[HOME-SEARCH] 搜索超时（10s），显示错误提示', 'warn')
+          return
+        }
+        // 数据缺失兜底：引擎懒初始化失败（meta 读不到）时提示去设置检查
+        if (result.initFailed) {
+          this.showEngineTip = true
+          this.displayList = []
+          this.totalCount = 0
+          this.loading = false
+          this.log('[HOME-SEARCH] 引擎数据缺失，提示检查')
+          return
+        }
+        var formatted = (result.results || []).map(function(item) {
+          // 取第一个关键词作为标题
+          var title = item.title || '未知事件'
+          if (title.indexOf(',') !== -1) {
+            title = title.split(',')[0].trim()
+          } else if (title.indexOf('，') !== -1) {
+            title = title.split('，')[0].trim()
+          }
+          return {
+            id: item.id || item._id,
+            yearDisplay: item.yearDisplay || '未知',
+            title: title,
+            region: item.region || '未知',
+            // 三行大小类透传（DatasetManager 按 meta.display.card 预拼；缺省回退页面基准）
+            yearClass: item.yearClass || 'result-year',
+            titleClass: item.titleClass || 'result-title',
+            catClass: item.catClass || 'result-region'
+          }
+        })
+        // 列表封顶（v1.16.25）：原先无限 concat，翻 10 页即 200 条 × 4 个节点 = 800 节点，
+        // 手环上直接拖垮渲染；同时它也是下方高度公式线性膨胀的根源。只保留最近 MAX_ROWS 条。
+        // v1.16.141（主人定案）：一页最多停留 6 条 —— 多次点「更多」后前面多余的刷新掉，
+        // 防列表无限扩张（原 MAX_ROWS=100 只是防爆上限，不解决"越点越长"）
+        var MAX_PAGE_ITEMS = 6
+        if (page === 1) {
+          this.displayList = formatted
+        } else {
+          this.displayList = this.displayList.concat(formatted)
+        }
+        if (this.displayList.length > MAX_PAGE_ITEMS) {
+          this.displayList = this.displayList.slice(this.displayList.length - MAX_PAGE_ITEMS)
+        }
+        // 每批 5 条、列表上限 10 条 → 可见数即列表长度（无需再单独维护）
+        this.visibleCount = this.displayList.length
+        this.totalCount = result.total || 0
+        this.currentPage = page
+        this.loading = false
+        // v1.16.60 渐进式加载：翻页到底 = 全部命中 map 已加载完（引擎权威值）。
+        // 原「formatted.length < pageSize」启发式在渐进模式下会误判（首轮可能只出几条），已弃用
+        if (result.allLoaded) {
+          this.allLoaded = true
+        }
+        var elapsed = Date.now() - startTime
+        if (page === 1) {
+          this.log('[HOME-SEARCH] 搜索词=' + this.searchQuery + ' 结果数=' + this.totalCount + ' 耗时=' + elapsed + 'ms')
+        } else {
+          this.log('[HOME-SEARCH] 加载第' + page + '页 新增' + formatted.length + '条 当前总数' + this.totalCount)
+        }
+      } catch (e) {
+        console.error('[loadPage] 错误:', e)
+        if (seq !== this.searchSeq) return
+        this.loading = false
+        // 错误态可见：此前 catch 只静默复位 loading，界面停留在旧列表/无任何提示
+        this.searchError = true
+        }
+    },
+
+    // 显示更多（v1.16.26）：每次追加 5 条；若本地已显示完但仍未加载完全部结果，
+    // 顺带拉下一页（这样「更多」既能展开本地已取到的，也能继续向后取）
+    showMore() {
+      // v1.16.138（主人定案）：避免无意义的多搜索 —— **搜够/搜完就停**。
+      // 每批 5 条；列表最多停留 10 条，点「更多」出下一批（前面的自动刷新掉，见 loadPage）。
+      // 已搜完全部资料集（allLoaded）或正在搜索（loading）时直接返回，不再发起调用。
+      if (this.allLoaded || this.loading) return
+      this.loadPage(this.currentPage + 1)
+    },
+
+    // 搜索态滚到底：自动加载下一页（键盘弹出时不触发；非搜索态双屏滚动不翻页）
+    onPageScrollBottom() {
+      // v1.16.141（主人定案）：「直到点击显示更多之后才开始继续搜索」—— **关闭触底自动翻页**。
+      // 原实现滚到底就自动 loadPage(currentPage+1)：主人滑动结果列表时会被动地把资料集
+      // 一个一个搜下去（每批都要读 block + 解析 map），这才是「感觉还是查过数量、没有停止过」
+      // 的真正来源 —— 前几轮我只调了搜索侧的条数与上限，没动这个触发侧。
+      // 现只保留「显示更多」按钮触发（showMore）。方法保留空实现，避免模板 onscrollbottom 绑空报错。
+      return
+    },
+
+    gotoDetail(id) {
+      if (this.showKeyboard) return
+      if (this.$app.$def.isNavigating) return   // 重复守卫清理（审查报告小瑕疵）
+      if (typeof global.addRuntimeLog === 'function') {
+        global.addRuntimeLog('从结果页打开详情: ID=' + id, 'info')
+      }
+      global.selectedEventId = id
+      router.push({ uri: '/pages/detail' })
+    },
+
+    // 右滑：语音态退出聆听，键盘开着先收起，再退出搜索态回主页（非搜索态主页右滑不处理）
+    onSwipe(eve) {
+      // v1.16.91 AI 面板打开时：主界面翻页/退搜索手势一律不响应（面板自身 onAiSwipe 处理。
+      // 面板全屏遮罩后事件理论上到不了这里，守卫是防穿透的逻辑保险）
+      if (this.aiMode) return
+      // v1.16.60：搜索态下【任意方向】滑动都退搜索（主人实测搜索态左右滑出视图塌陷，
+      // 统一为"滑一下即退出"消除该状态停留）；键盘开着先收键盘再退
+      if (this.searchActive) {
+        if (this.showKeyboard) {
+          this.finishInput()
+          return
+        }
+        this.exitSearch()
+        return
+      }
+      if (eve.direction !== 'right') return
+      if (this.voiceActive) {
+        this.exitVoiceSearch()
+        return
+      }
+    }
+  }
 </script>

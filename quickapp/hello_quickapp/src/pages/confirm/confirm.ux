@@ -1,0 +1,89 @@
+<template>
+  <div class="page-container">
+    <div class="page" @swipe="onSwipe">
+      <scroll class="scroll-list" scroll-y="true">
+        <div class="top-spacer"></div>
+        <div class="header"><text class="header-title">蓝牙接收</text></div>
+
+        <div class="info-card">
+          <text class="info-text">通过蓝牙接收手机端推送的资料库数据，更新本地知识库内容。</text>
+        </div>
+
+        <div class="btn-primary" @click="enable">
+          <text class="btn-text">开启</text>
+        </div>
+        <div class="btn-secondary" @click="disable">
+          <text class="btn-text">关闭</text>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </scroll>
+    </div>
+  </div>
+</template>
+
+<style>
+  .page-container { width: 100%; height: 100%; background-color: #000000; }
+  .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
+  .scroll-list { width: 100%; height: 100%; flex-direction: column; align-items: center; }
+  .top-spacer { width: 100%; height: 24px; flex-shrink: 0; }
+  .bottom-spacer { width: 100%; height: 60px; flex-shrink: 0; }
+  .header { width: 90%; height: 70px; justify-content: center; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
+  .header-title { font-size: 28px; font-weight: bold; color: #FFFFFF; text-align: center; }
+  .info-card { width: 82%; border-radius: 18px; background-color: #1C1C1E; padding: 16px; margin-bottom: 18px; flex-shrink: 0; flex-direction: column; align-items: center; }
+  .info-text { width: 100%; font-size: 20px; color: #BBBBBB; line-height: 30px; text-align: center; }
+  .btn-primary { width: 70%; height: 67px; border-radius: 33px; background-color: #4D9FEE; justify-content: center; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
+  .btn-secondary { width: 70%; height: 67px; border-radius: 33px; background-color: #2C2C2E; justify-content: center; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
+  .btn-text { font-size: 24px; color: #FFFFFF; font-weight: bold; }
+
+    @media (shape: pill-shaped) {
+    .top-spacer { height: 30px; }
+    .header { height: 100px; margin-bottom: 20px; }
+    .header-title { font-size: 42px; }
+    .info-card { width: 90%; border-radius: 32px; padding: 24px; margin-bottom: 20px; }
+    .info-text { font-size: 28px; }
+    .btn-primary { width: 220px; height: 96px; border-radius: 48px; margin-bottom: 14px; }
+    .btn-secondary { width: 220px; height: 96px; border-radius: 48px; margin-bottom: 14px; }
+    .btn-text { font-size: 35px; }
+  }
+</style>
+
+<script>
+  import router from '@system.router'
+  import storage from '@system.storage'
+
+  export default {
+    private: {
+      enabled: false
+    },
+
+    onInit() {
+      storage.get({
+        key: 'bluetooth_receive',
+        // v1.16.124 审查必修#2：同 settings.ux —— 无存储值即开启，避免首装 UI 与真实行为相反
+        success: (d) => { this.enabled = d !== 'false' },
+        fail: () => { this.enabled = true }
+      })
+    },
+
+    enable() {
+      this.enabled = true
+      global.bluetoothReceive = true
+      storage.set({ key: 'bluetooth_receive', value: 'true' })
+      global.addRuntimeLog && global.addRuntimeLog('蓝牙接收: 开启', 'info')
+      router.back()
+    },
+
+    disable() {
+      this.enabled = false
+      global.bluetoothReceive = false
+      storage.set({ key: 'bluetooth_receive', value: 'false' })
+      global.addRuntimeLog && global.addRuntimeLog('蓝牙接收: 关闭', 'warn')
+      router.back()
+    },
+
+    onSwipe(eve) { if (eve.direction === 'right') { router.back() } },
+
+    goBack() { router.back() }
+  }
+</script>

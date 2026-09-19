@@ -1,0 +1,100 @@
+300|harsh,四级|adj. 严酷的|The prisoners faced harsh conditions in winter. 囚犯们在冬天面临严酷的环境。|harsh criticism 严厉的批评；harsh weather 恶劣的天气；be harsh on sb 对某人苛刻
+301|reliable,四级|adj. 可靠的，可信赖的|She is the most reliable person on our team. 她是我们团队里最可靠的人。|a reliable source 可靠的消息来源；reliable information 可靠的信息；dependable and reliable 可靠可信
+302|massive,四级|adj. (尺寸、数量、规模) 非常大的|The bridge needed a massive amount of steel. 这座桥需要大量的钢材。|a massive amount of 大量的；massive investment 巨额投资；a massive building 庞大的建筑
+303|alcohol,四级|n. 酒精|He gave up alcohol for the sake of his health. 为了健康，他戒了酒。|give up alcohol 戒酒；alcohol consumption 饮酒；drinking alcohol 酒精饮料
+304|pregnant,四级|adj. 怀孕的|She is six months pregnant with her second child. 她怀二胎六个月了。|be pregnant with 怀着；get pregnant 怀孕；a pregnant woman 孕妇
+305|adapt,四级|v. 适应于|It took him a month to adapt to the new schedule. 他花了一个月才适应新的作息安排。|adapt to 适应；adapt sth for 为……改编；well adapted 十分适应的
+306|bogus,四级|adj. 假冒的|The police shut down a bogus charity last week. 警方上周取缔了一个假冒慈善机构。|a bogus passport 假护照；bogus claims 虚假索赔；a bogus caller 冒充身份的来访人员
+307|slippery,四级|adj. 滑的；模糊的，不明确的，|The road is slippery after the heavy rain. 大雨过后路面很滑。|a slippery road 湿滑的路面；a slippery customer 滑头的人；a slippery concept 含糊的概念
+308|current,四级|adj. 当前的|The current economic situation calls for patience. 当前的经济形势需要耐心应对。|the current situation 当前形势；current affairs 时事；current trends 当前的趋势
+309|overwhelm,四级|v. 压倒，战胜|A wave of sadness overwhelmed her at the farewell party. 告别派对上，一阵悲伤涌上她的心头。|be overwhelmed by 被……压垮；overwhelming majority 绝大多数；overwhelm sb with gratitude 让某人感激不尽
+310|stressful,四级|adj. 充满著压力的，充满著紧张的|Nursing is a stressful but rewarding job. 护理工作压力虽大，却很有意义。|a stressful job 压力大的工作；a stressful period 紧张的时期；find sth stressful 觉得某事压力大
+311|toothache,四级|n. 牙痛，牙疼|He couldn't sleep because of a bad toothache. 牙痛得厉害，他睡不着觉。|suffer from toothache 牙痛；a bad toothache 剧烈的牙痛；go to the dentist for a toothache 牙痛去看牙医
+312|eliminate,四级|v. 消除|The team was eliminated in the first round. 这支队伍在首轮即遭淘汰。|eliminate the possibility 排除可能性；eliminate waste 消除浪费；eliminate errors 消除错误
+313|terminal,四级|n. 终点站，航空站|Passengers gathered at Terminal Two of the airport. 旅客们聚集在机场二号航站楼。|an airport terminal 航站楼；a bus terminal 公交枢纽站；a terminal illness 晚期疾病
+314|severe,四级|adj. 严重的|The north suffered severe flooding last summer. 去年夏天北方遭受了严重的洪灾。|severe weather 恶劣天气；severe damage 严重损坏；a severe punishment 严厉的惩罚
+315|immobile,四级|adj. 稳定的，不变的|The injured player lay immobile on the grass. 受伤的球员一动不动地躺在草地上。|lie immobile 一动不动地躺着；remain immobile 保持不动
+316|diplomatic,四级|adj. 外交的|The two countries restored diplomatic relations last year. 两国于去年恢复了外交关系。|diplomatic relations 外交关系；a diplomatic solution 外交解决方式；diplomatic immunity 外交豁免权
+317|candidate,四级|n. 申请求职者；投考者；候选人|Each candidate must pass a written test first. 每位候选人都必须先通过笔试。|a presidential candidate 总统候选人；a candidate for ……的候选人；a strong candidate 热门人选
+318|fund,四级|n. 基金，储备； v. 提供资金|The project is funded by the local government. 该项目由地方政府出资。|raise funds 筹集资金；a charity fund 慈善基金；be funded by 由……资助
+319|complacency,四级|n. 自满，满足|Success in early rounds led to dangerous complacency. 前几轮的胜利导致了危险的骄傲自满。|guard against complacency 警惕自满；complacency about 对……的自满；dangerous complacency 危险的自满情绪
+320|delight,四级|n. 高兴|To our delight, the lost dog came home alone. 让我们高兴的是，走失的狗自己回家了。|to one's delight 令某人高兴的是；with delight 高兴地；take delight in 以……为乐
+321|inadequate,四级|adj. 不足的，不够的|The city's drainage system proved inadequate during the storm. 暴雨期间，城市排水系统显得不足。|inadequate resources 不足的资源；feel inadequate 感到力不从心；prove inadequate 显得不够
+322|steady,四级|adj. 稳定的，逐步的|The patient has made a steady recovery. 病人的恢复情况稳定。|a steady income 稳定的收入；steady growth 稳步增长；keep a steady pace 保持稳定的步速
+323|accurate,四级|adj. 精确的，准确的|The weather forecast proved remarkably accurate this time. 这次天气预报证明非常准确。|accurate information 准确的信息；highly accurate 非常精确；an accurate description 恰当的描述
+324|identification,四级|n. 身份证明；鉴定，识别；认同；|You must show identification at the entrance. 入场时必须出示身份证明。|show identification 出示身份证件；identification card 身份证；early identification 早期识别
+325|previously,四级|adv. 事先|The team had previously worked together on a smaller project. 这个团队此前曾合作过一个较小的项目。|previously mentioned 前面提到的；previously unknown 此前未知的；as previously stated 如前所述
+326|identical,四级|adj. 相同的|The two dresses look almost identical except for the color. 这两条裙子除颜色外几乎一模一样。|identical to 与……完全相同；identical twins 同卵双胞胎；virtually identical 几乎相同
+327|retirement,四级|n. 退休|After retirement, he took up photography as a hobby. 退休后，他把摄影当成了爱好。|retirement age 退休年龄；early retirement 提前退休；a retirement plan 退休计划
+328|commit,四级|v. 犯罪；承担义务|He was arrested for committing a serious crime. 他因犯下严重罪行被捕。|commit a crime 犯罪；commit to doing sth 承诺做某事；be committed to 致力于
+329|element,四级|n. 要素；元素|Trust is a key element of a healthy relationship. 信任是健康关系的关键要素。|a key element 关键要素；chemical elements 化学元素；an element of truth 一点真实性
+330|assess,四级|v. 评价|Teachers assess students' progress each term. 老师每学期评估学生的进步情况。|assess the situation 评估形势；assess damage 评估损失；assess performance 评估表现
+331|hire,四级|v. 雇佣|The firm plans to hire twenty new engineers this year. 公司计划今年招聘二十名新工程师。|hire staff 招聘员工；hire a car 租车；hire on a trial basis 先试用后录用
+332|represent,四级|v. 代表|Each class will represent a different country at the festival. 游园会上每个班代表一个不同的国家。|represent the company 代表公司；represent the interests of 代表……的利益；represent a turning point 标志着转折
+333|overestimate,四级|v. 对（数量）估计过高|People often overestimate how much free time they will have. 人们常常高估自己将来会有多少空闲时间。|overestimate the cost 高估成本；overestimate one's ability 高估自己的能力；tend to overestimate 往往高估
+334|supervision,四级|n. 监督|Children should swim under adult supervision. 儿童游泳应有成人看护。|under supervision 在监督下；close supervision 严格监督；medical supervision 医学监护
+335|expose,四级|v. 暴露|The report exposed serious flaws in the safety system. 报告揭露了安全系统的严重缺陷。|expose sb to 使某人接触到；be exposed to 暴露于；expose corruption 揭露腐败
+336|seemingly,四级|adv. 表面上看|The task was seemingly simple, yet it took all week. 这项任务看似简单，却花了一整周。|seemingly simple 看似简单；seemingly endless 仿佛没有尽头；seemingly impossible 看似不可能
+337|assignment,四级|n. 作业|The professor handed out a new assignment in class. 教授在课上布置了一项新作业。|finish an assignment 完成作业；hand in an assignment 上交作业；a writing assignment 写作任务
+338|preference,四级|n. 偏爱|He has a preference for trains rather than planes. 比起飞机，他更喜欢坐火车。|a preference for 对……的偏爱；give preference to 优先考虑；personal preference 个人喜好
+339|energetic,四级|adj. 精力充沛的|Despite his age, he stays energetic all day. 尽管上了年纪，他一整天都精力充沛。|an energetic young man 精力充沛的年轻人；feel energetic 感到精力充沛；stay energetic 保持活力
+340|application,四级|n. 申请；应用|The new technology has a wide application in medicine. 这项新技术在医学领域应用广泛。|submit an application 提交申请；a job application 求职申请；practical application 实际应用
+341|moral,四级|adj. 精神上的, 道德的|The story teaches children an important moral lesson. 这个故事教给孩子们一个重要的道德课。|moral values 道德观念；a moral lesson 道德教诲；moral support 精神支持
+342|dispute,四级|n. 辩论，争论 v. 辩论，争论|The two companies settled their dispute out of court. 两家公司庭外解决了纠纷。|settle a dispute 解决争端；a border dispute 边界争端；dispute a claim 对索赔提出异议
+343|influence,四级|n. 影响 v. 影响|Parents strongly influence their children's habits. 父母深深影响着孩子的习惯。|have an influence on 对……有影响；under the influence of 在……的影响下；a positive influence 积极的影响
+344|illegal,四级|adj. 非法的|Parking here is strictly illegal. 在这里停车是严格违法的。|illegal drugs 毒品；an illegal immigrant 非法移民；strictly illegal 严格违法的
+345|esteem,四级|n. 自尊|Regular praise helps build a child's self-esteem. 经常表扬有助于建立孩子的自尊心。|self-esteem 自尊心；hold sb in high esteem 十分敬重某人；gain the esteem of 赢得……的尊敬
+346|abundant,四级|adj. 大量的，丰富的|The region is abundant in natural resources. 该地区自然资源丰富。|abundant in 富含；abundant evidence 充分的证据；an abundant supply 充足的供应
+347|survey,四级|v. 调查；审视，仔细考虑 n. 调查；勘测，测量，测绘|The survey covered more than two thousand households. 这项调查覆盖了两千多户家庭。|conduct a survey 开展调查；a recent survey 最近的调查；survey the damage 查看受损情况
+348|extensively,四级|adv. 广泛地|The drug has been tested extensively on animals. 这种药已在动物身上进行了广泛试验。|used extensively 被广泛使用；travel extensively 广泛游历；research extensively 广泛研究
+349|deserve,四级|v. 值得|The volunteers richly deserve our thanks. 这些志愿者理应得到我们的感谢。|deserve attention 值得关注；deserve a chance 值得给个机会；richly deserve 完全配得上
+350|crash,四级|v. 坠落;坠毁;撞击 n. 〔汽车的〕撞车事故；〔飞机的〕坠毁，失事|The computer crashed while I was saving the file. 我保存文件时电脑死机了。|a car crash 车祸；crash into 撞上；the stock market crash 股市崩盘
+351|affirm,四级|v. 断言，声明|The minister affirmed the government's commitment to education. 部长申明了政府对教育的承诺。|affirm one's support 申明支持；affirm a decision 确认决定；firmly affirm 坚定声明
+352|reputation,四级|n. 名气，名声，名誉|The restaurant has built a reputation for excellent service. 这家餐厅以优质服务赢得了声誉。|build a reputation 树立声誉；a good reputation 好名声；damage one's reputation 损害名声
+353|degree,四级|n. 程度|The success of the plan depends to a large degree on teamwork. 计划的成功在很大程度上取决于团队合作。|to some degree 在某种程度上；a master's degree 硕士学位；a high degree of 高度的
+354|fade,四级|v. 逐渐消失|The sound of music faded into the night. 音乐声渐渐消失在夜色里。|fade away 逐渐消失；fade out 渐弱；memories fade 记忆淡去
+355|competitor,四级|n. 竞争者，对手|The young company beats its bigger competitors on price. 这家年轻公司在价格上胜过比自己大的竞争对手。|a main competitor 主要竞争对手；compete with competitors 与对手竞争；a close competitor 强劲的对手
+356|confuse,四级|v. 使混淆，迷惑|The long instructions confused many first-time users. 冗长的说明让许多新手一头雾水。|confuse … with … 把……与……混淆；be confused about 对……感到困惑；easily confused 容易混淆的
+357|task,四级|n. 任务，工作|She tackled the difficult task without any complaint. 她毫无怨言地承担起这项艰巨任务。|a challenging task 有挑战性的任务；complete a task 完成任务；assign a task 分派任务
+358|lessen,四级|v. 减少|Time lessened the pain of losing his friend. 时间减轻了他失去朋友的痛苦。|lessen the impact 减小影响；lessen the pain 减轻痛苦；lessen the risk 降低风险
+359|admit,四级|v. 承认；容许|He admitted that he had made a serious mistake. 他承认自己犯了一个严重的错误。|admit a mistake 承认错误；admit to doing sth 承认做过某事；be admitted to 被……录取
+360|bow,四级|v. 鞠躬|The players bowed to the audience after the match. 比赛结束后，队员们向观众鞠躬致意。|bow to 向……鞠躬；bow to pressure 迫于压力屈服；take a bow 谢幕
+361|division,四级|n. 除法；部门|She leads the sales division in three provinces. 她负责三个省的销售分部。|a business division 业务部门；the division of labor 分工；a sharp division 尖锐的分歧
+362|literature,四级|n. 文学，文学作品；文献；文献|She majored in English literature at university. 她大学时主修英国文学。|English literature 英国文学；scientific literature 科学文献；a body of literature 大量文献
+363|consultant,四级|n. 顾问|The company hired a consultant to improve its image. 公司聘请了一位顾问来改善形象。|a management consultant 管理顾问；consult a consultant? use consult an expert? collocation for consultant: a senior consultant 资深顾问；hire a consultant 聘请顾问
+364|penalty,四级|n. 惩罚|The referee awarded a penalty in the last minute. 裁判在最后一分钟判罚了点球。|the death penalty 死刑；a heavy penalty 重罚；face a penalty 面临处罚
+365|comment,四级|n. 评论|The official refused to comment on the report. 这位官员拒绝对该报道发表评论。|comment on 就……发表评论；no comment 无可奉告；positive comments 正面评价
+366|major,四级|adj. 主要的 v. 主修|She majors in computer science at a top university. 她在一所顶尖大学主修计算机科学。|major in 主修；a major role 主要角色；a major cause 主要原因
+367|option,四级|n. 选择|We have no option but to delay the launch. 我们别无选择，只能推迟发布。|have no option 别无选择；keep one's options open 保留选择余地；a good option 一个不错的选择
+368|socialize,四级|v. 交往，联谊|Office parties give colleagues a chance to socialize. 公司聚会为同事们提供了社交的机会。|socialize with 与……交往；socialize at parties 在聚会上应酬
+369|bureau,四级|n. 局|She works at the local weather bureau. 她在当地气象局工作。|a travel bureau 旅游局；the weather bureau 气象局；a news bureau 新闻分社
+370|budget,四级|n. 预算 v. 编预算|The school's budget for books was cut this year. 今年学校的购书预算被削减了。|stay within the budget 控制在预算内；a tight budget 预算紧张；budget for 为……编制预算
+371|pop,四级|v. 突然出现，跳出|A warning window popped up on the screen. 屏幕上弹出了一个警告窗口。|pop up 突然出现；pop in 顺便走访；pop out 突然冒出
+372|position,四级|n. 职位|She applied for the position of project manager. 她申请了项目经理一职。|apply for a position 申请职位；a senior position 高级职位；in a position to do sth 有能力做某事
+373|unaffordable,四级|adj. 买不起的，负担不起的|For many families, city housing is unaffordable. 对许多家庭来说，城里的房子贵得负担不起。|unaffordable prices 负担不起的价格；unaffordable housing 住房负担过重
+374|function,四级|n. 功能 v. 运行|The system will not function without regular maintenance. 没有定期维护，系统就无法正常运行。|the main function 主要功能；function properly 正常运转；serve a function 起到作用
+375|perceive,四级|v. 察觉|Dogs perceive sounds far beyond the range of human hearing. 狗能察觉到远超人类听力范围的声音。|perceive as 被视为；perceive a change 察觉变化；commonly perceived 普遍认为
+376|reserve,四级|v. 留出，预定|We have reserved a table for six at eight. 我们预订了八点六人一桌的位子。|reserve a table 预订餐位；reserve a room 订房间；in reserve 备用
+377|innovation,四级|n. 改革，创新|The award celebrates innovation in product design. 该奖项表彰产品设计方面的创新。|technological innovation 技术创新；drive innovation 推动创新；an innovation in 在……方面的革新
+378|alert,四级|v. 提醒；使〔某人〕意识到 adj. 机警的|The doctor alerted the family to the risks of the operation. 医生提醒家属注意手术风险。|alert sb to sth 提醒某人注意某事；stay alert 保持警觉；on high alert 高度戒备
+379|cautious,四级|adj. 谨慎的|Investors remain cautious about the new market. 投资者对新市场仍持谨慎态度。|be cautious about 对……谨慎；a cautious approach 稳妥的做法；cautious optimism 谨慎的乐观
+380|document,四级|n. 文件|Please sign the document at the bottom of the page. 请在页面底端签署这份文件。|sign a document 签署文件；official documents 官方文件；supporting documents 证明材料
+381|characterize,四级|v. 以……特点|The region is characterized by its dry climate. 该地区的特点是气候干燥。|be characterized by 以……为特征；characterize an era 标志一个时代
+382|achieve,四级|v. 完成，实现|She achieved her goal of running a full marathon. 她实现了跑完全程马拉松的目标。|achieve a goal 实现目标；achieve success 取得成功；achieve one's dream 实现梦想
+383|address,四级|v. 解决|The manager promised to address the staff's concerns. 经理承诺处理员工关心的问题。|address the problem 解决问题；address a meeting 在会议上发言；address the issue 处理议题
+384|inspiration,四级|n. 灵感|The artist draws inspiration from everyday life. 这位艺术家从日常生活中汲取灵感。|draw inspiration from 从……中获得灵感；a source of inspiration 灵感源泉；seek inspiration 寻找灵感
+385|agency,四级|n. 机构|She works for a travel agency downtown. 她在市中心的一家旅行社工作。|a travel agency 旅行社；a government agency 政府机构；by/through an agency 通过代理机构
+386|formulate,四级|v. 规定，制定|The committee formulated a new set of safety rules. 委员会制定了一套新的安全规则。|formulate a policy 制定政策；formulate a plan 拟定计划；formulate an answer 想出答案
+387|fate,四级|n. 命运|He left his fate in the hands of the judges. 他把命运交到了评委手中。|accept one's fate 接受命运；seal one's fate 注定失败；a cruel fate 残酷的命运
+388|surf,四级|v. 冲浪|He spends every weekend surfing at Bondi Beach. 他每个周末都在邦迪海滩冲浪。|surf the Internet 上网冲浪；go surfing 去冲浪；surf the waves 冲浪戏波
+389|steer,四级|v. 驾驶|She carefully steered the car through the narrow gate. 她小心翼翼地驾车穿过狭窄的大门。|steer clear of 避开；steer a car 驾驶汽车；steer the conversation 把话题引向
+390|structure,四级|n. 结构|The report has a clear three-part structure. 这份报告结构清晰，分为三部分。|the basic structure 基本结构；organizational structure 组织架构；a rigid structure 僵化的结构
+391|architect,四级|n. 建筑师|The architect designed the library around natural light. 建筑师围绕自然光设计了这座图书馆。|a chief architect 总建筑师；consult an architect 咨询建筑师；the architect of ……的设计者
+392|frame,四级|n. 框架|The painting still hangs in its original wooden frame. 这幅画仍挂在原来的木框里。|a picture frame 画框；a steel frame 钢结构框架；within the frame of 在……框架内
+393|amaze,四级|v. 使吃惊|The magician's tricks amazed the entire audience. 魔术师的表演让全场观众惊叹不已。|be amazed at/by 对……感到惊讶；amaze the audience 令观众惊叹；an amazing result（形容词用法）惊人的结果
+394|affirmation,四级|n. 断言，肯定|Daily affirmations helped her regain her confidence. 每天的自我肯定帮助她重拾信心。|a positive affirmation 积极的肯定；an affirmation of 对……的确认；seek affirmation 寻求认可
+395|intelligent,四级|adj. 有智慧的，聪明的，悟性强的|Dolphins are among the most intelligent animals in the sea. 海豚是海洋中最聪明的动物之一。|an intelligent decision 明智的决定；highly intelligent 非常聪明；intelligent life 智慧生命
+396|code,四级|n. 代码，密码|She forgot the four-digit code for the safe. 她忘了保险箱的四位密码。|a secret code 密码；break the code 破译密码；a dress code 着装规范
+397|burden,四级|n. 重担，负担|High tuition fees place a heavy burden on families. 高昂的学费给家庭带来沉重负担。|a heavy burden 沉重的负担；shoulder the burden 承担重担；ease the burden 减轻负担
+398|absorb,四级|v. 吸收（液体、气体等）|Plants absorb carbon dioxide and release oxygen. 植物吸收二氧化碳并释放氧气。|absorb knowledge 吸收知识；be absorbed in 全神贯注于；absorb water 吸水
+399|instruction,四级|n. 用法说明；操作指南；命令，指示|Read the instructions carefully before using the machine. 使用机器前请仔细阅读说明书。|follow instructions 遵照指示；operating instructions 操作说明；under instruction 接受指导

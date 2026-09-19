@@ -1,0 +1,229 @@
+<template>
+  <div class="page-container">
+    <div class="page">
+      <!-- 加载中 -->
+      <div class="center-box" if="{{status === 'loading'}}">
+        <text class="main-title">正在加载数据…</text>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: {{progressPercent}}%;"></div>
+        </div>
+        <text class="progress-text">{{progressPercent}}%</text>
+        <text class="msg-text">{{message}}</text>
+      </div>
+
+      <!-- 加载完成 -->
+      <div class="center-box" if="{{status === 'done'}}">
+        <text class="main-title">加载完成</text>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 100%;"></div>
+        </div>
+        <text class="progress-text">100%</text>
+        <text class="msg-text" if="{{isFastCache}}">命中缓存，快速加载</text>
+        <text class="msg-text" else>数据已就绪，即将进入…</text>
+      </div>
+
+      <!-- 加载失败 -->
+      <div class="center-box" if="{{status === 'error'}}">
+        <text class="main-title">加载失败</text>
+        <text class="msg-text">{{errorMsg}}</text>
+        <div class="back-btn" @click="goBack">
+          <text class="back-btn-text">返回</text>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+  /* ===== 基础样式（矩形 rect，designWidth 300 基准） ===== */
+  .page-container { width: 100%; height: 100%; background-color: #000000; }
+  .page { width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; }
+  .center-box { width: 100%; flex-direction: column; align-items: center; }
+
+  .main-title { font-size: 28px; color: #FFFFFF; font-weight: 600; text-align: center; }
+  .progress-bar { width: 200px; height: 8px; border-radius: 4px; background-color: #333333; margin-top: 24px; margin-bottom: 16px; overflow: hidden; }
+  .progress-fill { height: 100%; background-color: #4D9FEE; border-radius: 4px; }
+  .progress-text { font-size: 20px; color: #FFFFFF; font-weight: 600; margin-bottom: 6px; }
+  .msg-text { font-size: 20px; color: #757575; text-align: center; }
+
+  .back-btn { width: 60%; height: 72px; border-radius: 36px; background-color: #4D9FEE; justify-content: center; align-items: center; margin-top: 40px; }
+  .back-btn-text { font-size: 24px; color: #FFFFFF; font-weight: bold; }
+
+  /* ===== 圆屏 466（Watch S3/S4） ===== */
+    /* ===== 胶囊 192x490（手环 9） ===== */
+  @media (shape: pill-shaped) {
+    .main-title { font-size: 42px; }
+    .progress-bar { width: 80%; height: 14px; border-radius: 7px; margin-top: 36px; margin-bottom: 22px; }
+    .progress-fill { border-radius: 7px; }
+    .progress-text { font-size: 28px; margin-bottom: 8px; }
+    .msg-text { font-size: 28px; }
+    .back-btn { width: 80%; height: 136px; border-radius: 68px; margin-top: 50px; }
+    .back-btn-text { font-size: 36px; }
+  }
+</style>
+
+<script>
+  import router from '@system.router'
+  import { getSearchEngine } from '../../SearchEngine/SearchEngine.js'
+  import { warmupAllCaches, warmupSingle } from '../../SearchEngine/DatasetManager.js'
+
+  export default {
+    private: {
+      status: 'loading',
+      progressPercent: 0,
+      message: '准备加载…',
+      errorMsg: '',
+      timer: null,
+      hasNavigated: false,
+      isDestroyed: false,
+      loadStarted: false,
+      fromSettings: false,
+      startTime: 0,
+      isFastCache: false
+    },
+
+    onInit(query) {
+      this.fromSettings = !!(query && query.source === 'settings')
+      // 蓝牙传输唤醒（v1.16.46）：source=bt 时只给传输来的那一个资料集建缓存，
+      // 不跑历史集完整 init、不跑全量预热（主人定案：只加载蓝牙所传输的文件）
+      this.btMode = !!(query && query.source === 'bt' && query.dsId)
+        ? { dsId: parseInt(query.dsId, 10) }
+        : null
+      this.startTime = Date.now()
+      this.status = 'loading'
+      this.progressPercent = 0
+      this.message = '准备加载…'
+      this.errorMsg = ''
+      this.hasNavigated = false
+      this.isDestroyed = false
+    },
+
+    // onShow 时页面 DOM 已 ready，此时再启动引擎加载，
+    // 避免在 onInit（DomPage 未 ready）阶段调用 @system.file.readText 导致回调丢失
+    onShow() {
+      if (this.isDestroyed || this.hasNavigated || this.loadStarted) return
+      this.loadStarted = true
+      this.startLoad()
+    },
+
+    onDestroy() {
+      this.isDestroyed = true
+      if (this.timer) clearTimeout(this.timer)
+      if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null }
+    },
+
+    // 启动完整加载：引擎单例 + 进度回调；蓝牙唤醒时走单集模式
+    async startLoad() {
+      var self = this
+      if (self.isDestroyed) return
+      if (self.btMode) return self.startBtLoad()
+      try {
+        var engine = getSearchEngine()
+        // 历史集完整初始化占进度前 70%
+        // v1.16.120：init 加 60s 超时兜底（审查报告 #5）—— readText 回调丢失是本项目
+        // 记录过的雷（#18/#84），搜索路径早有 10s race 兜底，唯独 init 没有：一旦挂起，
+        // 首次安装的用户会永久停在「正在加载数据…」。超时走既有失败分支转错误态。
+        var _initP = engine.init('/common/datasets/history/', function(percent, message) {
+          self.onProgress(Math.round(percent * 0.7), message)
+        })
+        var _timeoutP = new Promise(function(resolve) {
+          self._initTimer = setTimeout(function() { resolve(false) }, 60000)
+        })
+        var success = await Promise.race([_initP, _timeoutP])
+        if (self._initTimer) { clearTimeout(self._initTimer); self._initTimer = null }
+        if (self.isDestroyed) return
+        if (success) {
+          // 将已就绪引擎挂到全局：app.ux 挂载的是 app 作用域实例，与页面作用域
+          // 的模块实例可能不同（isReady 不同步），此处统一覆盖为已 init 的实例
+          global.searchEngine = engine
+          // ⚠️ 引擎就绪后刷新全局 chunkSize：app.ux 的 mountToGlobal 在 onCreate 执行，
+          // 那时 meta 尚未读取，mapChunkSize/detailChunkSize 会停在默认值 100；
+          // 而历史集真实值是 mapChunkSize=600 / detailChunkSize=150 —— 不刷新会导致
+          // 详情页按错误分片取数（读到别的条目或报「未找到数据」）。
+          if (typeof global.refreshEngineGlobals === 'function') global.refreshEngineGlobals()
+          // 资料集索引预热占进度后 30%（v1.16.43 主人定案）：把 6 个资料集的
+          // map+chunk 全部建好 storage 缓存——此前它们懒创建，总搜索第一次要同时
+          // 冷启动 5 个集（读块文件+写缓存）= 搜索非常慢的主因。预热后搜索直读缓存。
+          self.message = '预加载资料…'
+          await warmupAllCaches(function(p, msg) {
+            self.onProgress(70 + Math.round((p || 0) * 0.3), msg)
+          })
+          if (self.isDestroyed) return
+          self.onSuccess()
+        } else {
+          self.onError('数据加载失败，请重试')
+        }
+      } catch (e) {
+        if (self.isDestroyed) return
+        self.onError('数据加载异常：' + (e && e.message ? e.message : '未知错误'))
+      }
+    },
+
+    // 蓝牙传输唤醒（v1.16.46）：只对传输来的资料集建缓存（单集模式）
+    async startBtLoad() {
+      var self = this
+      try {
+        self.message = '加载蓝牙资料…'
+        await warmupSingle(self.btMode.dsId, function(p, msg) {
+          self.onProgress(p || 0, msg)
+        })
+        if (self.isDestroyed) return
+        if (typeof global.refreshEngineGlobals === 'function') global.refreshEngineGlobals()
+        self.onSuccess()
+      } catch (e) {
+        if (self.isDestroyed) return
+        self.onError('蓝牙资料加载失败：' + (e && e.message ? e.message : '未知错误'))
+      }
+    },
+
+    // 进度回调：percent 0-100 整数，message 为阶段文案
+    onProgress(percent, message) {
+      if (this.isDestroyed || this.hasNavigated) return
+      this.progressPercent = percent
+      if (message) this.message = message
+      if (percent >= 100 && this.status === 'loading') {
+        this.onSuccess()
+      }
+    },
+
+    // 加载成功：进入「加载完成」态，补齐最小展示时长后 replace 回首页。
+    // 从设置页主动进入且缓存命中（实际加载 < 1.5s）时，补齐满 1.5s 并提示「命中缓存」；
+    // 其余情况维持原 800ms 后跳转。
+    onSuccess() {
+      if (this.isDestroyed || this.hasNavigated) return
+      this.hasNavigated = true
+      this.status = 'done'
+      this.progressPercent = 100
+      this.message = '加载完成'
+      if (this.timer) clearTimeout(this.timer)
+      var self = this
+      var delay = 800
+      // ⚠️ 原逻辑按「实际加载 < 1.5s」猜缓存命中并提示「命中缓存，快速加载」——并非真的检查缓存；
+      // 资料精简后（5600 条）构建本来就快，清完缓存再加载也会误报「从缓存恢复」。
+      // 现不再猜测，固定 800ms 后跳转（模板保持原 if/else 配对，此处置 false 即走 else 分支）。
+      this.isFastCache = false
+      this.timer = setTimeout(function() {
+        self.replaceToIndex()
+      }, delay)
+    },
+
+    // 统一跳转入口：replace 回首页
+    replaceToIndex() {
+      if (this.isDestroyed) return
+      router.replace({ uri: '/pages/index' })
+    },
+
+    // 加载失败：显示错误说明与「返回」按钮
+    onError(msg) {
+      if (this.isDestroyed || this.hasNavigated) return
+      this.hasNavigated = true
+      this.status = 'error'
+      this.errorMsg = msg || '未知错误'
+      if (this.timer) clearTimeout(this.timer)
+    },
+
+    goBack() {
+      router.back()
+    }
+  }
+</script>

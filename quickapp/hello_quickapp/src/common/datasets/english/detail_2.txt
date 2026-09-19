@@ -1,0 +1,100 @@
+200|appeal,四级|n. 呼吁 v. 吸引；呼吁；恳请，恳求|The bright colors of the poster appeal to young people. 海报鲜艳的色彩吸引着年轻人。|appeal to 吸引，对……有吸引力；make an appeal 发出呼吁；lose one's appeal 失去吸引力
+201|careless,四级|adj. 粗心的|A careless mistake cost him the championship. 一个粗心的失误让他与冠军失之交臂。|a careless mistake 粗心的错误；be careless about 对……粗心大意；careless driving 疏忽驾驶
+202|hit,四级|n. (唱片、电影或戏剧的) 成功；命中，击中|The song became a hit as soon as it was released. 这首歌一发行就成了热门金曲。|a big hit 大热门；a hit song 爆红歌曲；make a hit 大获成功
+203|swallow,四级|v. 咽下，吞下|Take a sip of water and swallow the pill slowly. 喝一口水，慢慢把药片咽下去。|swallow a pill 吞下药片；swallow one's words 收回说过的话；swallow one's pride 放下架子
+204|consult,四级|v. 咨询|You should consult a doctor if the pain continues. 如果疼痛持续，你应该咨询医生。|consult a doctor 咨询医生；consult a dictionary 查阅词典；consult with sb 与某人商量
+205|preservation,四级|n. 保存，保留|The old town is under strict preservation rules. 这座老城受到严格的保护规定约束。|the preservation of 对……的保护；food preservation 食品保鲜；in a good state of preservation 保存完好
+206|distance,四级|n. 距离|The village is within walking distance of the station. 村子离车站步行可达。|within walking distance 步行可达；in the distance 在远处；a long distance 长距离
+207|plastic,四级|adj. 塑料的|The supermarket encourages shoppers to bring reusable bags instead of plastic ones. 超市鼓励顾客自带环保袋代替塑料袋。|plastic bags 塑料袋；plastic waste 塑料垃圾；a plastic bottle 塑料瓶
+208|predict,四级|v. 预言，预测，预告|No one can predict exactly when the earthquake will happen. 没有人能准确预测地震何时发生。|predict the future 预测未来；hard to predict 难以预测；predict a trend 预判趋势
+209|submit,四级|v. 提交|Applicants must submit their forms before Friday. 申请者必须在周五前提交表格。|submit an application 提交申请；submit a report 提交报告；submit to 屈服于
+210|entertainment,四级|n. 娱乐|The city offers plenty of entertainment for visitors. 这座城市为游客提供丰富的娱乐活动。|the entertainment industry 娱乐产业；an entertainment program 娱乐节目；a form of entertainment 一种娱乐方式
+211|critical,四级|adj. 批评的，爱挑剔的|He tends to be critical of new ideas. 他对新想法往往很挑剔。|be critical of 对……挑剔；critical thinking 批判性思维；a critical moment 关键时刻
+212|transaction,四级|n. 交易，业务，事务|The bank charges a fee for each transaction. 银行对每笔交易收取手续费。|a business transaction 商业交易；complete a transaction 完成交易；online transactions 线上交易
+213|via,四级|prep. 通过|We flew to Tokyo via Hong Kong. 我们经香港飞往东京。|via email 通过电子邮件；go via somewhere 途经某地；travel via 经……前往
+214|insist,四级|v. 主张，坚持|He insisted on paying the bill himself. 他坚持要自己付账。|insist on 坚持；insist that 坚持认为；insist upon 坚决要求
+215|distract,四级|v. 分心|The noise from the street distracted me from my reading. 街上的嘈杂声让我无法专心读书。|distract sb from 使某人分心；easily distracted 容易分心的；a distracting noise 令人分心的噪音
+216|subdivision,四级|n. 分支; 分部|The sales department is divided into several subdivisions. 销售部下设几个分部。|a subdivision of ……的分支；administrative subdivisions 行政分区
+217|yield,四级|v. 产生，得出〔结果、答案或资料 n. 产量|The experiment yielded surprising results. 实验得出了令人惊讶的结果。|yield results 产生结果；a high yield 高产量；yield to 让步于
+218|misunderstand,四级|v. 误解|Don't misunderstand her silence as agreement. 别把她的沉默误解为同意。|be misunderstood by 被……误解；misunderstand the question 误解了问题；avoid misunderstanding 避免误解
+219|detail,四级|n. 细节|The report examines the issue in great detail. 报告对这个问题进行了详尽的考察。|in detail 详细地；in great detail 非常详细；pay attention to detail 注重细节
+220|immeasurable,四级|adj. 无法估量的|Her support was of immeasurable value during those hard years. 那些艰难岁月里，她的支持有着无法估量的价值。|immeasurable value 无法估量的价值；immeasurable harm 不可估量的伤害
+221|convincing,四级|adj. 令人信服的|The lawyer presented a convincing argument in court. 律师在法庭上提出了令人信服的论证。|a convincing argument 令人信服的论证；a convincing performance 令人信服的表现；highly convincing 极有说服力的
+222|donate,四级|v. 捐赠|He donates blood twice a year. 他每年献血两次。|donate blood 献血；donate money to 向……捐款；donate sth to charity 把……捐给慈善机构
+223|compare,四级|v. 比较，对照|The report compares prices in different supermarkets. 这份报告比较了不同超市的价格。|compare … with … 把……与……比较；compare … to … 把……比作；compared with 与……相比
+224|item,四级|n. 〔尤指清单上、一群或一组事物中的〕一项，一件，一条|Each item on the list must be checked twice. 清单上的每一项都必须核对两遍。|an item on the list 清单上的一项；a news item 一则新闻；individual items 单个物品
+225|concrete,四级|adj. 具体的|Can you give me a concrete example to illustrate the point? 你能举一个具体的例子来说明这一点吗？|a concrete example 具体的例子；concrete evidence 确凿的证据；a concrete plan 具体计划
+226|govern,四级|v. 管理，支配|A board of directors governs the company. 董事会管理着这家公司。|govern a country 治理国家；be governed by 受……支配；governing body 管理机构
+227|classify,四级|v. 把…分类，把…分级|The library classifies books by subject. 图书馆按主题对图书分类。|classify … as 把……归为；classify sth by 按某标准分类；be classified into 被划分为
+228|restrict,四级|v. 限制，限定|The new law restricts the sale of cigarettes to minors. 新法律限制向未成年人出售香烟。|restrict access 限制进入；be restricted to 仅限于；restrict the use of 限制……的使用
+229|establish,四级|v. 建立，创办，设立|The company was established in 1998. 这家公司成立于1998年。|establish a company 创办公司；establish contact with 与……建立联系；establish a reputation 树立声誉
+230|counseling,四级|n. 咨询服务|The school offers free counseling to stressed students. 学校为压力大的学生提供免费心理咨询服务。|seek counseling 寻求心理咨询；career counseling 职业咨询；counseling services 咨询服务
+231|majority,四级|n. 多数|The majority of students prefer online learning. 大多数学生更喜欢在线学习。|the majority of ……中的大多数；a narrow majority 微弱多数；be in the majority 占多数
+232|contact,四级|n. 联系，接触 v. 〔写信、打电话〕联系〔某人〕|Please contact us if you have any questions. 如有任何问题，请联系我们。|keep in contact with 与……保持联系；contact sb by phone 电话联系某人；make contact 取得联系
+233|virtual,四级|adj. 虚拟的|The museum offers a virtual tour of its galleries. 博物馆提供展厅的虚拟游览。|a virtual tour 虚拟游览；virtual reality 虚拟现实；a virtual meeting 线上会议
+234|simplicity,四级|n. 简单|The beauty of the design lies in its simplicity. 这款设计的美在于简洁。|for simplicity 为简单起见；the simplicity of ……的简洁；with simplicity 质朴地
+235|enrollment,四级|n. 入学人数|College enrollment has risen steadily over the decade. 十年来大学入学人数稳步上升。|student enrollment 学生入学人数；enrollment rate 入学率；open enrollment 开放注册
+236|programming,四级|n. 〔计算机的〕程序编写，程序设计；程序；；〔电视或广播〕节目；电视[广播]节目策划，编排|She is learning programming to build her own app. 她在学习编程，想开发自己的应用。|learn programming 学习编程；programming skills 编程技能；TV programming 电视节目编排
+237|device,四级|n. 装置，设备|This small device measures your heart rate. 这个小装置可以测量你的心率。|an electronic device 电子设备；a medical device 医疗器械；a measuring device 测量装置
+238|previous,四级|adj. 之前的|She has three years of previous work experience. 她此前有三年工作经验。|previous experience 以往经验；the previous day 前一天；previous to 在……之前
+239|alter,四级|v. 改变|Nothing can alter his love for music. 什么都改变不了他对音乐的热爱。|alter a plan 改变计划；alter one's mind 改变主意；alter course 改变航向
+240|coach,四级|n. 教练 v. 当…的教练，训练，培训|The coach trained the team hard before the finals. 决赛前，教练对全队进行了高强度训练。|a head coach 主教练；coach sb for sth 指导某人做某事；a basketball coach 篮球教练
+241|crisis,四级|n. 危机|The government took quick action during the financial crisis. 政府在金融危机期间迅速采取行动。|a financial crisis 金融危机；face a crisis 面临危机；a crisis of confidence 信任危机
+242|interconnect,四级|v. 相互联系|All the departments are closely interconnected. 所有部门都紧密相连。|be interconnected with 与……相互关联；closely interconnected 紧密相连；interconnected systems 互联系统
+243|enrich,四级|v. 丰富；使富有|Reading widely enriches both mind and language. 广泛阅读能丰富思想与语言。|enrich one's knowledge 丰富知识；enrich the soil 使土壤肥沃；enrich one's experience 丰富阅历
+244|poll,四级|n. 民意调查|A recent poll shows growing public concern about food safety. 最近的民意调查显示，公众对食品安全的担忧日益加深。|conduct a poll 进行民调；an opinion poll 民意调查；top the poll 得票最高
+245|consent,四级|v. 允许，同意 n. 同意，赞同|Her parents finally consented to the marriage. 她的父母最终同意了这桩婚事。|consent to 同意；with the consent of 经……同意；give one's consent 表示同意
+246|utility,四级|n. 公用事业〔如煤气、电力等〕|The monthly bill covers rent and utilities. 每月账单包含房租和水电等公用事业费。|utility bills 公用事业账单；a utility company 公用事业公司；public utilities 公共事业
+247|poisonous,四级|adj. 有毒的，有害的|Some wild mushrooms are highly poisonous. 有些野生蘑菇毒性极强。|a poisonous snake 毒蛇；poisonous gases 有毒气体；highly poisonous 剧毒的
+248|collision,四级|n. 冲突，抵触|The ship was badly damaged in the collision. 这艘船在碰撞中严重受损。|a collision between ……之间的碰撞；in collision with 与……发生冲突；a head-on collision 迎面相撞
+249|rank,四级|v. 具有…等级[地位] n. 衔，阶层|The university ranks among the top ten in the country. 这所大学位居全国前十。|rank among 位居……之列；rank first 位居第一；a high rank 高级别
+250|fundamentally,四级|adv. 根本上|The two plans are fundamentally different in purpose. 这两个方案在目的上根本不同。|fundamentally different 根本不同；fundamentally change 彻底改变；fundamentally important 至关根本的
+251|inflation,四级|n. 通货膨胀|The government is trying to control rising inflation. 政府正努力控制不断上升的通货膨胀。|control inflation 控制通胀；the inflation rate 通货膨胀率；high inflation 高通胀
+252|secure,四级|v. 确保……安全|The team finally secured a place in the final. 球队最终锁定了决赛席位。|secure a job 谋得职位；secure funding 获得资金；be secured with 用……固定
+253|interpret,四级|v. 解释|The poet's silence can be interpreted in many ways. 诗人的沉默可以从多种角度解读。|interpret data 解读数据；interpret a dream 释梦；interpret silence as 把沉默理解为
+254|criticize,四级|v. 批评；评论|The plan was widely criticized for its high cost. 该计划因成本过高而受到广泛批评。|be criticized for 因……受到批评；criticize sb openly 公开批评某人；harshly criticize 严厉批评
+255|arrest,四级|v. 逮捕|The police arrested two suspects near the bank. 警方在银行附近逮捕了两名嫌疑人。|arrest a suspect 逮捕嫌疑人；be arrested for 因……被捕；place sb under arrest 将某人逮捕
+256|afford,四级|v. 负担得起|We can't afford a new car this year. 今年我们买不起新车。|afford to do sth 负担得起；can't afford 买不起；afford the time 抽得出时间
+257|implementation,四级|n. 实现，履行|The implementation of the new system began in July. 新系统于七月开始实施。|the implementation of ……的实施；implementation plan 实施方案；full implementation 全面落实
+258|initiate,四级|v. 开始，发起|The company initiated a review of its safety rules. 公司发起了一次安全制度审查。|initiate a project 启动项目；initiate talks 发起谈判；initiate proceedings 提起诉讼
+259|enable,四级|v. 使能够……|The new software enables users to edit videos easily. 新软件使用户能够轻松剪辑视频。|enable sb to do sth 使某人能够做某事；enable access 使得以进入；enable the use of 使能够使用
+260|narrow,四级|adj. 狭窄的|The old street is too narrow for cars. 这条老街太窄，汽车无法通行。|a narrow street 狭窄的街道；a narrow escape 死里逃生；a narrow majority 微弱多数
+261|overcharge,四级|v. 向……多收费|Tourists complained that the taxi driver overcharged them. 游客抱怨出租车司机多收了他们的钱。|overcharge sb for sth 就某事向某人多收费；be overcharged 被多收费
+262|shortcut,四级|n. 捷径，近路|There are no shortcuts to mastering a language. 掌握语言没有捷径可走。|take a shortcut 抄近路；a shortcut to ……的捷径；learn shortcuts 学习快捷键
+263|leisure,四级|n. 悠闲，空闲|She spends her leisure time painting and gardening. 她的闲暇时间用来画画和打理花园。|leisure time 空闲时间；at leisure 悠闲地；leisure activities 休闲活动
+264|original,四级|adj. 原始的，最初的|The original manuscript is kept in the museum. 原稿保存在博物馆里。|the original version 原版；an original idea 独到的见解；the original plan 原计划
+265|density,四级|n. 密度|This city has one of the highest population densities in the world. 这座城市是世界上人口密度最高的城市之一。|population density 人口密度；high density 高密度；low-density housing 低密度住宅
+266|sphere,四级|n. 球体；范围|She is well known in the sphere of education. 她在教育领域颇有名气。|in the sphere of 在……领域；a public sphere 公共领域；sphere of influence 势力范围
+267|margin,四级|n. 页边的空白，页边，白边|Students often take notes in the margins of their textbooks. 学生常在教科书的页边空白处做笔记。|in the margin 在页边空白处；a narrow margin 险胜，微弱差距；leave a margin 留出页边距
+268|department,四级|n. 部门|She works in the marketing department of a bank. 她在一家银行的市场部工作。|the sales department 销售部；a department store 百货商店；the physics department 物理系
+269|desire,四级|n. 渴望，欲望|He has a strong desire to travel around the world. 他环游世界的愿望非常强烈。|a strong desire 强烈的愿望；a desire for 对……的渴望；desire to do sth 渴望做某事
+270|legend,四级|n. 传奇|The old town is full of legends and ghost stories. 这座老城充满了传奇和鬼故事。|a local legend 当地传说；a living legend 活着的传奇；according to legend 相传
+271|dictator,四级|n. 独裁者；专制者|The country suffered for years under the dictator. 这个国家在独裁者统治下苦难多年。|a military dictator 军事独裁者；overthrow a dictator 推翻独裁者；rule like a dictator 像独裁者一样统治
+272|diversity,四级|n. 多样性；差异|The city is famous for its cultural diversity. 这座城市以文化多样性著称。|cultural diversity 文化多样性；a diversity of 多种多样的；biological diversity 生物多样性
+273|quit,四级|v. 放弃|She quit her job to start her own business. 她辞去工作，开始自己创业。|quit a job 辞职；quit smoking 戒烟；quit school 辍学
+274|outgoing,四级|adj. 开朗的；外向的；外出的|His outgoing nature helps him make friends easily. 外向的性格让他容易交到朋友。|an outgoing personality 外向的性格；outgoing mail 外发邮件；be outgoing 性格外向
+275|solution,四级|n. 解决，解答，解决办法|Technology alone cannot solve every problem, but it offers many solutions. 单靠技术解决不了所有问题，但它提供了许多解决办法。|a solution to ……的解决办法；find a solution 找到解决办法；a practical solution 切实可行的方案
+276|revenge,四级|n. 报仇|In the film, the hero takes revenge on his brother. 影片中，主人公向自己的兄弟复仇。|take revenge on 向……复仇；seek revenge 寻求报复；an act of revenge 报复行为
+277|reverse,四级|n. 相反情况；正相反 a. 相反的|The court reversed its earlier decision. 法院推翻了先前的判决。|in reverse order 以相反的顺序；reverse a decision 推翻决定；quite the reverse 恰恰相反
+278|enroll,四级|v. 注册|He enrolled in an evening class to learn French. 他报名参加夜校课程学习法语。|enroll in 报名参加；enroll at a university 注册入学；enrollment fee 注册费
+279|logically,四级|adv. 合乎情理地，符合逻辑地|She argued logically and won the debate. 她论证合乎逻辑，赢得了辩论。|think logically 逻辑清晰地思考；logically consistent 逻辑一致；argue logically 合乎逻辑地论证
+280|rental,四级|n. 租金|The rental for the office includes heating and cleaning. 办公室租金包含供暖和保洁费用。|a rental agreement 租赁协议；rental fees 租金；a car rental 汽车租赁
+281|component,四级|n. 成分|Trust is a key component of any friendship. 信任是任何友谊的关键组成部分。|a key component 关键组成部分；electronic components 电子元件；an essential component 必要成分
+282|quotation,四级|n. 引文|The essay opens with a quotation from Confucius. 文章以孔子的一句引言开篇。|a direct quotation 直接引语；a quotation from 摘自……的引文；stock quotations 股票行情
+283|faith,四级|n. 信任|She never lost faith in her own ability. 她从未失去对自己能力的信心。|lose faith in 对……失去信心；keep faith with 信守对……的承诺；blind faith 盲目的信任
+284|invalid,四级|adj. 无效的|Your parking permit is invalid after midnight. 你的停车证午夜后无效。|an invalid ticket 无效票证；declare sth invalid 宣布某事无效；invalid arguments 站不住脚的论点
+285|invade,四级|v. 侵入，侵略|The army invaded the neighboring country at dawn. 军队在黎明时分入侵邻国。|invade a country 入侵一个国家；invade one's privacy 侵犯隐私；invading forces 入侵部队
+286|separately,四级|adv. 分别地，另行|The twins were interviewed separately. 这对双胞胎被分别进行了面谈。|be treated separately 被分开处理；pay separately 各自付款；keep sth separately 分开存放
+287|strain,四级|v. 扭伤，拉伤|He strained his back while lifting the box. 他搬箱子时拉伤了背部。|strain a muscle 拉伤肌肉；strain one's back 拉伤背部；strain one's eyes 用眼过度
+288|accessible,四级|adj. 易接近的|The library is accessible to wheelchair users. 图书馆可供轮椅使用者无障碍进入。|easily accessible 容易到达的；accessible to 对……开放可用；accessible information 易于获取的信息
+289|lap,四级|n. 〔坐着时的〕大腿部|The cat fell asleep on her lap. 猫在她腿上睡着了。|sit on sb's lap 坐在某人腿上；complete a lap 跑完一圈；drop into one's lap 轻易落到某人手中
+290|character,四级|n. 角色|The main character in the novel is a young doctor. 小说的主角是一位年轻医生。|the main character 主角；a fictional character 虚构人物；in character 符合某人的性格
+291|widespread,四级|adj. 普遍的，广泛的|Smartphones have gained widespread use among teenagers. 智能手机已在青少年中广泛使用。|widespread use 广泛使用；widespread concern 普遍关注；a widespread belief 普遍的看法
+292|rearrange,四级|v. 重新安排|We had to rearrange the meeting because of the storm. 因为暴风雨，我们不得不重新安排会议。|rearrange a meeting 改期会议；rearrange the furniture 重新摆放家具；rearrange one's schedule 调整日程
+293|hospitalize,四级|v. 就医|She was hospitalized for a week after the accident. 事故发生后她住院治疗了一周。|be hospitalized for 因……住院；be hospitalized overnight 留院观察一晚
+294|avail,四级|v. 有益, 有帮助|His efforts to persuade her were of no avail. 他劝说她的一切努力都没有用。|of no avail 徒劳无益；to no avail 没有效果；avail oneself of 利用
+295|instant,四级|adj. 立即的；紧急的；速溶的，方便的|She prefers instant coffee on busy mornings. 忙碌的早晨，她更喜欢速溶咖啡。|instant noodles 方便面；instant coffee 速溶咖啡；an instant success 一举成功
+296|democratic,四级|adj. 民主的|The club makes decisions through a democratic process. 这家俱乐部通过民主程序做决定。|a democratic society 民主社会；democratic elections 民主选举；a democratic style 民主的作风
+297|barely,四级|adv. 仅仅，几乎不|She barely slept before the big exam. 大考前她几乎没怎么睡。|barely visible 几乎看不见；barely enough 勉强够用；barely make it 勉强赶上
+298|vanish,四级|v. 消失|The magician made the dove vanish into thin air. 魔术师让鸽子消失得无影无踪。|vanish into thin air 消失得无影无踪；vanish without a trace 不留痕迹地消失；vanish from sight 从视线中消失
+299|caregiver,四级|n. 照料者|Family caregivers often need rest and support. 家庭照护者常常需要休息和支持。|a family caregiver 家庭照护者；the primary caregiver 主要照料者；caregiver stress 照护者压力

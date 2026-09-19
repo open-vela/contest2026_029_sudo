@@ -1,0 +1,15 @@
+{
+  "_说明": "历史集（v4 存量格式，位于 /common 根目录）—— existing 模式：不消费源文件，直接读回既有 map_*/detail_* 行，可选采样后重建分片/block/meta。不带 sample = 全保留重建（用于验证 block 一致性）；要精简就加 \"sample\": {\"mode\":\"content-length\",\"target\":850,\"lengthOf\":[\"keywords\"]} 后按原 id 升序保时间线。year_index.txt/quotes.txt 等额外文件不受本工具管理，重编号后必须手工重建 year_index",
+  "name": "历史",
+  "mode": "existing",
+  "outDir": "src/common",
+  "mapLine": "{localId}|{year}|{regionIdx}|{title}",
+  "detailKeywords": "{keywords}",
+  "bucketText": "{title},{keywords}",
+  "mapChunkSize": 600,
+  "detailChunkSize": 150,
+  "bucketSize": 4096,
+  "regionList": "inherit",
+  "yearIndex": true,
+  "noMetaJson": true
+}

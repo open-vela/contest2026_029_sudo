@@ -1,0 +1,100 @@
+400|admission,四级|n. 承认；准许进(加)入；入场费|Admission to the museum is free on Sundays. 这家博物馆周日免费入场。|admission to 获准进入；an admission fee 入场费；by one's own admission 由某人自己承认
+401|additional,四级|adj. 额外的|The service charges no additional fees. 这项服务不收取任何额外费用。|additional costs 额外费用；additional information 补充信息；an additional charge 附加费
+402|prejudice,四级|n. 偏见 v. 使有偏见，使有成见|The report aims to remove prejudice against older workers. 这份报告旨在消除对高龄劳动者的偏见。|prejudice against 对……的偏见；deep-rooted prejudice 根深蒂固的偏见；without prejudice 不带偏见
+403|process,四级|n. 过程，进程；；工序；工艺流程 v. 处理|The visa process usually takes about two weeks. 签证流程通常需要两周左右。|in the process 在此过程中；a lengthy process 漫长的过程；process data 处理数据
+404|elegant,四级|adj. 优雅的|She wore an elegant black dress to the dinner. 她穿了一条优雅的黑裙子赴晚宴。|an elegant solution 巧妙的解决办法；an elegant design 优雅的设计；simple but elegant 简洁而雅致
+405|hospitable,四级|adj. 热情友好的|The villagers were extremely hospitable to the travelers. 村民们对旅客极为热情友好。|be hospitable to 对……热情；a hospitable climate 宜人的气候；a hospitable welcome 热情的接待
+406|refreshing,四级|adj. 恢复活力的|A cold shower feels refreshing on a hot day. 大热天冲个凉水澡让人神清气爽。|a refreshing change 令人耳目一新的变化；refreshing drinks 清爽的饮品；a refreshing breeze 凉爽的微风
+407|ensure,四级|v. 确保|Please ensure that all doors are locked before leaving. 离开前请确保所有门都已锁好。|ensure safety 确保安全；ensure that 确保；ensure success 确保成功
+408|frighten,四级|v. 使惊恐，使恐慌|Loud thunder frightened the little dog. 巨大的雷声吓坏了小狗。|frighten sb into doing sth 吓得某人做某事；be frightened of 害怕；easily frightened 容易受惊的
+409|civilized,四级|adj. 文明的|Queueing patiently is part of civilized behavior. 耐心排队是文明行为的一部分。|a civilized society 文明社会；civilized behavior 文明举止；a civilized discussion 理性的讨论
+410|approval,四级|n. 批准，认可；赞成，同意|The plan finally won the approval of the committee. 计划最终获得了委员会的批准。|win approval 获得批准；with the approval of 经……批准；nod in approval 点头表示赞许
+411|publicize,四级|v. 宣布|The charity publicized its work through short videos. 这家慈善机构通过短视频宣传自己的工作。|widely publicize 广泛宣传；publicize an event 宣传活动；heavily publicized 大肆宣传的
+412|resident,四级|n. 居民|Local residents protested against the new highway. 当地居民反对修建新高速公路。|a local resident 当地居民；permanent residents 永久居民；senior residents 年长居民
+413|considerate,四级|adj. 体贴的；考虑周到的|It was considerate of him to warm up the car for us. 他为我们提前热车，真是体贴。|be considerate of 体谅；a considerate gesture 体贴的举动；considerate towards 对……体贴
+414|twist,四级|v. 扭曲，使弯曲|The path twists up the mountainside. 小路蜿蜒着绕上山腰。|twist and turn 蜿蜒曲折；twist one's ankle 扭伤脚踝；twist the facts 歪曲事实
+415|citizen,四级|n. 市民，城镇居民；公民|Every citizen has the duty to obey the law. 每个公民都有守法的义务。|a responsible citizen 负责任的公民；senior citizens 老年人；a citizen of ……的公民
+416|stake,四级|n. 风险|Thousands of jobs are at stake if the factory closes. 如果工厂关闭，数千个工作岗位将岌岌可危。|at stake 危在旦夕；have a stake in 在……中有利害关系；raise the stakes 加大风险筹码
+417|keenly,四级|adv. 敏锐地|The young lawyer is keenly aware of every detail in the contract. 这位年轻律师对合同里的每个细节都极为敏锐。|keenly aware 敏锐地意识到；keenly felt 感受深切；watch keenly 密切关注
+418|superficial,四级|adj. 肤浅的|His understanding of the issue remains superficial. 他对这个问题的理解仍然肤浅。|a superficial understanding 肤浅的理解；superficial wounds 表皮伤；a superficial analysis 肤浅的分析
+419|flexibility,四级|n. 灵活性；适应性|Remote work gives employees greater flexibility. 远程办公让员工拥有更大的灵活性。|greater flexibility 更大的灵活性；flexibility in 在……方面的弹性；offer flexibility 提供灵活性
+420|favorable,四级|adj. 赞同的|The film received favorable reviews from most critics. 这部电影获得了大多数影评人的好评。|favorable conditions 有利条件；be favorable to 对……有利；a favorable impression 良好的印象
+421|competent,四级|adj. 胜任的，有能力的|She proved herself a competent manager within a year. 一年之内她就证明了自己是位称职的经理。|competent at/in 胜任；a highly competent 十分称职的；competent authorities 主管当局
+422|emotional,四级|adj. 情绪(上)的，情感(上)的；激起感情的； 敏感的；情绪激动的〔尤指哭泣〕|The movie's ending is deeply emotional. 这部电影的结尾非常催人泪下。|emotional support 情感支持；an emotional moment 动情的时刻；emotional intelligence 情商
+423|pioneer,四级|v. 开拓，开发|The lab pioneered new techniques in gene editing. 该实验室开创了基因编辑的新技术。|pioneer a technique 开创技术；a pioneer in ……领域的先驱；pioneering work 开创性工作
+424|sustain,四级|n. 维持|The soil here cannot sustain intensive farming. 这里的土壤经不起集约化耕作。|sustain growth 维持增长；sustain an injury 受伤；sustain life 维持生命
+425|gloomy,四级|adj. 阴沉的，沮丧的|The forecast for the weekend looks gloomy. 周末的天气看起来很阴沉。|a gloomy sky 阴沉的天空；feel gloomy 感到忧郁；a gloomy outlook 黯淡的前景
+426|convince,四级|v. 使相信|It took two hours to convince the customers of the product's value. 他们花了两个小时才让顾客相信产品的价值。|convince sb of sth 使某人相信某事；be convinced that 确信；try to convince 试图说服
+427|profitable,四级|adj. 有利可图的，有益的|The bakery turned out to be highly profitable. 这家面包店后来利润相当可观。|a profitable business 赚钱的生意；highly profitable 利润丰厚的；profitable investment 有利可图的投资
+428|routinely,四级|adv. 例行公事地|The machines are routinely checked every morning. 这些机器每天早晨例行检查。|routinely checked 例行检查；routinely used 常规使用；happen routinely 经常性地发生
+429|phenomenon,四级|n. 现象|The northern lights are a natural phenomenon worth seeing. 北极光是一种值得一看的自然现象。|a natural phenomenon 自然现象；a social phenomenon 社会现象；a rare phenomenon 罕见的现象
+430|variety,四级|n. 多样|The market sells a wide variety of fresh vegetables. 这个市场出售种类繁多的新鲜蔬菜。|a wide variety of 种类繁多的；a variety of 各种各样的；add variety 增加多样性
+431|gum,四级|n. 牙龈|Brushing too hard can damage your gums. 刷牙太用力会损伤牙龈。|healthy gums 健康的牙龈；bleeding gums 牙龈出血；chewing gum 口香糖
+432|criticism,四级|n. 批评|The proposal has drawn sharp criticism from experts. 该提案遭到专家的尖锐批评。|face criticism 面临批评；constructive criticism 建设性的批评；draw criticism 招致批评
+433|fatal,四级|adj. 致命的，攸关的|The driver's fatal mistake happened in the fog. 司机的致命失误发生在大雾中。|a fatal error 致命错误；a fatal accident 致命事故；prove fatal 造成死亡
+434|delightful,四级|adj. 高兴的|We spent a delightful evening by the lake. 我们在湖边度过了一个愉快的夜晚。|a delightful surprise 惊喜；a delightful child 讨人喜欢的孩子；utterly delightful 令人非常愉快的
+435|tedious,四级|adj. 单调沉闷的|Data entry is tedious but necessary work. 数据录入枯燥乏味，却必不可少。|a tedious task 枯燥的任务；tedious work 单调的工作；long and tedious 冗长乏味
+436|flexible,四级|adj. 灵活的|The company offers flexible working hours. 这家公司实行弹性工作时间。|flexible hours 弹性时间；a flexible schedule 灵活的日程；remain flexible 保持灵活
+437|considerably,四级|adv. 相当地，非常地|House prices in the city have risen considerably. 该市的房价已经大幅上涨。|considerably higher 高出许多；increase considerably 大幅增加；differ considerably 差别很大
+438|efficiently,四级|adj. 有效地|The new system lets staff process orders far more efficiently. 新系统让员工处理订单的效率大大提高。|work efficiently 高效工作；run efficiently 高效运转；use resources efficiently 有效利用资源
+439|appearance,四级|n. 外表, 外观；出现|You should never judge a person by appearance. 绝不可以貌取人。|judge by appearance 以貌取人；make an appearance 露面；a neat appearance 整洁的外表
+440|album,四级|n. 粘贴簿，集邮簿，册|She keeps old family photos in a leather album. 她把家里的老照片收在一本皮质相册里。|a photo album 相册；release an album 发行专辑；a stamp album 集邮册
+441|optimistic,四级|adj. 乐观的|Doctors are optimistic about her full recovery. 医生们对她完全康复持乐观态度。|be optimistic about 对……乐观；cautiously optimistic 谨慎乐观；an optimistic view 乐观的看法
+442|clue,四级|n. 线索|Police found a vital clue near the scene. 警方在现场附近发现了一条重要线索。|find a clue 找到线索；a vital clue 关键线索；haven't a clue 一无所知
+443|grief,四级|n. 悲伤|Time eased the grief of losing her mother. 时间减轻了她丧母之痛。|deep grief 深切的悲痛；in grief 悲痛之中；come to grief 遭受失败
+444|synthetic,四级|adj. 合成的，人造的|The jacket is made of synthetic material that keeps out rain. 这件夹克由防雨的合成材料制成。|synthetic materials 合成材料；synthetic fibers 合成纤维；synthetic drugs 合成药物
+445|resistance,四级|n. 抵御，抵抗；抵抗力|Regular exercise builds up the body's resistance to illness. 经常锻炼可以增强身体对疾病的抵抗力。|resistance to 对……的抵抗力；drug resistance 耐药性；meet resistance 遭到抵制
+446|install,四级|v. 安装|The workers will install a new elevator next week. 工人们下周将安装一部新电梯。|install software 安装软件；install a system 安装系统；newly installed 新安装的
+447|pledge,四级|n. 保证，誓言|The government made a pledge to cut taxes. 政府作出了减税的承诺。|make a pledge 作出承诺；keep one's pledge 信守誓言；a pledge to do sth 做某事的保证
+448|unique,四级|adj. 独特的，唯一的|Each snowflake has a unique shape. 每片雪花都有独一无二的形状。|unique to 为……所独有；a unique opportunity 绝无仅有的机会；totally unique 独一无二
+449|stock,四级|n. 股票；库存|The shop keeps a large stock of winter coats. 这家店备有大量冬季外套的库存。|stock market 股市；in stock 有现货；out of stock 缺货
+450|disadvantage,四级|n. 不利情况，缺点|The main disadvantage of the plan is its high cost. 这个方案的主要缺点是成本太高。|at a disadvantage 处于不利地位；the main disadvantage 主要缺点；put sb at a disadvantage 使某人处于劣势
+451|compensate,四级|v. 弥补，补偿|Nothing can compensate for the loss of a child. 什么都无法弥补失去孩子的痛苦。|compensate for 弥补；compensate sb for sth 因某事补偿某人；fairly compensated 得到公平补偿
+452|rescue,四级|v. 营救，援救|A fisherman rescued the boy from the icy river. 一位渔民把男孩从冰冷的河里救了上来。|rescue sb from 把某人从……救出；a rescue team 救援队；come to the rescue 前来救援
+453|monitor,四级|v. 监控；监听|Doctors monitored the patient's heart rate all night. 医生整夜监测病人的心率。|monitor progress 监测进展；closely monitored 受到严密监控；monitor the situation 密切关注局势
+454|refusal,四级|n. 拒绝|Her flat refusal surprised everyone at the meeting. 她断然拒绝让与会所有人都感到意外。|a flat refusal 断然拒绝；meet with a refusal 遭到拒绝；refusal to do sth 拒绝做某事
+455|exile,四级|n. 流放，放逐|The poet spent ten years in exile abroad. 这位诗人在国外流亡了十年。|live in exile 过流放生活；send sb into exile 将某人流放；a long exile 漫长的流亡
+456|encourage,四级|v. 鼓励|The teacher encouraged the shy girl to speak up. 老师鼓励那个害羞的女孩大胆发言。|encourage sb to do sth 鼓励某人做某事；be encouraged by 受到……的鼓舞；strongly encourage 大力鼓励
+457|concept,四级|n. 观点，观念|Young children often struggle with the concept of time. 幼儿往往难以理解时间的概念。|grasp a concept 理解概念；a basic concept 基本概念；the concept of ……的概念
+458|render,四级|v. 给予|The storm rendered the bridge completely useless. 暴风雨使这座桥完全无法使用。|render help 给予帮助；render a service 提供服务；render sth useless 使某物失效
+459|trait,四级|n. 性格|Patience is a trait shared by all great teachers. 耐心是所有优秀教师共有的品质。|a common trait 共同特征；personality traits 性格特征；a dominant trait 显性特征
+460|feature,四级|n. 特点|The phone's best feature is its long battery life. 这款手机最大的亮点是超长续航。|a key feature 主要特点；a standard feature 标准配置；feature prominently 十分突出
+461|reframe,四级|v. 再构造(图画、照片等)|The teacher reframed the student's failure as a chance to learn. 老师把学生的失败重新解读为学习的机会。|reframe the problem 重新界定问题；reframe one's thinking 转换思维
+462|identify,四级|v. 认出，识别；视为|Can you identify the man in this photo? 你能认出照片里的这个男人吗？|identify with 认同；identify the cause 查明原因；easily identified 容易辨认
+463|impose,四级|v. 强加|The government imposed a tax on sugary drinks. 政府对含糖饮料征收了一项税。|impose a ban 实施禁令；impose … on … 把……强加于；impose restrictions 施加限制
+464|snack,四级|n. 零食，小吃|She grabbed a quick snack between meetings. 她在会议间隙匆忙吃了点零食。|a quick snack 快餐小食；snack bars 小吃店；healthy snacks 健康零食
+465|require,四级|v. 要求，命令|The job requires at least three years of experience. 这份工作要求至少三年经验。|require sb to do sth 要求某人做某事；be required to 被要求；as required 按要求
+466|donation,四级|n. 捐赠|The library received a generous donation of ten thousand books. 图书馆收到了一万册图书的慷慨捐赠。|make a donation 捐款；a generous donation 慷慨的捐赠；accept donations 接受捐赠
+467|equal,四级|adj. 相等的，平等的|All citizens are equal before the law. 法律面前人人平等。|equal to 等于，能胜任；on equal terms 在平等条件下；equal rights 平等权利
+468|rare,四级|adj. 罕有的，少见的|It is rare to see snow in this southern city. 在这座南方城市，下雪是难得一见的。|a rare species 稀有物种；rarely seen 很少见；a rare chance 难得的机会
+469|specify,四级|v. 指定，具体说明|The contract clearly specifies the delivery date. 合同明确规定了交货日期。|clearly specify 明确规定；specify the requirements 具体说明要求；as specified 按规定
+470|constant,四级|adj. 不断的，持续的|The machine makes a constant humming noise. 这台机器持续发出嗡嗡声。|a constant temperature 恒温；constant pressure 持续的压力；constantly changing 不断变化的
+471|standardize,四级|v. 使标准化|The school standardized its testing procedure last year. 学校去年统一了考试流程。|standardize procedures 统一流程；standardized tests 标准化考试；standardized products 标准化产品
+472|consume,四级|v. 消费，消耗|The old heater consumes too much electricity. 这台旧取暖器太耗电了。|consume energy 消耗能源；time-consuming 耗时的；consume resources 消耗资源
+473|status,四级|n. 地位|The family's social status changed after the father's business succeeded. 父亲生意成功后，这个家庭的社会地位随之改变。|social status 社会地位；marital status 婚姻状况；high status 高地位
+474|complement,四级|v. 补充|The wine perfectly complements the flavor of the steak. 这款葡萄酒与牛排的风味相得益彰。|complement each other 相辅相成；perfectly complement 相得益彰；a complement to ……的补充
+475|lengthy,四级|adj. 长的，漫长的|The two sides held lengthy talks on trade. 双方就贸易问题举行了漫长的谈判。|a lengthy process 漫长的过程；lengthy discussions 冗长的讨论；a lengthy report 长篇报告
+476|embarrassed,四级|adj. 尴尬的；窘迫的|He was embarrassed to admit that he had forgotten her name. 承认忘了她的名字，他感到很尴尬。|feel embarrassed 感到尴尬；be embarrassed about 对……感到难为情；embarrassed silence 尴尬的沉默
+477|rational,四级|adj. 神智清楚的|Try to make a rational decision instead of an emotional one. 尽量理性决策，不要感情用事。|a rational choice 理性的选择；rational thinking 理性思考；perfectly rational 完全合理的
+478|distant,四级|adj. 遥远的|The village is distant from any major city. 这个村子远离任何大城市。|a distant relative 远亲；in the distant past 在遥远的过去；distant from 远离
+479|homemaker,四级|n. 主妇|As a homemaker, she manages cooking, cleaning and budgets. 作为家庭主妇，她一手操持做饭、清洁和家用开支。|a full-time homemaker 全职主妇；homemaker duties 家务职责
+480|exception,四级|n. 例外|Everyone must attend the training without exception. 所有人必须参加培训，无一例外。|without exception 无一例外；make an exception 破例；an exception to ……的例外
+481|sustainable,四级|adj. 可持续的|The city is investing in sustainable energy sources. 这座城市正在投资可持续能源。|sustainable development 可持续发展；sustainable growth 可持续增长；environmentally sustainable 环境上可持续的
+482|trigger,四级|v. 引发，引起|The strange smell triggered memories of her childhood. 奇怪的气味勾起了她对童年的回忆。|trigger memories 勾起回忆；trigger an alarm 触发警报；trigger a response 引发反应
+483|intend,四级|v. 打算|I intend to finish the project before the holiday. 我打算在放假前完成这个项目。|intend to do sth 打算做某事；be intended for 专为……设计；had intended 原本打算
+484|spread,四级|v. 扩散；传播|The news spread quickly through the small town. 消息很快传遍了小镇。|spread quickly 迅速传播；spread the word 传播消息；spread out 铺开，散开
+485|estimate,四级|v. 估计|Experts estimate that the bridge will cost two billion yuan. 专家估计这座桥将耗资二十亿元。|estimate the cost 估算成本；a rough estimate 粗略估计；estimate at/about 估计为
+486|technique,四级|n. 技巧，手艺；技术，技能|The chef demonstrated a special cutting technique. 大厨演示了一种特别的刀工技法。|a basic technique 基本技巧；advanced techniques 先进技术；master a technique 掌握技术
+487|include,四级|v. 包含|The price includes breakfast and airport transfer. 价格含早餐和机场接送。|include in 包含在……中；be included 含在内；including 包括（介词用法）
+488|academic,四级|adj. 学术的|Her academic performance improved sharply this semester. 这学期她的学业成绩显著提高。|academic performance 学业表现；academic research 学术研究；an academic year 学年
+489|distinctive,四级|adj. 独特的，与众不同的|The singer's distinctive voice is easy to recognize. 这位歌手嗓音独特，很容易辨认。|a distinctive style 独特的风格；a distinctive voice 独特的嗓音；distinctive features 鲜明特征
+490|consist,四级|v. 由……组成|The committee consists of ten experienced teachers. 该委员会由十位经验丰富的教师组成。|consist of 由……组成；consist in 在于；consistently high 始终很高（同根词联想）
+491|bid,四级|n. 出价，投标 v. 出价，投标|Three companies submitted bids for the construction project. 三家公司为这项建筑工程提交了投标书。|submit a bid 提交投标；bid for 竞标；a successful bid 成功的竞标
+492|benefit,四级|v. 有益于，有助于|Millions of people benefited from the new health policy. 数百万人从新的医疗政策中受益。|benefit from 从……中受益；mutual benefit 互利；health benefits 健康益处
+493|downsize,四级|v. 裁员|The factory downsized its workforce by a third. 工厂将员工规模裁减了三分之一。|downsize the workforce 裁减员工；a downsized company 裁员后的公司
+494|avoid,四级|v. 避免|Drivers should avoid using phones while driving. 驾驶员应避免开车时使用手机。|avoid doing sth 避免做某事；avoid conflict 避免冲突；narrowly avoid 险些逃过
+495|gender,四级|n. 性别|The company promises equal pay regardless of gender. 公司承诺不分性别同工同酬。|gender equality 性别平等；gender differences 性别差异；gender roles 性别角色
+496|interracial,四级|adj. 种族间的|The city has seen a steady rise in interracial marriages. 这座城市的跨种族婚姻稳步增多。|an interracial marriage 跨种族婚姻；interracial dialogue 种族间对话
+497|complaint,四级|n. 抱怨; 投诉|The hotel received several complaints about the noise. 这家酒店收到数起关于噪音的投诉。|make a complaint 投诉；a common complaint 常见的抱怨；complaints about 对……的投诉
+498|pattern,四级|n. 模式|Experts studied the sleeping patterns of newborn babies. 专家研究了新生儿的睡眠模式。|a behavior pattern 行为模式；follow a pattern 遵循某种模式；a regular pattern 规律的模式
+499|mood,四级|n. 心情|She is in a good mood after passing the exam. 考试通过后，她心情很好。|in a good mood 心情好；change one's mood 改变心情；reflect one's mood 反映情绪

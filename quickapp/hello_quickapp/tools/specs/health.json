@@ -1,0 +1,43 @@
+{
+  "_说明": "健康集 —— 源=资料提取 5 列竖线行（标题|关键词|原因背景|影响做法|分类），按内容长度取前 1000 条。换行编码与竖线转义由工具自动处理。改完本文件或源数据后：node tools/split_dataset.js health，并递增 SearchEngine.js 的 cache.version",
+  "name": "健康",
+  "mode": "fresh",
+  "parser": { "type": "pipe5", "categoryDefault": "健康" },
+  "sourcesBase": "../资料提取",
+  "sources": [
+    { "path": "jiankang.txt" },
+    { "path": "hufu.txt" },
+    { "path": "xinli.txt" },
+    { "path": "jijiu.txt" },
+    { "path": "yundong.txt" }
+  ],
+  "sample": { "mode": "content-length", "target": 1000, "lengthOf": ["title", "keywords", "cause", "impact"] },
+  "mapLine": "{localId}|{year}|{regionIdx}|{title}",
+  "detailKeywords": "{keywords}",
+  "detailFields": ["cause", "impact"],
+  "bucketText": "{title},{keywords},{category}",
+  "regionField": "category",
+  "year": 0,
+  "mapChunkSize": 200,
+  "detailChunkSize": 100,
+  "bucketSize": 2048,
+  "regionList": "sorted-set",
+  "metaVersion": "health-ds-1",
+  "outDir": "src/common/datasets/health",
+  "metaJson": {
+    "datasetId": 3,
+    "name": "健康",
+    "version": 1,
+    "category": "健康",
+    "author": "sudo",
+    "totalCount": 0,
+    "fields": { "map": ["title", "year", "category"], "keyword": "keywords", "detail": ["原因/背景", "影响/做法"], "filter": ["category"] },
+    "mapChunkSize": 200,
+    "detailChunkSize": 100,
+    "blockCount": 1,
+    "bucketSize": 2048,
+    "yearIndex": false,
+    "icon": "icon.png"
+  },
+  "icon": { "char": "健", "bg": "#8B5CF6", "fg": "#FFFFFF" }
+}

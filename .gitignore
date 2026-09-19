@@ -1,0 +1,21 @@
+# 依赖与构建产物
+node_modules/
+.temp_velaPro/
+build/
+
+# 本地配置与凭据
+.env
+*.local
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# 日志与临时文件（参赛日志 logs/ 下的 .jsonl 需提交，此处只忽略运行期日志）
+*.log
+_vela_*.log
+_vela_*.err
+.cc_*.txt

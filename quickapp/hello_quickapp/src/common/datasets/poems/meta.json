@@ -1,0 +1,30 @@
+{
+  "datasetId": 1,
+  "name": "诗词集",
+  "version": 1,
+  "category": "文化",
+  "author": "sudo",
+  "totalCount": 800,
+  "fields": {
+    "map": [
+      "title",
+      "year",
+      "dynasty"
+    ],
+    "keyword": "keywords",
+    "detail": [
+      "source",
+      "content",
+      "translation"
+    ],
+    "filter": [
+      "dynasty"
+    ]
+  },
+  "mapChunkSize": 200,
+  "detailChunkSize": 10,
+  "blockCount": 1,
+  "bucketSize": 2048,
+  "yearIndex": false,
+  "icon": "icon.png"
+}

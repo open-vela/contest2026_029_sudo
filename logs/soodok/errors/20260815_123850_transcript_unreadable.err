@@ -1,0 +1,12 @@
+{
+  "ts": "2026-08-15T04:38:50.870Z",
+  "kind": "transcript_unreadable",
+  "tool": "claude-code",
+  "team_id": "contest2026_029_sudo",
+  "version": "1.3.0",
+  "context": {
+    "tool": "claude-code",
+    "transcript_path": "C:\\Users\\Qt\\.claude\\projects\\e--vela-Project-velaPro\\b2293c1a-a97a-4585-adb1-cbb38ed635f9.jsonl"
+  },
+  "message": "cannot read or parse transcript at C:\\Users\\Qt\\.claude\\projects\\e--vela-Project-velaPro\\b2293c1a-a97a-4585-adb1-cbb38ed635f9.jsonl"
+}

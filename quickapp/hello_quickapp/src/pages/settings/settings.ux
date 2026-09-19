@@ -1,0 +1,129 @@
+<template>
+  <div class="page-container">
+    <div class="page" @swipe="onSwipe">
+      <scroll class="scroll-list" scroll-y="true">
+        <div class="top-spacer"></div>
+        <div class="header"><text class="header-title">设置</text></div>
+
+        <!-- 蓝牙接收 -->
+        <div class="setting-card" @click="goBluetooth">
+          <text class="card-title">蓝牙接收</text>
+          <text class="card-status">{{bluetoothText}}</text>
+        </div>
+
+        <!-- 加载数据 -->
+        <div class="setting-card" @click="goLoad">
+          <text class="card-title">加载数据</text>
+          <text class="card-status">重新加载本地数据</text>
+        </div>
+
+        <!-- 关于（隐藏入口：连续点四下 = 清除所有资料集缓存） -->
+        <div class="setting-card setting-card-row" @click="onAboutTap">
+          <text class="card-title">关于</text>
+          <text class="card-version">{{appVersionText}}</text>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </scroll>
+    </div>
+  </div>
+</template>
+
+<style>
+  .page-container { width: 100%; height: 100%; background-color: #000000; }
+  .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
+  .scroll-list { width: 100%; height: 100%; flex-direction: column; align-items: center; }
+  .top-spacer { width: 100%; height: 24px; flex-shrink: 0; }
+  .bottom-spacer { width: 100%; height: 60px; flex-shrink: 0; }
+  .header { width: 90%; height: 70px; justify-content: center; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
+  .header-title { font-size: 28px; font-weight: bold; color: #FFFFFF; text-align: center; }
+  .setting-card { width: 86%; background-color: #1C1C1E; border-radius: 18px; padding: 14px 22px; margin-bottom: 12px; flex-shrink: 0; flex-direction: column; }
+  .setting-card-row { flex-direction: row; justify-content: space-between; align-items: center; height: 72px; padding: 0 22px; }
+  .card-title { font-size: 24px; color: #FFFFFF; font-weight: 600; }
+  .card-status { font-size: 16px; color: #757575; margin-top: 4px; }
+  .card-version { font-size: 16px; color: #757575; }
+
+    @media (shape: pill-shaped) {
+    .top-spacer { height: 30px; }
+    .header { height: 100px; margin-bottom: 20px; }
+    .header-title { font-size: 42px; }
+    .setting-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
+    .setting-card-row { height: 160px; padding: 0 28px; }
+    .card-title { font-size: 36px; }
+    .card-status { font-size: 28px; }
+    .card-version { font-size: 28px; }
+  }
+</style>
+
+<script>
+  import router from '@system.router'
+  import storage from '@system.storage'
+  import prompt from '@system.prompt'
+  import { clearAllCaches } from '../../SearchEngine/DatasetManager.js'
+
+  export default {
+    private: {
+      bluetoothText: '已关闭',
+      appVersionText: 'v1.0.0'
+    },
+
+    onInit() {
+      this.appVersionText = 'v' + (global.appVersionName || '1.0.0')
+      this.refreshBluetooth()
+    },
+
+    onShow() {
+      this.refreshBluetooth()
+    },
+
+    refreshBluetooth() {
+      storage.get({
+        key: 'bluetooth_receive',
+        // v1.16.124 审查必修#2：默认值语义统一为「无存储值 = 开启」（原 d==='true' 会与
+        // app.ux/BtTransfer 的实际行为相反：全新安装实际在接收，UI 却显示已关闭）
+        success: (d) => { this.bluetoothText = d !== 'false' ? '已开启' : '已关闭' },
+        fail: () => { this.bluetoothText = '已开启' }
+      })
+    },
+
+    goBluetooth() {
+      router.push({ uri: '/pages/confirm' })
+    },
+
+    goLoad() {
+      router.push({ uri: '/pages/loading?source=settings' })
+    },
+
+    // 隐藏功能：连续点四下「关于」= 清除所有资料集的搜索缓存
+    // （数据文件更新后缓存不会自动失效，这里提供手动入口；对应 cache.version 递增的那套机制）
+    onAboutTap() {
+      var self = this
+      this.aboutTapCount = (this.aboutTapCount || 0) + 1
+      if (this.aboutTapTimer) { clearTimeout(this.aboutTapTimer); this.aboutTapTimer = null }
+      if (this.aboutTapCount >= 4) {
+        this.aboutTapCount = 0
+        this.doClearCache()
+        return
+      }
+      // 1.5s 内没点满四下则计数归零（避免误触累积）
+      this.aboutTapTimer = setTimeout(function() {
+        self.aboutTapCount = 0
+        self.aboutTapTimer = null
+      }, 1500)
+    },
+
+    async doClearCache() {
+      prompt.showToast({ message: '正在清除缓存…', duration: 1000 })
+      try {
+        var r = await clearAllCaches()
+        prompt.showToast({ message: '缓存已清除（' + r.cleared + '/' + r.datasets + ' 个集，' + r.keys + ' 个键位）', duration: 2800 })
+      } catch (e) {
+        prompt.showToast({ message: '清除失败：' + (e && e.message ? e.message : e), duration: 2500 })
+      }
+    },
+
+    onSwipe(eve) { if (eve.direction === 'right') { router.back() } },
+
+    goBack() { router.back() }
+  }
+</script>

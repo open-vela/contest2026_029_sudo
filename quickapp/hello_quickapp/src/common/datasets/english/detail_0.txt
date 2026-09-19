@@ -1,0 +1,100 @@
+0|access,四级|v. 获取 n. 接近，入口|She accessed the files remotely. 她远程访问了这些文件。|access to 接触，使用权；have access to 有权使用；gain access to 获得进入的机会
+1|project,四级|n. 工程；课题、作业|The bridge project took three years to complete. 这座桥的工程花了三年才完成。|carry out a project 实施项目；a research project 研究课题；project management 项目管理
+2|intention,四级|n. 打算，意图|She has no intention of changing her job. 她没有换工作的打算。|with the intention of 带着……的意图；announce one's intention 表明意图；good intentions 好意
+3|equivalence,四级|n. 等值，相等|There is no exact equivalence between the two systems. 这两种制度之间没有完全的等同。|equivalence between ……之间的等值；the equivalence of ……的等同；near equivalence 大致相当
+4|negotiate,四级|v. 谈判，协商，交涉|The union negotiated a better pay deal with management. 工会与管理层谈成了更好的薪酬协议。|negotiate with sb 与某人谈判；negotiate a deal 谈成一笔交易；negotiate a contract 谈判合同
+5|disappointing,四级|adj. 令人失望的|The exam results were rather disappointing. 考试成绩相当令人失望。|a disappointing result 令人失望的结果；disappointing news 令人失望的消息；find sth disappointing 觉得某事令人失望
+6|alternative,四级|n. 代替品|We need to find an alternative to plastic packaging. 我们需要找到塑料包装的替代品。|an alternative to ……的替代品；have no alternative 别无选择；alternative energy 替代能源
+7|generous,四级|adj. 慷慨的|He is generous with both his time and his money. 他在时间和金钱上都很慷慨。|be generous with 对……慷慨；a generous donation 慷慨的捐赠；generous support 慷慨的支持
+8|biological,四级|adj. 生物的|Scientists studied the biological effects of the new drug. 科学家研究了这种新药对生物体的影响。|biological research 生物研究；biological clock 生物钟；biological processes 生理过程
+9|strategy,四级|n. 策略，战略|The company developed a new marketing strategy. 公司制定了一套新的营销策略。|marketing strategy 营销策略；develop a strategy 制定策略；a strategy for doing sth 做某事的策略
+10|paradox,四级|n. 悖论；自相矛盾|It is a paradox that the busiest people often find the most time. 最忙的人往往最能挤出时间，这真是个悖论。|the paradox of ……的矛盾之处；a curious paradox 奇特的悖论；a living paradox 活生生的矛盾体
+11|primary,四级|adj. 主要的，基本的|Safety is our primary concern. 安全是我们的头等大事。|primary school 小学；primary concern 首要关注；of primary importance 至关重要
+12|standpoint,四级|n. 立场|From a practical standpoint, the plan is too costly. 从实际立场来看，这个计划代价太高。|from the standpoint of 从……的立场来看；a theoretical standpoint 理论立场；from my standpoint 在我看来
+13|grab,四级|v. 抢先，抢占，抢夺|She grabbed her bag and rushed out of the office. 她抓起包就冲出了办公室。|grab the chance 抓住机会；grab a bite 随便吃点东西；grab one's attention 抓住某人的注意力
+14|crucial,四级|adj. 至关重要的|Good sleep plays a crucial role in staying healthy. 良好的睡眠对保持健康起着至关重要的作用。|play a crucial role 起关键作用；crucial to/for 对……至关重要；a crucial moment 关键时刻
+15|flaw,四级|n. 缺点；错误|There is a fundamental flaw in your argument. 你的论证有一个根本性的缺陷。|a fatal flaw 致命缺陷；a flaw in ……中的缺陷；character flaw 性格缺陷
+16|depressed,四级|adj. 萧条的；沮丧的|He felt depressed after losing his job. 失业后他感到很沮丧。|feel depressed 感到沮丧；become depressed 变得消沉；a depressed market 萧条的市场
+17|obstacle,四级|n. 阻碍|Lack of money is the main obstacle to the plan. 资金短缺是该计划的主要障碍。|an obstacle to ……的障碍；overcome an obstacle 克服障碍；remove obstacles 清除障碍
+18|automatic,四级|adj. 自动的|The building has an automatic door-locking system. 这栋楼装有自动门锁系统。|automatic doors 自动门；an automatic response 下意识的反应；be automatic to sb 对某人而言是自然而然的
+19|passionate,四级|adj. 热情的|She is passionate about environmental protection. 她对环境保护充满热情。|be passionate about 对……充满热情；a passionate speech 充满激情的演讲；passionate support 热情的支持
+20|gambling,四级|n. 赌博|He lost all his savings through gambling. 他因赌博输光了所有积蓄。|gambling addiction 赌瘾；online gambling 网络赌博；give up gambling 戒赌
+21|logic,四级|n. 逻辑|There is no logic in what she says. 她说的话毫无逻辑。|the logic behind ……背后的逻辑；follow the logic 理解其中的逻辑；faulty logic 有缺陷的逻辑
+22|theory,四级|n. 理论|His theory was later proved wrong by experiments. 他的理论后来被实验证明是错误的。|in theory 在理论上；put theory into practice 把理论付诸实践；a theory about 关于……的理论
+23|download,四级|v. 下载|You can download the app for free. 你可以免费下载这个应用。|download an app 下载应用；download music 下载音乐；download from the Internet 从网上下载
+24|signal,四级|n. 信号 v. 发信号，打信号；示意|A red light is a signal to stop. 红灯是停止的信号。|a signal to do sth 做某事的信号；send a signal 发出信号；signal to sb 向某人示意
+25|authoritative,四级|adj. 权威的|She cited an authoritative report on climate change. 她引用了一份关于气候变化的权威报告。|an authoritative source 权威来源；an authoritative voice 权威的声音；authoritative information 权威信息
+26|smooth,四级|adj. 光滑的|The surface of the table is smooth and shiny. 桌面光滑而有光泽。|a smooth surface 光滑的表面；run smoothly 进展顺利；a smooth transition 平稳过渡
+27|institution,四级|n. 社会公共机构；制度；设立，制定|Universities are important institutions of higher learning. 大学是重要的高等教育机构。|a financial institution 金融机构；an educational institution 教育机构；the institution of marriage 婚姻制度
+28|vehicle,四级|n. 车辆|The vehicle was traveling at high speed. 那辆车当时正高速行驶。|a motor vehicle 机动车；a vehicle for ……的载体；heavy vehicles 重型车辆
+29|plague,四级|v. 使困扰|Financial problems plagued the company for years. 财务问题困扰了这家公司多年。|be plagued by 被……困扰；be plagued with 深受……之苦；plague sb for years 多年困扰某人
+30|psychological,四级|adj. 心理上的|Lack of sleep can cause psychological problems. 睡眠不足会引发心理问题。|psychological pressure 心理压力；psychological factors 心理因素；psychological counseling 心理咨询
+31|shade,四级|n. 阴凉处|They sat in the shade of a large tree. 他们坐在一棵大树的树荫下。|in the shade 在阴凉处；a shade of blue 一抹蓝色；put sb in the shade 使某人相形见绌
+32|persistent,四级|adj. 持续的；坚持的|She made persistent efforts to improve her English. 她为提高英语做出了持续的努力。|persistent efforts 不懈的努力；a persistent cough 久咳不愈；persistent problems 持续存在的问题
+33|voluntary,四级|adj. 自愿的，主动的|She does voluntary work at the local hospital. 她在当地医院做志愿工作。|voluntary work 志愿工作；on a voluntary basis 自愿地；voluntary organizations 志愿组织
+34|tolerance,四级|n. 宽容，容忍|The school promotes tolerance among students. 这所学校提倡学生之间互相宽容。|tolerance for 对……的容忍；zero tolerance 零容忍；show tolerance 表现出宽容
+35|senior,四级|n. 老年人|The discount is available to seniors over sixty. 六十岁以上的老人可以享受折扣。|senior citizens 老年人；a senior position 高级职位；senior high school 高中
+36|individual,四级|n. 个人|Each individual has the right to express an opinion. 每个人都有表达意见的权利。|each individual 每个人；individual rights 个人权利；treat sb as an individual 把某人当作独立的个体
+37|contemporary,四级|adj. 当代的，现代的|The gallery exhibits contemporary art from Asia. 美术馆展出来自亚洲的当代艺术。|contemporary art 当代艺术；contemporary society 当代社会；contemporary issues 当代问题
+38|opposite,四级|adj. 相反的|Hot is the opposite of cold. 热是冷的反面。|the opposite of ……的反面；in the opposite direction 朝相反方向；opposite views 相反的观点
+39|specialize,四级|v. 专业从事|The restaurant specializes in Sichuan dishes. 这家餐厅专营川菜。|specialize in 专门从事，专攻；a specialized field 专门领域；specialized knowledge 专业知识
+40|content,四级|n. 内容|The content of the course is updated every year. 课程内容每年都会更新。|the content of ……的内容；content management 内容管理；a table of contents 目录
+41|philosopher,四级|n. 哲学家|Confucius was a great Chinese philosopher. 孔子是中国伟大的哲学家。|an ancient philosopher 古代哲学家；a moral philosopher 伦理学家；a political philosopher 政治哲学家
+42|unrest,四级|n. 不安定，动荡|Political unrest forced many families to flee the country. 政治动荡迫使许多家庭逃离这个国家。|social unrest 社会动荡；political unrest 政治动荡；cause unrest 引发动荡
+43|startle,四级|v. 吃惊|The sudden noise startled the sleeping baby. 突然的响声惊醒了熟睡的婴儿。|be startled by 被……吓了一跳；startle sb 吓到某人；look startled 显得很吃惊
+44|emission,四级|n. 排放，辐射|The new law limits emissions from factories. 新法律限制了工厂的排放。|carbon emissions 碳排放；reduce emissions 减少排放；emission standards 排放标准
+45|overweight,四级|adj. 超重的|Doctors warn that more children are becoming overweight. 医生警告说，超重的儿童越来越多。|be overweight 超重；slightly overweight 略微超重；overweight children 超重儿童
+46|occupation,四级|n. 职业，工作|Please state your name and occupation on the form. 请在表格上写明姓名和职业。|state one's occupation 写明职业；a full-time occupation 全职工作；take up the occupation of 从事……职业
+47|mainstream,四级|n. 主流|Yoga has moved into the mainstream of fitness culture. 瑜伽已进入健身文化的主流。|mainstream culture 主流文化；go mainstream 成为潮流；the mainstream media 主流媒体
+48|scholarship,四级|n. 奖学金|She won a scholarship to study abroad. 她获得了出国留学的奖学金。|win a scholarship 获得奖学金；apply for a scholarship 申请奖学金；a full scholarship 全额奖学金
+49|contract,四级|n. 合同|They signed a two-year contract with the supplier. 他们与供应商签订了为期两年的合同。|sign a contract 签订合同；break a contract 违约；a labor contract 劳动合同
+50|cheek,四级|n. 脸颊|A tear rolled down her cheek. 一滴泪水从她脸颊滑落。|on one's cheek 在脸颊上；kiss sb on the cheek 吻某人的脸颊；rosy cheeks 红润的脸颊
+51|interdependence,四级|n. 相互依靠|The two economies show growing interdependence. 这两个经济体表现出日益增强的相互依存。|economic interdependence 经济上的相互依存；mutual interdependence 相互依存；growing interdependence 日益增强的相互依赖
+52|import,四级|n. 进口 v. 进口|The country relies on the import of foreign oil. 这个国家依赖石油进口。|import from 从……进口；import duty 进口税；import and export 进出口
+53|fiction,四级|n. 小说，虚构的文学作品|She enjoys reading science fiction in her spare time. 她闲暇时喜欢读科幻小说。|science fiction 科幻小说；a work of fiction 一部虚构作品；detective fiction 侦探小说
+54|upbringing,四级|n. 养育，培养，教养|His strict upbringing shaped his character. 严格的家教塑造了他的性格。|a strict upbringing 严格的家教；one's religious upbringing 宗教熏陶；have a good upbringing 有良好的教养
+55|preserve,四级|v. 保护|We should preserve these old buildings for future generations. 我们应该为子孙后代保护这些古老建筑。|preserve the environment 保护环境；preserve traditions 保护传统；well preserved 保存完好的
+56|vitally,四级|adv. 极其重要地|This decision is vitally important to the company. 这个决定对公司极其重要。|vitally important 极其重要；vitally necessary 十分必要
+57|masculine,四级|adj. 男性的|Traditional views often link engineering with masculine strength. 传统观念常把工程学与男性的力量联系在一起。|masculine traits 男性特质；a masculine voice 粗沉的嗓音；masculine images 男性形象
+58|advocate,四级|v. 倡导 n. 提倡者，拥护者，鼓吹者|Many experts advocate a balanced diet for children. 许多专家提倡儿童均衡饮食。|advocate doing sth 提倡做某事；a strong advocate of ……的坚定拥护者；advocate change 倡导变革
+59|dust,四级|n. 灰尘|The furniture was covered with a thick layer of dust. 家具上覆盖着厚厚的一层灰尘。|a layer of dust 一层灰尘；collect dust 积满灰尘；wipe away the dust 擦去灰尘
+60|track,四级|n. 足迹 v. 追踪，〔循着踪迹、气味等〕找寻|The hunters followed the tracks left in the snow. 猎人循着雪地上留下的足迹前行。|follow the tracks 循着足迹；keep track of 掌握……的动态；lose track of 失去……的线索
+61|confidence,四级|n. 信心|She answered the interview questions with confidence. 她满怀信心地回答了面试问题。|with confidence 满怀信心；lose confidence 失去信心；have confidence in 对……有信心
+62|riotous,四级|adj. 狂暴的|The riotous crowd refused to leave the square. 狂暴的人群拒绝离开广场。|riotous behavior 狂暴的行为；a riotous crowd 狂暴的人群；riotous scenes 骚乱的场面
+63|sophisticated,四级|adj. 复杂的；世故的|The lab is equipped with sophisticated instruments. 实验室配备了精密的仪器。|sophisticated technology 尖端技术；a sophisticated argument 缜密的论证；sophisticated tastes 高雅的品味
+64|similar,四级|adj. 相似的|Our opinions on education are quite similar. 我们在教育问题上的观点很相似。|be similar to 与……相似；in a similar way 以类似的方式；similar interests 相似的兴趣
+65|transform,四级|v. 改变|The Internet has transformed the way we communicate. 互联网改变了我们交流的方式。|transform … into … 把……变成……；completely transform 彻底改变；transform one's life 改变某人的生活
+66|approve,四级|v. 赞成，同意|The board approved the new budget plan. 董事会批准了新的预算方案。|approve of 赞成；approve a plan 批准计划；formally approve 正式批准
+67|session,四级|n. 开会，会议|The training session lasts about two hours. 培训课大约持续两个小时。|a training session 培训课；be in session 正在开会；a special session 特别会议
+68|awareness,四级|n. 意识|The campaign aims to raise awareness of road safety. 这场活动旨在提高道路安全意识。|raise awareness 提高意识；public awareness 公众意识；an awareness of 对……的认识
+69|exhaust,四级|v. 使筋疲力尽|The long hike exhausted the children. 长途徒步让孩子们筋疲力尽。|be exhausted 精疲力竭；exhaust oneself 使自己筋疲力尽；exhaust all possibilities 竭尽一切可能
+70|subsidize,四级|v. 提供补贴|The government subsidizes public transportation. 政府对公共交通提供补贴。|heavily subsidize 大力补贴；subsidized housing 保障性住房；subsidized prices 受补贴的价格
+71|grocery,四级|n. 杂货店|She stopped by the grocery on her way home. 她回家路上顺便去了趟杂货店。|a grocery store 杂货店；grocery shopping 采购食品杂货；a grocery list 购物清单
+72|ignorance,四级|n. 无知，愚昧|His answer revealed complete ignorance of basic history. 他的回答暴露出他对基本历史一无所知。|ignorance of 对……的无知；out of ignorance 出于无知；keep sb in ignorance 使某人蒙在鼓里
+73|intelligence,四级|n. 智力，智慧，理解力|The test measures a child's intelligence and memory. 这项测试测量儿童的智力和记忆力。|artificial intelligence 人工智能；a high intelligence 高智商；intelligence tests 智力测试
+74|tiny,四级|adj. 微小的|A tiny spider crawled across the wall. 一只小蜘蛛爬过墙壁。|a tiny amount 极少量；tiny details 细微之处；a tiny fraction 极小的一部分
+75|praise,四级|v. 赞扬，赞美|The teacher praised her for her hard work. 老师称赞她的勤奋。|praise sb for sth 因某事称赞某人；win praise 赢得赞扬；sing high praise for 高度赞扬
+76|memorize,四级|v. 熟记，牢记|The actor memorized all his lines in two days. 演员两天内背下了所有台词。|memorize lines 背台词；memorize vocabulary 记单词；memorize by heart 熟记于心
+77|relative,四级|adj. 相对的 n. 亲戚|Happiness is a relative concept for everyone. 对每个人来说，幸福都是一个相对的概念。|a close relative 近亲；relative to 与……相比；a distant relative 远亲
+78|breakthrough,四级|n. 突破|Scientists announced a major breakthrough in cancer research. 科学家宣布在癌症研究方面取得重大突破。|a major breakthrough 重大突破；make a breakthrough 取得突破；a breakthrough in 在……方面的突破
+79|incidence,四级|n. 几率，发生率|The city has a high incidence of lung disease. 这座城市肺部疾病的发病率很高。|the incidence of ……的发生率；a high incidence 高发病率；reduce the incidence 降低发生率
+80|scratch,四级|n. 抓，划痕|There is a deep scratch on the car door. 车门上有一道很深的划痕。|a scratch on ……上的划痕；from scratch 从零开始；scratch the surface 只触及表面
+81|harmful,四级|adj. 有害的|Smoking is harmful to your health in many ways. 吸烟在许多方面危害健康。|be harmful to 对……有害；harmful effects 有害影响；harmful chemicals 有害化学物质
+82|undergo,四级|v. 承受|The old bridge must undergo a safety inspection. 这座老桥必须接受安全检查。|undergo an operation 接受手术；undergo training 接受培训；undergo tests 接受检测
+83|recession,四级|n. 衰退|Many small businesses closed during the recession. 经济衰退期间许多小企业倒闭了。|economic recession 经济衰退；in recession 处于衰退期；slide into recession 陷入衰退
+84|extraordinary,四级|adj. 非凡的|She showed extraordinary courage during the fire. 她在火灾中表现出非凡的勇气。|extraordinary courage 非凡的勇气；an extraordinary achievement 非凡的成就；extraordinary talent 非凡的才能
+85|improper,四级|adj. 不合适的，不适当的|He was blamed for improper use of company funds. 他因不当使用公司资金而受到指责。|improper use 不当使用；improper behavior 不当行为；improper storage 储存不当
+86|marginalize,四级|v. 边缘化，排斥|Rising costs marginalize small family farms. 不断上涨的成本使小家庭农场被边缘化。|marginalize groups 使群体边缘化；feel marginalized 感到被边缘化；marginalized communities 边缘化群体
+87|vital,四级|adj. 重要的|Water is vital to all living things. 水对所有生物都至关重要。|be vital to/for 对……至关重要；play a vital role 起重要作用；vital information 至关重要的信息
+88|fortunately,四级|adv. 幸运地|Fortunately, no one was hurt in the accident. 所幸事故中无人受伤。|fortunately for sb 对某人而言所幸；放在句首作评注 所幸的是
+89|commencement,四级|n. 毕业典礼|He gave an inspiring speech at the commencement. 他在毕业典礼上发表了一场鼓舞人心的演讲。|a commencement ceremony 毕业典礼；a commencement speech 毕业演讲；attend the commencement 参加毕业典礼
+90|fetch,四级|v. 取回|Could you fetch me a glass of water? 你能给我取杯水来吗？|fetch sth for sb 为某人取某物；fetch and carry 跑腿打杂；fetch a good price 卖得好价钱
+91|clumsy,四级|adj. 笨拙的，不圆滑的|The clumsy waiter dropped three plates that evening. 那天晚上，笨手笨脚的服务员打碎了三个盘子。|a clumsy attempt 笨拙的尝试；clumsy hands 笨拙的手；feel clumsy 感到笨拙
+92|establishment,四级|n. 确立|The establishment of the new school took five years. 新学校的建立花了五年时间。|the establishment of ……的建立；since its establishment 自建立以来；approve the establishment 批准设立
+93|emit,四级|v. 发出，排出|Factory chimneys emit dark smoke into the air. 工厂烟囱向空气中排放黑烟。|emit carbon dioxide 排放二氧化碳；emit heat 散发热量；emit a signal 发出信号
+94|entertaining,四级|adj. 有趣的，使人愉快的|The talk show host is witty and entertaining. 这位脱口秀主持人风趣又逗人开心。|an entertaining story 有趣的故事；find sth entertaining 觉得某事有趣；an entertaining evening 令人愉快的夜晚
+95|irregular,四级|adj. 不规律的|He keeps irregular hours because of night shifts. 由于上夜班，他的作息很不规律。|irregular hours 不规律的作息；irregular heartbeat 心律不齐；an irregular pattern 不规则的图案
+96|psychologist,四级|n. 心理学家|The psychologist helped her deal with exam anxiety. 心理学家帮助她应对考试焦虑。|a clinical psychologist 临床心理学家；consult a psychologist 咨询心理学家；a child psychologist 儿童心理学家
+97|era,四级|n. 纪元，年代|We are living in an era of rapid change. 我们生活在一个迅速变化的时代。|in the era of 在……时代；a new era 新纪元；enter a new era 进入新纪元
+98|triumph,四级|n. 胜利|Winning the championship was a great triumph for the team. 赢得冠军是这支队伍的巨大胜利。|a great triumph 伟大的胜利；triumph over 战胜；return in triumph 凯旋
+99|detection,四级|n. 侦查；察觉|Early detection greatly improves the chance of a cure. 早发现能大大提高治愈的机会。|early detection 早期发现；detection systems 探测系统；the detection of 对……的探测

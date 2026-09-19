@@ -1,0 +1,8 @@
+# 数据文件行尾保护：引擎与拆分工具约定「\n 分隔、无 \r、无尾换行」，
+# autocrlf=true 的检出（LF→CRLF）会污染 map/detail/block/meta/year_index。
+# 这里强制它们检出为 LF；icon.png 按二进制处理。
+src/common/**/*.txt text eol=lf
+src/**/*.json text eol=lf
+tools/**/*.json text eol=lf
+*.png binary
+*.rpk binary

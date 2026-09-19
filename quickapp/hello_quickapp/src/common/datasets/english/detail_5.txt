@@ -1,0 +1,100 @@
+500|sympathy,四级|n. 同情心|We expressed our deepest sympathy to the grieving family. 我们向悲痛的家属表达了最深切的同情。|express sympathy 表示同情；out of sympathy 出于同情；in sympathy with 赞同
+501|discount,四级|n. 折扣|Members enjoy a ten percent discount on all books. 会员购书一律享受九折优惠。|at a discount 打折；a special discount 特别折扣；offer a discount 提供折扣
+502|value,四级|v. 重视|The company truly values its employees' ideas. 这家公司真正重视员工的意见。|value one's opinion 重视某人的意见；highly valued 备受重视；core values 核心价值观
+503|altitude,四级|n. 海拔, 高度|The plane cruised at an altitude of ten thousand meters. 飞机在一万米的高度巡航。|at an altitude of 在……的高度；high altitude 高海拔；altitude sickness 高原反应
+504|groundsheet,四级|n. 防潮布|They spread a groundsheet on the wet grass before pitching the tent. 搭帐篷前，他们先在湿草地上铺了防潮布。|lay a groundsheet 铺防潮布；a waterproof groundsheet 防水地布
+505|evolutionary,四级|adj. 进化的；演变的|Scientists discovered an evolutionary link between the two species. 科学家发现了这两个物种之间的进化联系。|evolutionary theory 进化理论；evolutionary change 渐进演变；an evolutionary process 演化过程
+506|implement,四级|v. 实施，执行|The school will implement the new rules next term. 学校将从下学期起实施新规。|implement a policy 执行政策；implement a plan 落实计划；fully implemented 全面实施
+507|dominant,四级|adj. 占优势的|Smartphones have become the dominant way to shop online. 智能手机已成为网购的主流方式。|a dominant role 主导地位；the dominant language 主导语言；dominant force 主导力量
+508|scope,四级|n. 范围|The question is beyond the scope of this discussion. 这个问题超出了本次讨论的范围。|beyond the scope 超出范围；within the scope of 在……范围内；broaden the scope 拓宽范围
+509|suspect,四级|v. 怀疑，猜想 n. 嫌疑犯|The police suspect that the fire was started deliberately. 警方怀疑这是一起人为纵火。|suspect sb of 怀疑某人；a prime suspect 头号嫌疑人；strongly suspect 强烈怀疑
+510|confrontation,四级|n. 冲突，对抗|The talks ended without any confrontation. 会谈在平和气氛中结束，没有发生对抗。|a direct confrontation 正面冲突；avoid confrontation 避免对抗；military confrontation 军事对抗
+511|puzzle,四级|v. 迷惑 n. 难解之事，谜|The cause of the disease puzzled doctors for decades. 这种病的病因让医生困惑了几十年。|a jigsaw puzzle 拼图；puzzle over 苦思；remain a puzzle 仍是未解之谜
+512|critic,四级|n. 批评家，评论家|The film won praise even from its harshest critics. 这部电影连最苛刻的影评人也给予了好评。|a film critic 影评人；an art critic 艺术评论家；meet the critics' standards 达到评论家的水准
+513|apartment,四级|n. 公寓|They moved into a small apartment near the university. 他们搬进了大学附近的一套小公寓。|rent an apartment 租公寓；a two-bedroom apartment 两居室公寓；an apartment block 公寓楼
+514|analyze,四级|v. 分析|Scientists analyzed the soil samples in the laboratory. 科学家在实验室分析了土壤样本。|analyze data 分析数据；closely analyze 仔细分析；analyze the results 分析结果
+515|maintain,四级|v. 维持；主张|The city maintains its old buildings very well. 这座城市对老建筑维护得很好。|maintain order 维持秩序；maintain contact 保持联系；maintain that 坚持认为
+516|curb,四级|v. 控制 n. 控制|The city took measures to curb air pollution. 该市采取措施控制空气污染。|curb inflation 抑制通胀；curb spending 控制开支；try to curb 试图遏制
+517|version,四级|n. 版本|The film is a new version of a classic story. 这部电影是一个经典故事的新版本。|the latest version 最新版本；an earlier version 早期版本；a revised version 修订版
+518|rival,四级|n. 对手|The two supermarkets have been rivals for decades. 这两家超市竞争了几十年。|a close rival 强劲对手；rival company 竞争公司；beat a rival 击败对手
+519|beneficial,四级|adj. 有利的，有益的|Regular exercise is beneficial to both body and mind. 经常锻炼对身心都有益处。|be beneficial to 对……有益；mutually beneficial 互利的；beneficial effects 有益的效果
+520|substantial,四级|adj. 大量的|The project needs a substantial investment of time and money. 该项目需要大量的时间和资金投入。|a substantial amount 大量；substantial evidence 充分证据；substantial progress 重大进展
+521|recover,四级|v. 恢复；重新获得；寻回|It took her months to recover from the operation. 她花了几个月才从手术中恢复过来。|recover from 从……中恢复；fully recover 完全康复；recover lost data 找回丢失的数据
+522|diploma,四级|n. 文凭|She framed her diploma and hung it on the wall. 她把毕业证书装上框挂在墙上。|a high school diploma 高中文凭；earn a diploma 获得文凭；a diploma course 文凭课程
+523|carpenter,四级|n. 木匠|The carpenter built a bookshelf to fit the corner. 木匠打造了一个正好放进角落的书架。|a skilled carpenter 熟练的木匠；hire a carpenter 请木匠；carpenter's tools 木工工具
+524|circumstance,四级|n. 环境，境遇|Under no circumstances should you open that door. 任何情况下你都不要打开那扇门。|under the circumstances 在这种情况下；under no circumstances 绝不；in difficult circumstances 处境艰难
+525|canteen,四级|n. 食堂|The office canteen serves lunch from twelve to one. 公司食堂从十二点到一点供应午餐。|the school canteen 学校食堂；a staff canteen 员工食堂；eat in the canteen 在食堂吃饭
+526|advocator,四级|n. 主张者，倡导者|She is a firm advocator of green commuting. 她是绿色出行的坚定倡导者。|a firm advocator of ……的坚定倡导者；a leading advocator 主要倡导者
+527|disorderly,四级|adj. 杂乱的|The protesters were arrested for disorderly conduct. 抗议者因扰乱秩序的行为被捕。|disorderly conduct 扰乱秩序行为；a disorderly crowd 乱哄哄的人群；a disorderly room 凌乱的房间
+528|essentially,四级|adv. 本质上，根本上|The two products are essentially the same in quality. 这两款产品在质量上基本相同。|essentially different 本质上不同；essentially the same 本质上相同；be essentially a question of 实际上是……的问题
+529|prevent,四级|v. 预防|Washing hands regularly helps prevent the spread of illness. 经常洗手有助于防止疾病传播。|prevent … from 防止……做；prevent accidents 预防事故；prevent the spread of 防止……的蔓延
+530|ceremony,四级|n. 典礼，仪式|The opening ceremony drew a huge crowd. 开幕式吸引了大量观众。|an opening ceremony 开幕式；a wedding ceremony 婚礼；hold a ceremony 举行仪式
+531|assume,四级|v. 假定，认为|Let's assume, for the moment, that the report is correct. 让我们暂时假定这份报告是正确的。|assume that 假定；assuming that 假设；an assumed name 化名
+532|demand,四级|n. 需求，要求 v. 要求|The union demanded safer working conditions. 工会要求改善工作安全条件。|meet the demand 满足需求；in demand 供不应求；demand an explanation 要求解释
+533|principle,四级|n. 原则，原理|She refuses to lie as a matter of principle. 出于原则，她拒绝撒谎。|as a matter of principle 出于原则；in principle 原则上；basic principles 基本原则
+534|reception,四级|n. 接待；反响|The new policy received a warm reception from the public. 新政策受到公众的热烈欢迎。|a warm reception 热情的接待；the reception desk 接待处；a mixed reception 反响不一
+535|transfer,四级|v. 转换，调换 n. 转换，调换|She transferred to the Shanghai office last spring. 她去年春天调到了上海办事处。|transfer to 转到；bank transfer 银行转账；transfer money 汇款
+536|preventable,四级|adj. 可预防的|Heart disease is largely preventable through a healthy lifestyle. 通过健康的生活方式，心脏病大多可以预防。|preventable diseases 可预防的疾病；largely preventable 大多可预防；preventable deaths 可避免的死亡
+537|anticipate,四级|v. 预感|We anticipate strong demand for the new product. 我们预计新产品需求旺盛。|anticipate problems 预见问题；widely anticipated 广受预期；anticipate the needs 预判需求
+538|assumption,四级|n. 假定，假设|The plan is based on the assumption that prices stay stable. 该计划基于价格保持稳定的假设。|base an assumption on 以……为依据的假设；a false assumption 错误的假设；on the assumption that 基于……的假设
+539|prescription,四级|n. 处方|The doctor wrote out a prescription for the cough. 医生为咳嗽开了一张处方。|write a prescription 开处方；on prescription 凭处方；a prescription drug 处方药
+540|evolution,四级|n. 演变，进化|The exhibition traces the evolution of Chinese characters. 展览追溯了汉字的演变过程。|the evolution of ……的演变；theory of evolution 进化论；gradual evolution 渐进演化
+541|annoy,四级|v. 使反感，厌烦|The constant phone calls annoyed the neighbors. 不断的电话铃声让邻居们很反感。|be annoyed with 生某人的气；be annoyed at 对……感到恼火；easily annoyed 容易被惹恼的
+542|unintended,四级|adj. 意想不到的|The rule had the unintended effect of driving away customers. 这条规定产生了赶跑顾客的意外效果。|unintended consequences 意外后果；unintended effects 意外影响
+543|origin,四级|n. 起源|The word has an interesting Latin origin. 这个词的拉丁语来源很有意思。|the origin of ……的起源；country of origin 原产国；trace the origin 追溯源头
+544|qualify,四级|v. 使……有资格|A teaching certificate qualifies you to work in most schools. 有了教师资格证，你就具备了在大多数学校任教的资格。|qualify for 有……的资格；be qualified to do sth 有资格做某事；fully qualified 完全合格的
+545|emergence,四级|n. 出现，发生|The emergence of online stores changed the retail landscape. 网店的出现改变了零售格局。|the emergence of ……的出现；the emergence of new technology 新技术的兴起
+546|complain,四级|v. 抱怨|Guests complained that the room was too noisy. 客人抱怨房间太吵。|complain about 抱怨；complain to sb 向某人投诉；complain of 诉说（不适）
+547|merit,四级|n. 优点，成绩 v. 值得|The proposal has merit, though it costs too much. 这个提案虽有可取之处，但成本太高。|judge on merit 凭实绩评判；merit attention 值得关注；have merit 有可取之处
+548|forum,四级|n. 论坛|The town hall meeting provides a forum for citizens' voices. 市政厅会议为市民发声提供了论坛。|an open forum 公开论坛；a discussion forum 讨论区；provide a forum 提供论坛
+549|arrange,四级|v. 安排，筹划|She arranged the flowers in a tall glass vase. 她把花插在一只高玻璃瓶里。|arrange a meeting 安排会议；arrange flowers 插花；arrange for sb to do 安排某人做
+550|determination,四级|n. 意志|Her determination carried the team through the hardest weeks. 她的坚定意志带领全队度过了最艰难的几周。|iron determination 钢铁般的意志；show determination 展现决心；with determination 凭着决心
+551|bargain,四级|n. 便宜货，减价品|The shoes were a real bargain at half price. 这双鞋半价买到，真是太划算了。|a real bargain 真划算；bargain price 特价；strike a bargain 达成交易
+552|appetite,四级|n. 欲望, 胃口|The long hike gave everyone a huge appetite. 长途跋涉让大家食欲大开。|lose one's appetite 没有胃口；a huge appetite 好胃口；an appetite for 对……的欲望
+553|neutral,四级|adj. 中立的|Switzerland stayed neutral during both world wars. 瑞士在两次世界大战期间都保持中立。|remain neutral 保持中立；a neutral party 中立方；a neutral tone 平淡的语气
+554|primitive,四级|adj. 原始的；简单的；简单的，简陋的|Early humans lived in primitive huts made of wood and mud. 早期人类住在用木头和泥土搭成的简陋棚屋里。|primitive society 原始社会；primitive tools 简陋的工具；primitive instincts 原始本能
+555|therapy,四级|n. 疗法 治疗|Physical therapy helped her walk again after the accident. 事故后，物理治疗帮助她重新走路。|physical therapy 物理治疗；undergo therapy 接受治疗；therapy sessions 治疗课程
+556|conscience,四级|n. 良心|His conscience would not let him keep the money. 良心不允许他把这笔钱留下。|a clear conscience 问心无愧；in good conscience 凭良心；prick one's conscience 良心不安
+557|define,四级|v. 确定；下定义|Success means different things to different people, and few can define it exactly. 成功对每个人都有不同含义，很少有人能给它下个准确的定义。|define … as 把……定义为；clearly defined 明确界定的；define the terms 界定术语
+558|creativity,四级|n. 创造力|Games can unlock children's natural creativity. 游戏能激发孩子天生的创造力。|unlock creativity 激发创造力；creative thinking 创造性思维；show creativity 展现创造力
+559|tailor,四级|v. 调整使适应|The course is tailored to the needs of beginners. 这门课程是为初学者的需求量身定制的。|tailor sth to 为……量身定制；tailor-made 量身定做的；specially tailored 特别定制的
+560|dramatically,四级|adv. 戏剧性地，引人注目地|Online shopping has dramatically changed our spending habits. 网购极大地改变了我们的消费习惯。|dramatically change 剧烈改变；increase dramatically 大幅增加；fall dramatically 骤然下降
+561|panic,四级|n. 惊恐|The sudden alarm caused panic in the crowded hall. 突如其来的警报让拥挤的大厅陷入惊慌。|in panic 惊慌之中；cause panic 引起恐慌；panic buying 抢购
+562|motivation,四级|n. 激励，刺激|Clear goals give employees stronger motivation. 明确的目标能给员工更强的动力。|lack motivation 缺乏动力；strong motivation 强烈的动力；motivation to do sth 做某事的动力
+563|durable,四级|adj. 持久的，耐用的|These boots are durable enough for mountain trails. 这双靴子足够耐用，适合走山间小道。|durable goods 耐用品；highly durable 非常耐用；a durable material 耐用的材料
+564|remedy,四级|n. 药物|Honey and lemon is a traditional remedy for sore throats. 蜂蜜柠檬水是缓解喉咙痛的传统方子。|a home remedy 家用偏方；a natural remedy 天然疗法；remedy a situation 补救局面
+565|inevitable,四级|adj. 不可避免的|With prices rising, a change of plan became inevitable. 随着物价上涨，改变计划在所难免。|seem inevitable 似乎不可避免；an inevitable result 必然的结果；the inevitable 命中注定的事
+566|diverse,四级|adj. 各种各样的|The city attracts people from diverse cultural backgrounds. 这座城市吸引着来自不同文化背景的人。|culturally diverse 文化多元的；a diverse range of 多种多样的；highly diverse 高度多元
+567|context,四级|n. 背景，环境|You should understand a word in its cultural context. 你应该在文化背景中理解一个词。|in the context of 在……背景下；cultural context 文化语境；out of context 断章取义
+568|prominent,四级|adj. 杰出的；突出的，凸起的|The photo hung in a prominent position in the hall. 照片挂在大厅的显要位置。|a prominent role 突出的作用；a prominent figure 杰出人物；a prominent position 显要的位置
+569|witness,四级|n. 目击者，目击|Police are appealing for witnesses to the accident to come forward. 警方呼吁事故目击者站出来。|a key witness 关键证人；witness an accident 目击事故；bear witness to 为……作证
+570|save,四级|v. 节省|Taking the train saved us nearly two hours. 坐火车为我们节省了近两个小时。|save time 节省时间；save money 省钱；save up 攒钱
+571|inherit,四级|v. 继承|She inherited the farmhouse from her grandparents. 她从祖父母那里继承了这座农舍。|inherit property 继承财产；inherit a title 继承头衔；inherit the family business 继承家业
+572|occasion,四级|n. 场合|He gave a moving speech on the occasion of his retirement. 在退休之际，他发表了一场感人的讲话。|on the occasion of 在……之际；on one occasion 有一次；a special occasion 特殊场合
+573|initiative,四级|n. 主动权，自主权|She took the initiative and organized the whole event. 她主动牵头，组织了整场活动。|take the initiative 采取主动；on one's own initiative 主动地；a government initiative 政府倡议
+574|insight,四级|n. 洞察力，洞悉|The book offers valuable insights into modern teaching. 这本书对现代教学提出了独到的见解。|insight into 对……的洞察；gain insight 获得洞见；valuable insights 宝贵的见解
+575|misguided,四级|adj. 被误导的|His misguided trust in the stranger cost him his savings. 他对陌生人的错误信任让他赔上了积蓄。|misguided trust 被误导的信任；a misguided attempt 徒劳的尝试；misguided loyalty 盲目的忠诚
+576|sponsor,四级|v. 赞助|A local bank sponsors the city marathon every year. 一家本地银行每年赞助城市马拉松。|sponsor an event 赞助活动；a sponsor company 赞助公司；main sponsor 主赞助商
+577|porter,四级|n. 搬运工|The porter carried our luggage to Room 506. 搬运工把我们的行李送到了506房间。|a hotel porter 酒店行李员；a station porter 车站搬运工；tip the porter 给搬运工小费
+578|loyalty,四级|n. 忠诚，忠实|The dog's loyalty touched everyone in the family. 这只狗的忠诚感动了全家人。|customer loyalty 客户忠诚度；loyalty card 会员卡；show loyalty 表现出忠诚
+579|overwhelming,四级|adj. 压倒性的|The proposal passed with an overwhelming majority. 提案以压倒性多数获得通过。|an overwhelming majority 压倒性多数；overwhelming support 强有力的支持；an overwhelming desire 强烈的愿望
+580|appreciation,四级|n. 感激|She smiled to show her appreciation of the gift. 她微笑着表达对礼物的感谢。|in appreciation of 为感谢；express appreciation 表达感谢；a deep appreciation of 对……的深切欣赏
+581|setting,四级|n. 背景，环境|The novel is set in a peaceful seaside setting. 这部小说以宁静的海滨为背景。|a rural setting 乡村环境；the setting of the story 故事背景；a perfect setting 完美的环境
+582|display,四级|n. 展览 v. 展览|The museum displays ancient coins from the Silk Road. 博物馆展出丝绸之路的古钱币。|on display 展出中；display case 展示柜；display an interest in 表现出对……的兴趣
+583|deliver,四级|v. 发表|The professor delivered a lecture on climate change. 教授发表了一场关于气候变化的演讲。|deliver a speech 发表演讲；deliver a lecture 讲授课程；deliver goods 送货
+584|astonish,四级|v. 使惊讶，使大为吃惊|The magician's final trick astonished the whole crowd. 魔术师的最后一个戏法让全场观众大为惊叹。|be astonished at/by 对……大为惊讶；astonish the audience 令观众惊叹
+585|adequate,四级|adj. 足够的|Make sure you get adequate sleep before the exam. 考试前一定要保证充足的睡眠。|adequate sleep 充足的睡眠；adequate resources 充足的资源；more than adequate 绰绰有余
+586|consumption,四级|n. 消费，消耗|The country aims to cut its energy consumption by half. 该国计划将能源消耗减半。|energy consumption 能源消耗；consumption of alcohol 饮酒；reduce consumption 减少消耗
+587|abuse,四级|v. 虐待；滥用|The nurse was accused of abusing elderly patients. 这名护士被指控虐待老年病人。|drug abuse 吸毒；abuse power 滥用权力；child abuse 虐待儿童
+588|broad,四级|adj. 宽的|The new road is broad enough for four lanes. 新路足够宽，可以设四条车道。|in broad daylight 光天化日之下；a broad range of 广泛的；broad shoulders 宽阔的肩膀
+589|inappropriate,四级|adj. 不合适的|Wearing shorts to the funeral seemed inappropriate. 穿着短裤去参加葬礼显得不合时宜。|inappropriate behavior 不当行为；seem inappropriate 显得不合适；wholly inappropriate 完全不恰当
+590|worldwide,四级|adv. 全世界范围地|The brand's products are sold worldwide. 这个品牌的产品销往世界各地。|sold worldwide 全球销售；known worldwide 闻名世界；worldwide demand 全球需求
+591|strict,四级|adj. 严格的|Her parents were strict about bedtime. 父母对就寝时间要求很严格。|be strict with 对……严格；strict rules 严格的规定；strictly forbidden 严格禁止
+592|means,四级|n. 方法|Video calls are an efficient means of staying in touch. 视频通话是保持联系的高效方式。|a means of ……的手段；by means of 借助于；by no means 绝不
+593|reveal,四级|v. 揭露，揭示|The study reveals a surprising link between sleep and memory. 这项研究揭示了睡眠与记忆之间的惊人联系。|reveal the truth 揭露真相；reveal a secret 泄露秘密；revealing results 发人深省的结果
+594|confirm,四级|v. 证实|The test results confirmed the doctor's initial diagnosis. 检测结果证实了医生的初步诊断。|confirm a booking 确认预订；confirm that 证实；further confirm 进一步证实
+595|consensus,四级|n. 一致意见|After a long discussion, the team finally reached a consensus. 经过长时间讨论，团队终于达成了一致。|reach a consensus 达成共识；a general consensus 普遍共识；consensus on 在……上的一致意见
+596|agent,四级|n. 代理商|She signed with a talent agent in Los Angeles. 她与洛杉矶的一位星探经纪人签约。|a travel agent 旅行社代理；an estate agent 房产中介；agent for ……的代理商
+597|neighborhood,四级|n. 地区|There are several good bakeries in this neighborhood. 这个街区有好几家不错的面包店。|in the neighborhood 在附近；a quiet neighborhood 安静的街区；the whole neighborhood 整个街区
+598|participate,四级|v. 参与，参加|All students are encouraged to participate in the science fair. 鼓励所有学生参加科学展览会。|participate in 参加；actively participate 积极参与；participation（名词）参与
+599|valid,四级|adj. 有效的|Your visa is valid for ninety days. 你的签证有效期为九十天。|valid for 对……有效；a valid passport 有效护照；a valid point 有道理的观点

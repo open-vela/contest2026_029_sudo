@@ -1,0 +1,39 @@
+{
+  "_说明": "诗词集 —— 源 6 列竖线行（ID|标题|作者|朝代|出处|内容），首列 ID 丢弃由工具重编。按正文字符数取前 550 条。map 行标题物化为「标题·作者」",
+  "name": "诗词集",
+  "mode": "fresh",
+  "parser": { "type": "poems" },
+  "sourcesBase": "..",
+  "sources": [
+    { "path": "资料/poems_10000条_cleaned (1).txt" }
+  ],
+  "sample": { "mode": "content-length", "target": 550, "lengthOf": ["content"] },
+  "mapLine": "{localId}|{year}|{regionIdx}|{title}·{author}",
+  "detailKeywords": "{title},{author},{dynasty},{source}",
+  "detailFields": ["source", "content"],
+  "bucketText": "{title},{author},{dynasty},{source}",
+  "regionField": "dynasty",
+  "year": 0,
+  "mapChunkSize": 200,
+  "detailChunkSize": 100,
+  "bucketSize": 2048,
+  "regionList": "sorted-set",
+  "metaVersion": "poems-ds-1",
+  "outDir": "src/common/datasets/poems",
+  "metaJson": {
+    "datasetId": 1,
+    "name": "诗词集",
+    "version": 1,
+    "category": "文化",
+    "author": "sudo",
+    "totalCount": 0,
+    "fields": { "map": ["title", "year", "dynasty"], "keyword": "keywords", "detail": ["source", "content"], "filter": ["dynasty"] },
+    "mapChunkSize": 200,
+    "detailChunkSize": 100,
+    "blockCount": 1,
+    "bucketSize": 2048,
+    "yearIndex": false,
+    "icon": "icon.png"
+  },
+  "icon": { "char": "诗", "bg": "#4D9FEE", "fg": "#FFFFFF" }
+}

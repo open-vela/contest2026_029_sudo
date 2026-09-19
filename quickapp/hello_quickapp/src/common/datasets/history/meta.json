@@ -1,0 +1,57 @@
+{
+  "datasetId": 0,
+  "name": "历史资料",
+  "version": 4,
+  "category": "历史",
+  "author": "sudo",
+  "basePath": "/common/datasets/history/",
+  "dataNote": "历史集为 v4 旧格式存量数据。v1.16.122 资料文件规范化：原散落在 /common/ 根目录的数据文件（meta.txt/map_*/detail_*/block_*/year_index.txt/icon.png）已归入本目录，与其余 5 个资料集结构一致；由 tools/split_dataset.js history（existing 模式）维护重建",
+  "totalCount": 850,
+  "regionList": [
+    "asia",
+    "europe",
+    "africa",
+    "other",
+    "south_america",
+    "north_america"
+  ],
+  "categoryList": [
+    "world_history",
+    "ancient_china",
+    "ww2",
+    "modern_china",
+    "contemporary_china"
+  ],
+  "fields": {
+    "map": [
+      "title",
+      "year",
+      "continent"
+    ],
+    "keyword": "keywords",
+    "detail": [
+      "cause",
+      "impact"
+    ],
+    "filter": [
+      "continent"
+    ]
+  },
+  "bucketSize": 4096,
+  "blockCount": 1,
+  "mapCount": 2,
+  "detailCount": 6,
+  "mapChunkSize": 600,
+  "detailChunkSize": 150,
+  "yearIndex": true,
+  "extras": [
+    "year_index.txt",
+    "era_names.txt",
+    "quotes.txt",
+    "today_1.txt",
+    "today_2.txt",
+    "today_3.txt",
+    "today_4.txt"
+  ],
+  "icon": "/common/datasets/history/icon.png"
+}

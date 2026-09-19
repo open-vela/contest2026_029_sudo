@@ -1,0 +1,1 @@
+{"totalCount":750,"regionList":["四级","六级"],"categoryList":[],"bucketSize":2048,"chunks":[{"id":0,"bucketStart":0,"bucketEnd":2047,"recordCount":750}],"maps":[{"startId":0,"endId":199},{"startId":200,"endId":399},{"startId":400,"endId":599},{"startId":600,"endId":749}],"mapChunkSize":200,"detailChunkSize":100,"version":"english-cet-2"}

@@ -1,0 +1,30 @@
+{
+  "datasetId": 2,
+  "name": "英语集",
+  "version": 2,
+  "category": "英语",
+  "author": "sudo",
+  "totalCount": 750,
+  "fields": {
+    "map": [
+      "title",
+      "year",
+      "category"
+    ],
+    "keyword": "keywords",
+    "detail": [
+      "释义",
+      "例句",
+      "搭配"
+    ],
+    "filter": [
+      "category"
+    ]
+  },
+  "mapChunkSize": 200,
+  "detailChunkSize": 100,
+  "blockCount": 1,
+  "bucketSize": 2048,
+  "yearIndex": false,
+  "icon": "icon.png"
+}

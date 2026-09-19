@@ -1,0 +1,100 @@
+100|cozy,四级|adj. 舒适的|The little café feels warm and cozy in winter. 冬天，这家小咖啡馆让人感觉温暖舒适。|a cozy room 温馨的房间；feel cozy 感觉舒适惬意；cozy up to 套近乎
+101|gallery,四级|n. 美术馆|We spent the whole afternoon in the art gallery. 我们在美术馆里待了一下午。|an art gallery 美术馆；visit a gallery 参观美术馆；a photo gallery 图片陈列区
+102|enormous,四级|adj. 巨大的|The project requires an enormous amount of money. 这项工程需要巨额资金。|an enormous amount of 巨量的；enormous pressure 巨大压力；an enormous difference 天壤之别
+103|obtain,四级|v. 获得|You must obtain permission before entering the lab. 进入实验室前必须先获得许可。|obtain permission 获得许可；obtain information 获取信息；obtain a degree 取得学位
+104|desert,四级|v. 抛弃|Many soldiers deserted the army during the long war. 漫长的战争中，许多士兵逃离了部队。|desert one's family 抛弃家人；desert a sinking ship 弃船而逃；desert one's post 擅离职守
+105|aviate,四级|v. 驾驶飞机|He learned to aviate small planes at the age of twenty. 他二十岁时学会了驾驶小型飞机。|aviate an aircraft 驾驶飞行器；learn to aviate 学习飞行
+106|determine,四级|v. 决定；下决心|She determined to finish the marathon whatever happened. 她下定决心，无论如何也要跑完马拉松。|determine to do sth 决心做某事；determine the cause 查明原因；be determined to 下定决心要
+107|disappear,四级|v. 不见，消失|The sun disappeared behind the clouds. 太阳消失在云层后面。|disappear from view 从视线中消失；disappear without a trace 消失得无影无踪；gradually disappear 逐渐消失
+108|entitle,四级|v. 使具有权利，使具有资格|The ticket entitles you to a free meal. 凭这张票你可以免费享用一餐。|entitle sb to sth 使某人有资格获得某物；be entitled to 有权享有；an entitled seat 指定席位
+109|relieve,四级|v. 解除，减轻，缓解|This medicine will relieve your headache quickly. 这种药能很快缓解你的头痛。|relieve pain 缓解疼痛；relieve stress 缓解压力；relieve sb of 解除某人的
+110|generosity,四级|n. 慷慨，大方|We were all moved by her generosity. 她的慷慨令我们都很感动。|an act of generosity 慷慨之举；show generosity 表现出慷慨；admire sb's generosity 钦佩某人的大方
+111|colleague,四级|n. 同事|My colleagues helped me prepare the quarterly report. 同事们帮我准备季度报告。|a close colleague 关系密切的同事；work with colleagues 与同事共事；colleagues and friends 同事兼朋友
+112|undertake,四级|v. 承担|The lab agreed to undertake the research project. 实验室同意承担这项研究课题。|undertake a task 承担任务；undertake responsibility 承担责任；undertake research 从事研究
+113|convenient,四级|adj. 方便的|Is next Monday convenient for a meeting? 下周一开会方便吗？|be convenient for 对……方便；at a convenient time 在方便的时候；convenient transportation 便利的交通
+114|preferentially,四级|adv. 优先地|Members are preferentially treated when booking courts. 会员预订球场时享有优先权。|treat sb preferentially 优先对待某人；preferentially priced 价格优惠的
+115|column,四级|n. 专栏|She writes a weekly column on food culture. 她每周为专栏撰写饮食文化文章。|a weekly column 每周专栏；write a column 写专栏；an advice column 问答专栏
+116|affectionate,四级|adj. 深情的，柔情的|She gave her grandmother an affectionate hug. 她深情地拥抱了奶奶。|an affectionate hug 深情的拥抱；an affectionate smile 温情的微笑；be affectionate towards 对……充满柔情
+117|issue,四级|v. 发表〔声明〕 n. 问题|The government issued a statement on the new policy. 政府就新政策发表了一份声明。|issue a statement 发表声明；a key issue 关键问题；take issue with 提出异议
+118|inquire,四级|v. 询问|She inquired about the price of the training course. 她询问了培训课程的价格。|inquire about 询问……的情况；inquire into 调查；inquire of sb 向某人打听
+119|groundlessly,四级|adv. 无缘无故地，无根据地|The company was groundlessly accused of cheating customers. 该公司被毫无根据地指控欺骗顾客。|groundlessly accused 被无端指责；fear groundlessly 毫无根据的担忧
+120|independently,四级|adv. 独立地|The two teams worked independently on the same problem. 两个团队独立研究同一个问题。|work independently 独立工作；think independently 独立思考；act independently of 独立于……行事
+121|approach,四级|v. 靠近 n. 方法|We need a new approach to solving this problem. 我们需要解决问题的新方法。|an approach to ……的方法；approach sb about sth 就某事与某人接洽；a fresh approach 全新的思路
+122|administration,四级|n. 管理；〔某一时期的〕政府|She has twenty years of experience in business administration. 她有二十年的企业管理经验。|business administration 工商管理；under the administration of 在……的管辖下；the new administration 新一届政府
+123|adversity,四级|n. 逆境，不幸|He remained optimistic in the face of adversity. 面对逆境，他依然乐观。|in the face of adversity 面对逆境；overcome adversity 战胜逆境；adversity and hardship 逆境与磨难
+124|technician,四级|n. 技术员，技师|A technician came to repair the air conditioner. 一名技师来修空调。|a skilled technician 熟练的技术员；call a technician 叫技师来；a lab technician 实验室技术员
+125|regular,四级|adj. 有规律的，经常的|He takes regular exercise to stay fit. 他坚持有规律的运动以保持健康。|regular exercise 经常性的锻炼；a regular customer 常客；at regular intervals 每隔固定时间
+126|miscalculation,四级|n. 算错，误算|A small miscalculation delayed the whole project. 一个小小的误算拖延了整个工程。|a costly miscalculation 代价高昂的误算；make a miscalculation 出现误判；a slight miscalculation 轻微的计算失误
+127|hinder,四级|v. 阻碍|Heavy traffic hindered the rescue work. 拥堵的交通阻碍了救援工作。|hinder progress 阻碍进展；be hindered by 受……阻碍；hinder development 阻碍发展
+128|selection,四级|n. 选择，挑选|The selection of a new manager will take weeks. 挑选新经理需要数周时间。|a wide selection 丰富的选择；the selection of ……的挑选；natural selection 自然选择
+129|tide,四级|n. 潮水|The tide comes in twice a day here. 这里每天涨两次潮。|the ebb and flow of the tide 潮起潮落；go with the tide 随大流；a rising tide 上涨的潮水
+130|superior,四级|adj. 上级的，较高的 n. 上级，长官|He always consults his superior before making big decisions. 做重大决定前，他总是先请示上级。|a superior officer 上级长官；superior to 优于；immediate superior 直属上司
+131|matter,四级|v. 要紧，重要|It doesn't matter who pays the bill. 谁付账都没关系。|it doesn't matter 没关系；matter to sb 对某人重要；as a matter of fact 事实上
+132|passively,四级|adv. 消极地|Children should not passively absorb information from screens. 孩子不应被动地接受屏幕上的信息。|passively accept 被动接受；respond passively 消极回应
+133|grant,四级|v. 授予；允许|The university granted her a research fellowship. 大学授予她一份研究奖学金。|grant permission 准许；grant sb sth 授予某人某物；take sth for granted 把……视为理所当然
+134|liberation,四级|n. 解放|The city celebrated its liberation from the invaders. 这座城市庆祝从侵略者手中解放。|fight for liberation 为解放而斗争；the liberation of ……的解放；national liberation 民族解放
+135|observe,四级|v. 遵守|All drivers must observe the speed limit. 所有司机都必须遵守限速规定。|observe the rules 遵守规则；observe the law 守法；observe a tradition 遵循传统
+136|institute,四级|v. 建立 n. 〔从事科研或教育等的〕机构；学院；研究院|They instituted a new training system last year. 他们去年建立了新的培训制度。|a research institute 研究所；institute reforms 推行改革；an institute of technology 理工学院
+137|dormitory,四级|n. 宿舍|All freshmen live in the campus dormitory. 所有新生都住在校内宿舍。|a campus dormitory 校内宿舍；a dormitory building 宿舍楼；share a dormitory 合住宿舍
+138|awful,四级|adj. 可怕的，骇人的|The traffic this morning was simply awful. 今天早上的交通简直糟透了。|feel awful 感觉难受；an awful mess 一团糟；an awful lot of 非常多的
+139|emergency,四级|n. 紧急情况|Dial this number in case of emergency. 遇到紧急情况请拨打这个号码。|in an emergency 在紧急情况下；an emergency exit 紧急出口；emergency services 应急服务
+140|stress,四级|n. 压力；重音|Too much stress at work can damage your health. 过大的工作压力会损害健康。|under stress 承受压力；relieve stress 缓解压力；put stress on 给……施加压力
+141|launch,四级|v. 发动|The company will launch a new product next month. 公司将于下月发布一款新产品。|launch a product 推出产品；launch an attack 发动攻击；launch a campaign 发起活动
+142|suppose,四级|v. 料想，以为；假定；期望|I suppose you are right about the schedule. 关于日程，我想你是对的。|be supposed to 应该；suppose that 假定；I suppose so 我想是吧
+143|remove,四级|v. 消除，移除|Please remove your shoes before entering the room. 进屋前请脱鞋。|remove sth from 从……移走；remove a stain 去除污渍；remove doubts 消除疑虑
+144|exposure,四级|n. 暴露；揭露|Prolonged exposure to the sun harms the skin. 长时间暴晒会伤害皮肤。|exposure to 接触，暴露于；prolonged exposure 长期暴露；media exposure 媒体曝光
+145|promote,四级|v. 促进，提升；推销|Regular reading promotes vocabulary growth. 经常阅读能促进词汇量增长。|promote sales 促销；be promoted to 被提升为；promote awareness 提高意识
+146|engage,四级|v. 从事；吸引|The lecture engaged students from beginning to end. 这场讲座自始至终吸引着学生。|engage in 从事；engage one's interest 吸引某人的兴趣；be engaged in 忙于
+147|uncertain,四级|adj. 不确定的|The exact cause of the fire remains uncertain. 起火的确切原因仍不确定。|remain uncertain 仍不确定；uncertain about 对……拿不准；an uncertain future 不确定的未来
+148|accommodate,四级|v. 为…提供住宿|The hotel can accommodate up to four hundred guests. 这家酒店最多可容纳四百位客人入住。|accommodate guests 接待客人；accommodate sb for the night 留某人过夜；accommodate the needs 满足需求
+149|slave,四级|n. 奴隶|Thousands of slaves were freed after the war. 战争结束后，成千上万的奴隶获得自由。|free the slaves 解放奴隶；a slave to 奴隶般受制于；slave labor 奴隶劳动
+150|mature,四级|adj. 成熟的|She gave a mature response to the criticism. 她对批评做出了成熟的回应。|a mature attitude 成熟的态度；fully mature 完全成熟的；a mature decision 成熟的决定
+151|contrast,四级|n. 对照物 v. 对比|The writer contrasts city life with village life. 作者把城市生活与乡村生活加以对比。|in contrast 相比之下；by contrast 对比之下；contrast … with … 把……与……对比
+152|clinic,四级|n. 诊所|The clinic opens from nine to five on weekdays. 这家诊所工作日从九点营业到五点。|a health clinic 保健诊所；go to the clinic 去诊所；a dental clinic 牙科诊所
+153|award,四级|v. 授予；判给 n. 奖(金)|She was awarded first prize in the speech contest. 她在演讲比赛中获得了一等奖。|award a prize 颁发奖项；win an award 获奖；receive an award 领奖
+154|worthwhile,四级|adj. 有价值的|Volunteering is a worthwhile way to spend the summer. 做志愿者是度过暑假的有意义方式。|a worthwhile cause 值得投入的事业；be worthwhile doing 值得做；make it worthwhile 让……物有所值
+155|cruelty,四级|n. 残暴，残酷|The film shows the cruelty of the slave trade. 这部电影展现了奴隶贸易的残酷。|an act of cruelty 残暴行为；cruelty to animals 虐待动物；suffer cruelty 遭受虐待
+156|threaten,四级|v. 威胁|Rising sea levels threaten many coastal cities. 海平面上升威胁着许多沿海城市。|threaten to do sth 威胁要做某事；be threatened with 受到……的威胁；threaten the future 危及未来
+157|chemical,四级|adj. 化学的 n. 化学制品|The factory must reduce its discharge of harmful chemicals. 工厂必须减少有害化学物质的排放。|chemical reactions 化学反应；harmful chemicals 有害化学物质；chemical weapons 化学武器
+158|consistent,四级|adj. 一致的|Her story is consistent with the evidence. 她的说法与证据相符。|be consistent with 与……一致；a consistent performance 稳定的表现；remain consistent 始终如一
+159|renew,四级|v. 〔中止后〕重新开始，继续|The two countries renewed their trade talks in May. 两国于五月恢复了贸易谈判。|renew talks 恢复谈判；renew a passport 更新护照；renew a contract 续签合同
+160|takeoff,四级|n. 起飞|The plane caught fire shortly after takeoff. 飞机起飞后不久便起火了。|before takeoff 起飞前；a smooth takeoff 平稳的起飞；delay the takeoff 推迟起飞
+161|innocent,四级|adj. 无辜的；天真的|The court proved that he was innocent of the crime. 法庭证明他无罪。|be innocent of 无……罪；an innocent child 天真的孩子；innocent victims 无辜的受害者
+162|currently,四级|adv. 当前；一般地|She is currently working on her second novel. 她目前正在创作第二部小说。|currently available 当前可获得的；currently employed 目前在职
+163|dropout,四级|n. 辍学者|He was a college dropout who built a famous company. 他是一名大学辍学者，却创办了知名企业。|a high school dropout 高中辍学生；dropout rates 辍学率；a college dropout 大学辍学生
+164|replace,四级|v. 代替|Robots are replacing workers on the assembly line. 机器人正在取代流水线上的工人。|replace … with … 用……取代……；replace the old with the new 以新代旧；a replacement part 替换零件
+165|sightseeing,四级|n. 观光|We spent the day sightseeing around the old town. 我们花了一天时间在老城区观光。|go sightseeing 去观光；a sightseeing bus 观光巴士；a sightseeing tour 观光之旅
+166|honor,四级|n. 荣誉；崇敬，敬重，敬意|It is a great honor to speak at this conference. 能在这场大会上发言，我深感荣幸。|in honor of 为向……致敬；a great honor 极大的荣幸；win honors 赢得荣誉
+167|imitate,四级|v. 模仿|Children often imitate the behavior of their parents. 孩子常常模仿父母的行为。|imitate sb's accent 模仿某人的口音；imitate a style 模仿某种风格；learn by imitation 通过模仿学习
+168|installment,四级|n. 分期付款|We bought the car in monthly installments. 我们按月分期付款购买了这辆车。|pay in installments 分期支付；monthly installments 按月分期；an installment plan 分期付款方案
+169|personality,四级|n. 个性，性格|Her cheerful personality makes her popular at work. 开朗的性格让她在工作中很受欢迎。|a cheerful personality 开朗的性格；a strong personality 个性强；personality development 人格发展
+170|headquarter,四级|v. 设立总部，在…设立总部|The company is headquartered in Shanghai. 这家公司总部设在上海。|be headquartered in 总部位于；headquarter the business 将企业总部设在
+171|ingredient,四级|n. 成分，原料|Flour is the main ingredient of bread. 面粉是面包的主要原料。|the main ingredient 主要成分；active ingredients 有效成分；a list of ingredients 配料表
+172|revenue,四级|n. 收入|Online sales now account for half of the company's revenue. 线上销售如今占公司收入的一半。|annual revenue 年收入；tax revenue 税收收入；generate revenue 创造收入
+173|sensitive,四级|adj. 敏感的|My teeth are sensitive to cold drinks. 我的牙齿对冷饮很敏感。|be sensitive to 对……敏感；a sensitive topic 敏感话题；highly sensitive 极为敏感的
+174|particular,四级|adj. 特别的，特指的；讲究的；挑剔的，吹毛求疵的|She is very particular about the quality of her food. 她对食物的品质非常讲究。|in particular 尤其；be particular about 对……讲究；a particular case 特定情况
+175|tumor,四级|n. 瘤|The doctors found a small tumor in his lung. 医生在他肺部发现了一个小肿瘤。|a benign tumor 良性肿瘤；a malignant tumor 恶性肿瘤；remove a tumor 切除肿瘤
+176|consequence,四级|n. 结果，成果|He lost his job as a consequence of the scandal. 受丑闻影响，他丢了工作。|as a consequence of 由于；face the consequences 承担后果；far-reaching consequences 深远的影响
+177|explicitly,四级|adv. 直接地，明确地|The rules explicitly forbid smoking in the lab. 规定明确禁止在实验室内吸烟。|explicitly state 明确说明；explicitly forbid 明令禁止；explicitly refer to 明确提及
+178|sway,四级|v. 影响|The powerful speech swayed many undecided voters. 这场有力的演讲打动了许多尚未拿定主意的选民。|sway the voters 影响选民；hold sway over 支配；be swayed by 被……左右
+179|technical,四级|adj. 技术的|The manual is full of technical terms that confuse beginners. 这本手册满是让初学者困惑的技术术语。|technical terms 术语；technical support 技术支持；a technical problem 技术问题
+180|expert,四级|adj. 熟练的，内行的|She is expert at handling difficult customers. 她很擅长应对难缠的顾客。|be expert at 在……方面内行；an expert on ……方面的专家；expert advice 专家意见
+181|harm,四级|n. 损害；危害；伤害 v. 伤害，损害〔某事物〕|Too much sun can harm your skin. 过度日晒会伤害皮肤。|do harm to 对……造成伤害；harm the environment 损害环境；come to no harm 平安无事
+182|imaginary,四级|adj. 虚构的，想象的|The little girl has an imaginary friend. 这个小女孩有一个想象中的朋友。|an imaginary world 想象中的世界；an imaginary friend 虚构的朋友；an imaginary line 假想的线
+183|contaminate,四级|v. 污染，弄脏|The river was contaminated by industrial waste. 这条河受到工业废水的污染。|contaminate the water 污染水源；be contaminated by 被……污染；contaminated food 受污染的食品
+184|soar,四级|v. 猛增|Housing prices soared in the past five years. 过去五年房价猛涨。|soar to a record high 飙升至历史新高；prices soar 价格飞涨；soar above 远高于
+185|solely,四级|adv. 单独地，唯一地|The project was funded solely by private donations. 该项目完全由私人捐助资助。|solely responsible for 唯一对……负责；solely based on 仅仅基于；exist solely for 仅为……而存在
+186|tremendous,四级|adj. 巨大的|The show was a tremendous success. 演出取得了巨大的成功。|a tremendous success 巨大的成功；tremendous progress 巨大的进步；at tremendous speed 以极快的速度
+187|civilization,四级|n. 文明|Ancient Egypt was one of the earliest civilizations. 古埃及是最早的文明之一。|ancient civilization 古代文明；modern civilization 现代文明；the dawn of civilization 文明的开端
+188|tough,四级|adj. 困难的|It was a tough decision, but she made it. 那是个艰难的决定，但她还是做了。|a tough decision 艰难的决定；tough times 艰难时期；be tough on sb 对某人严厉
+189|gift,四级|n. 礼物；天赋|He has a gift for making people laugh. 他天生有让人发笑的本领。|a gift for ……的天赋；exchange gifts 交换礼物；a birthday gift 生日礼物
+190|scale,四级|n. 规模；比例|The company aims to expand its business on a global scale. 公司旨在把业务扩大到全球规模。|on a large scale 大规模地；economies of scale 规模经济；at scale 按比例
+191|injure,四级|v. 使受伤|Two players were injured during the match. 两名队员在比赛中受了伤。|be injured in 在……中受伤；seriously injured 伤势严重；injure one's back 背部受伤
+192|embrace,四级|v. 拥抱；欣然接受，乐意采纳 (新思想、意见、宗教等)|The company eagerly embraced the new technology. 公司欣然接受了这项新技术。|embrace change 拥抱变化；embrace new ideas 接受新思想；warm embrace 温暖的拥抱
+193|seldom,四级|adv. 很少，罕见|He seldom stays up late on weekdays. 工作日他很少熬夜。|seldom ever 很少；seldom, if ever 几乎从不
+194|performance,四级|n. 演出；履行；表现|Her performance in the play won warm applause. 她在剧中的表演赢得热烈掌声。|a live performance 现场演出；improve performance 提升表现；a strong performance 出色的表现
+195|violate,四级|v. 违反|The company violated the safety regulations repeatedly. 这家公司多次违反安全规定。|violate the law 违法；violate a rule 违反规定；violate privacy 侵犯隐私
+196|associate,四级|v. 把……联系起来；交往；|Most people associate this song with the holidays. 大多数人把这首歌和节日联系在一起。|associate … with … 把……与……联系起来；associate with sb 与某人交往；a business associate 生意伙伴
+197|privacy,四级|n. 隐私|People care deeply about their online privacy. 人们非常在意自己的网络隐私。|protect privacy 保护隐私；invade one's privacy 侵犯他人隐私；privacy policy 隐私政策
+198|choke,四级|v. 使窒息|The smoke nearly choked the trapped workers. 浓烟几乎使被困工人窒息。|choke on sth 被……噎住；choke back 忍住；choke off 扼杀
+199|capable,四级|adj. 能干的，有能力的|She is capable of handling several projects at once. 她有能力同时处理几个项目。|be capable of 有能力做；a capable manager 能干的管理者；highly capable 非常能干的

@@ -1,0 +1,6 @@
+
+本应用使用了 Vela 输入法组件
+
+Copyright (c) 2024 NEORUAA
+
+Licensed under the MIT License

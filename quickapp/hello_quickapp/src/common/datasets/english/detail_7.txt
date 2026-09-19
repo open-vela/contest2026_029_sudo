@@ -1,0 +1,50 @@
+700|recommend,四级|v. 推荐；劝告；使受欢迎|Can you recommend a good book on Chinese history? 你能推荐一本关于中国历史的好书吗？|recommend sth to sb 向某人推荐；highly recommended 强烈推荐；recommend doing sth 建议做某事
+701|frontier,四级|n. 边境|Guards patrol the frontier day and night. 卫兵日夜巡逻边境。|the frontier between ……之间的边境；cross the frontier 越过边境；push back the frontiers of knowledge 拓展知识的边界
+702|concern,四级|n. 重要的事情 v. 与…有关，关于|Rising food prices are a major concern for ordinary families. 食品价格上涨是普通家庭非常关心的问题。|be concerned about 担心；a matter of concern 令人关切的事；concern oneself with 关心
+703|organ,四级|n. 器官|The heart is the organ that pumps blood around the body. 心脏是把血液输送到全身的器官。|a vital organ 重要器官；organ donation 器官捐献；internal organs 内脏
+704|cite,四级|v. 引用|The lawyer cited three similar cases from the past decade. 律师引用了过去十年中的三个类似案例。|cite an example 举例；cite a source 引用出处；frequently cited 被频繁引用
+705|mechanism,四级|n. 机制，机能|The company set up a mechanism for handling complaints. 公司建立了处理投诉的机制。|a defense mechanism 防御机制；the mechanism of ……的机制；market mechanisms 市场机制
+706|contest,四级|n. 比赛|She entered a national writing contest and won second prize. 她参加了全国写作比赛并获得二等奖。|enter a contest 参加比赛；a speech contest 演讲比赛；win a contest 赢得比赛
+707|symptom,四级|n. 症状|A fever is often the first symptom of the flu. 发烧常常是流感的首发症状。|a common symptom 常见症状；show symptoms 出现症状；symptoms of ……的症状
+708|deadline,四级|n. 最后期限|We must finish the report before Friday's deadline. 我们必须在周五的截止日期前完成报告。|meet a deadline 赶上截止日期；a tight deadline 紧迫的期限；extend the deadline 延长截止时间
+709|domination,四级|n. 主导|The team ended their rival's ten-year domination of the league. 这支球队终结了对手对联赛长达十年的统治。|under the domination of 在……的支配下；total domination 全面统治；end the domination 结束垄断地位
+710|figure,四级|n. 人物；数字|Sales figures for the last quarter look promising. 上个季度的销售数字看起来很不错。|a key figure 关键人物；sales figures 销售数据；a public figure 公众人物
+711|imply,四级|v. 暗示；意味；|His silence implied that he did not agree. 他的沉默暗示他并不同意。|imply that 暗示；clearly implied 清楚地表明；imply criticism 含蓄地批评
+712|curiosity,四级|n. 好奇心|Children's natural curiosity makes them quick learners. 孩子天生的好奇心让他们学得很快。|out of curiosity 出于好奇；arouse curiosity 引起好奇；natural curiosity 天生的好奇心
+713|induce,四级|v. 引诱|Nothing could induce him to change his mind. 什么都诱使他改变不了主意。|induce sleep 催眠；induce sb to do sth 诱使某人做某事；induce change 引发变化
+714|acknowledge,四级|v. 承认(…的权威)|She is widely acknowledged as an expert in her field. 她被公认为其领域的专家。|acknowledge as 公认为；acknowledge a mistake 承认错误；readily acknowledge 欣然承认
+715|gym,四级|n. 体育馆，健身房|He goes to the gym three times a week. 他每周去健身房三次。|go to the gym 去健身房；a school gym 学校体育馆；gym membership 健身房会员
+716|chef,四级|n. 厨师|The chef spent ten years perfecting this recipe. 大厨花了十年时间完善这道菜的配方。|a head chef 主厨；a chef's special 主厨特色菜；train as a chef 接受厨师培训
+717|sensible,四级|adj. 明智的|It would be sensible to check the weather before we set out. 出发前先查一下天气才是明智的。|a sensible choice 明智的选择；sensible advice 合理的建议；be sensible about 对……理性看待
+718|outline,四级|n. 梗概，提纲，草稿，要点|She wrote an outline before starting the essay. 动笔写文章之前，她先列了提纲。|a brief outline 简要提纲；draw up an outline 拟定提纲；in outline 概括地说
+719|react,四级|v. 对……作出反应|The stock market reacted sharply to the interest-rate news. 股市对利率消息反应剧烈。|react to 对……作出反应；react strongly 反应强烈；react quickly 迅速反应
+720|committee,四级|n. 委员会|The committee meets every month to review the budget. 委员会每月开会审查预算。|a special committee 特别委员会；serve on a committee 担任委员会委员；a committee member 委员会成员
+721|civilian,四级|n. 平民，百姓|The report counted hundreds of civilian deaths in the war. 报告统计了战争中数百名平民的死亡。|civilian population 平民百姓；civilian life 平民生活；injure civilians 使平民受伤
+722|domestic,四级|adj. 国内的|Domestic demand is growing faster than exports. 国内需求的增长快于出口。|domestic market 国内市场；domestic flights 国内航班；domestic violence 家庭暴力
+723|complex,四级|adj. 复杂的|The instructions for the tax form are unnecessarily complex. 税务表格的说明过于复杂。|a complex issue 复杂的问题；a complex system 复杂的系统；highly complex 极为复杂
+724|locate,四级|v. 位于，定位|The new library is located in the heart of the city. 新图书馆位于市中心。|be located in 位于；locate the source 找到源头；easily located 容易找到
+725|tighten,四级|v. 使变紧|The bank tightened lending rules last month. 银行上个月收紧了放贷规则。|tighten security 加强安保；tighten the rules 收紧规则；tighten one's belt 勒紧裤腰带
+726|physics,四级|n. 物理，物理学|She has always been fascinated by the physics of space. 她一直着迷于空间物理学。|study physics 学习物理；quantum physics 量子物理；a physics teacher 物理老师
+727|foothold,四级|n. 立足处（攀登时脚踩的地方）|The company finally gained a foothold in the European market. 公司终于在欧洲市场站稳了脚跟。|gain a foothold 站稳脚跟；establish a foothold 建立立足点；a firm foothold 牢固的立足点
+728|discharge,四级|v. 释放；排出；批准离开; 命令离开|The patient was discharged from hospital after a full recovery. 病人完全康复后获准出院。|be discharged from hospital 出院；discharge waste 排放废物；discharge a duty 履行职责
+729|advanced,四级|adj. 高级的|She teaches an advanced class for experienced learners. 她为有经验的学员教授高级课程。|advanced technology 先进技术；an advanced course 高级课程；academically advanced 学业超前的
+730|complicated,四级|adj. 复杂的，难懂的|The surgery was more complicated than the doctors expected. 手术比医生预想的更复杂。|a complicated situation 复杂的局面；unduly complicated 过于复杂；complicated instructions 复杂难懂的说明
+731|needy,四级|adj. 贫穷的|The volunteers deliver free meals to needy families every week. 志愿者每周为贫困家庭送去免费餐食。|needy families 贫困家庭；help the needy 帮助穷人；needy children 贫困儿童
+732|stale,四级|adj. 乏味的，没有新意的|Critics called the sequel stale and predictable. 评论家称这部续集乏味而老套。|stale air 不新鲜的空气；a stale joke 老掉牙的笑话；go stale 变得陈腐
+733|casual,四级|adj. 漫不经心的，随便的；偶然的|The office has a casual dress code on Fridays. 这家办公室周五可以随意着装。|casual clothes 休闲装；a casual conversation 闲聊；casual workers 临时工
+734|conform,四级|v. 相一致，遵守|All products must conform to national safety standards. 所有产品都必须符合国家安全标准。|conform to 符合；conform with 与……一致；refuse to conform 拒绝随大流
+735|recharge,四级|v. 再充电|Remember to recharge your phone before the trip. 出发前记得给手机充电。|recharge a battery 给电池充电；recharge oneself 休整充电；a quick recharge 快速充电
+736|annually,四级|adv. 每年，一年一次|The festival is held annually in early spring. 这个节庆每年初春举行。|held annually 每年举办；report annually 每年报告；renewed annually 每年续期
+737|frown,四级|v. 皱眉|She frowned at the messy report on her desk. 她看着桌上凌乱的报告皱起了眉头。|frown at 对……皱眉；frown on 不赞成；deep frown 深深地皱眉
+738|decline,四级|v. 下降，减少；拒绝|He politely declined the invitation to the party. 他礼貌地拒绝了派对的邀请。|decline an invitation 婉拒邀请；a sharp decline 骤降；in decline 走下坡路
+739|originate,四级|v. 开始|Many popular board games originated in ancient China. 许多流行的棋盘游戏起源于古代中国。|originate in/from 起源于；originate the idea 提出创意
+740|prospect,四级|n. 前景；前途|Graduates face better job prospects this year than last. 今年毕业生的就业前景好于去年。|job prospects 就业前景；exciting prospects 令人振奋的前景；the prospect of ……的前景
+741|curious,四级|adj. 好奇的|The boy was curious about how the old clock worked. 男孩很好奇这座老钟是怎么走动的。|be curious about 对……好奇；curious minds 求知若渴的头脑；curious to know 急于知道
+742|incentive,四级|n. 动机，刺激|The bonus gives staff an extra incentive to meet their targets. 奖金为员工完成目标提供了额外的动力。|a strong incentive 强烈的激励；offer incentives 提供激励；an incentive to do sth 做某事的诱因
+743|virus,四级|n. 病毒|The new virus spread rapidly through crowded cities. 新病毒在拥挤的城市中迅速传播。|a computer virus 电脑病毒；catch a virus 感染病毒；the spread of the virus 病毒的传播
+744|cultivate,四级|v. 培养， 养成|Reading widely helps cultivate a rich vocabulary. 广泛阅读有助于积累丰富的词汇。|cultivate a habit 培养习惯；cultivate relationships 培养关系；cultivate talents 培养人才
+745|potential,四级|n. 潜力 adj. 有可能的；潜在的|The young player shows enormous potential. 这名年轻球员展现出巨大的潜力。|realize one's potential 发挥潜力；great potential 巨大的潜力；potential risks 潜在风险
+746|reluctant,四级|adj. 不愿意的，勉强的|She was reluctant to lend her car to a stranger. 她不愿意把车借给陌生人。|be reluctant to do sth 不愿做某事；a reluctant agreement 勉强的同意；seem reluctant 显得不情愿
+747|miserable,四级|adj. 痛苦的|The rainy weather made the camping trip miserable. 阴雨天气让露营之旅苦不堪言。|feel miserable 感到痛苦；a miserable failure 惨痛的失败；look miserable 看起来愁眉苦脸
+748|persuasion,四级|n. 劝说|After much persuasion, she agreed to join the trip. 经过反复劝说，她同意参加这次旅行。|after much persuasion 经反复劝说；gentle persuasion 温和的劝说；persuasive arguments 有说服力的论据
+749|competitiveness,四级|n. 竞争力|Training programs are key to improving the industry's competitiveness. 培训项目是提升行业竞争力的关键。|improve competitiveness 提升竞争力；international competitiveness 国际竞争力；lose competitiveness 失去竞争力

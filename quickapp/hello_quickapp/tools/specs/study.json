@@ -1,0 +1,40 @@
+{
+  "name": "学习",
+  "mode": "fresh",
+  "parser": { "type": "pipe5", "categoryDefault": "学习" },
+  "sourcesBase": "../资料提取",
+  "sources": [
+    { "path": "xuexi.txt" },
+    { "path": "shuma.txt" },
+    { "path": "chatgpt-baike.txt" }
+  ],
+  "sample": { "mode": "content-length", "target": 800, "lengthOf": ["title", "keywords", "cause", "impact"] },
+  "mapLine": "{localId}|{year}|{regionIdx}|{title}",
+  "detailKeywords": "{keywords}",
+  "detailFields": ["cause", "impact"],
+  "bucketText": "{title},{keywords},{category}",
+  "regionField": "category",
+  "year": 0,
+  "mapChunkSize": 200,
+  "detailChunkSize": 100,
+  "bucketSize": 2048,
+  "regionList": "sorted-set",
+  "metaVersion": "study-ds-1",
+  "outDir": "src/common/datasets/study",
+  "metaJson": {
+    "datasetId": 5,
+    "name": "学习",
+    "version": 1,
+    "category": "学习",
+    "author": "sudo",
+    "totalCount": 0,
+    "fields": { "map": ["title", "year", "category"], "keyword": "keywords", "detail": ["原因/背景", "影响/做法"], "filter": ["category"] },
+    "mapChunkSize": 200,
+    "detailChunkSize": 100,
+    "blockCount": 1,
+    "bucketSize": 2048,
+    "yearIndex": false,
+    "icon": "icon.png"
+  },
+  "icon": { "char": "学", "bg": "#24C1E0", "fg": "#FFFFFF" }
+}

@@ -1,0 +1,157 @@
+<template>
+  <div class="page-container">
+    <div class="page" @swipe="onSwipe">
+      <scroll class="scroll-list" scroll-y="true">
+        <div class="top-spacer"></div>
+        <div class="header"><text class="header-title">我的收藏</text></div>
+
+        <!-- 空态：无收藏时显示（对齐 result.ux empty-tip 深灰居中） -->
+        <text class="empty-tip" if="{{!loading && favorites.length === 0}}">暂无收藏 · 在详情页点击收藏添加</text>
+
+        <!-- 收藏列表：点击条目主体进入详情，右侧 ✕ 移除（fav-info / fav-del 为兄弟节点，互不冒泡） -->
+        <!-- v1.16.130（性能审查 T0①）：收藏增删时按 key diff，未变节点不重设属性 -->
+        <div class="fav-item" tid="id" for="{{favorites}}">
+          <div class="fav-info" @click="gotoDetail($item.id)">
+            <text class="fav-title">{{$item.title}}</text>
+            <text class="fav-sub">{{$item.yearDisplay}} · {{$item.region}}</text>
+          </div>
+          <text class="fav-del" @click="removeFavorite($item.id)">✕</text>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </scroll>
+    </div>
+  </div>
+</template>
+
+<style>
+  /* ===== 基础样式（矩形 rect，designWidth 300 基准） ===== */
+  .page-container { width: 100%; height: 100%; background-color: #000000; }
+  .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
+  .scroll-list { width: 100%; height: 100%; flex-direction: column; align-items: center; }
+  .top-spacer { width: 100%; height: 24px; flex-shrink: 0; }
+  .bottom-spacer { width: 100%; height: 60px; flex-shrink: 0; }
+  .header { width: 90%; height: 70px; justify-content: center; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
+  .header-title { font-size: 28px; font-weight: bold; color: #FFFFFF; text-align: center; }
+
+  .empty-tip { width: 100%; text-align: center; font-size: 18px; color: #757575; margin-top: 40px; }
+
+  /* 收藏卡片：深色圆角（对齐 index.ux .sec2-card / settings.ux .setting-card），行内分信息区 + ✕ 按钮 */
+  .fav-item { width: 86%; background-color: #1C1C1E; border-radius: 18px; padding: 14px 22px; margin-bottom: 12px; flex-direction: row; align-items: center; flex-shrink: 0; }
+  .fav-info { flex: 1; flex-direction: column; }
+  .fav-title { font-size: 24px; color: #FFFFFF; font-weight: 600; }
+  .fav-sub { font-size: 16px; color: #757575; margin-top: 4px; }
+  .fav-del { width: 44px; height: 44px; border-radius: 22px; background-color: #2C2C2E; color: #FFFFFF; text-align: center; font-size: 22px; line-height: 44px; margin-left: 12px; flex-shrink: 0; }
+
+  /* ===== 圆屏 466：字号/卡片宽度/内边距按比例缩小（对齐 settings.ux 圆屏） ===== */
+    /* ===== 胶囊 192x490：按比例放大（对齐 settings.ux 胶囊屏） ===== */
+  @media (shape: pill-shaped) {
+    .top-spacer { height: 30px; }
+    .header { height: 100px; margin-bottom: 20px; }
+    .header-title { font-size: 42px; }
+    .fav-item { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
+    .fav-title { font-size: 36px; }
+    .fav-sub { font-size: 28px; }
+    /* ✕ 从 76 缩到 56：少挤占标题文字宽度（标题已支持 3 行自适应） */
+    .fav-del { width: 56px; height: 56px; border-radius: 28px; font-size: 28px; line-height: 56px; margin-left: 14px; }
+    .empty-tip { font-size: 28px; margin-top: 60px; }
+  }
+</style>
+
+<script>
+  import router from '@system.router'
+  import prompt from '@system.prompt'
+  import storage from '@system.storage'
+
+  export default {
+    private: {
+      favorites: [],
+      loading: true
+    },
+
+    // onShow 每次回到本页都刷新，保证详情页收藏/取消后列表同步
+    onShow() {
+      this.refreshFavorites()
+    },
+
+    // 读取收藏列表：兼容旧数据里纯数字元素，统一转成对象格式（只读不写回，storage 原格式保持不变）
+    refreshFavorites() {
+      var self = this
+      storage.get({
+        key: 'favorite_list',
+        success: function(data) {
+          var list = []
+          try {
+            list = JSON.parse(data) || []
+          } catch(e) {
+            list = []
+          }
+          var normalized = list.map(function(item) {
+            if (typeof item === 'number') {
+              return { id: item, title: '事件 #' + item, yearDisplay: '', region: '' }
+            }
+            return {
+              id: item.id || 0,
+              title: item.title || '未知事件',
+              yearDisplay: item.yearDisplay || '',
+              region: item.region || ''
+            }
+          })
+          self.favorites = normalized
+          self.loading = false
+        },
+        fail: function() {
+          self.favorites = []
+          self.loading = false
+        }
+      })
+    },
+
+    // 点击条目进入详情页（与 result.ux/index.ux 一致：先写 global.selectedEventId 再跳转）
+    gotoDetail(id) {
+      if (id === undefined || id === null) return
+      if (this.$app.$def.isNavigating) return
+      global.selectedEventId = id
+      if (typeof global.addRuntimeLog === 'function') {
+        global.addRuntimeLog('从收藏打开详情: ID=' + id, 'info')
+      }
+      router.push({ uri: '/pages/detail', params: { id: id } })
+    },
+
+    // 移除收藏：按 id 从数组剔除并写回 storage（self 写法避免回调内 this 依赖）
+    removeFavorite(id) {
+      var self = this
+      var idx = -1
+      for (var i = 0; i < this.favorites.length; i++) {
+        if (this.favorites[i].id === id) {
+          idx = i
+          break
+        }
+      }
+      if (idx === -1) return
+      var newFavorites = []
+      for (var j = 0; j < this.favorites.length; j++) {
+        if (j !== idx) {
+          newFavorites.push(this.favorites[j])
+        }
+      }
+      self.favorites = newFavorites
+      storage.set({
+        key: 'favorite_list',
+        value: JSON.stringify(newFavorites),
+        success: function() {
+          prompt.showToast({ message: '已移除收藏', duration: 500 })
+          global.addRuntimeLog && global.addRuntimeLog('移除收藏: ID=' + id, 'info')
+        },
+        fail: function() {
+          prompt.showToast({ message: '移除收藏失败', duration: 500 })
+        }
+      })
+    },
+
+    // 右滑返回
+    onSwipe(eve) { if (eve.direction === 'right') { router.back() } },
+
+    goBack() { router.back() }
+  }
+</script>
