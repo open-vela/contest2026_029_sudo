@@ -585,6 +585,8 @@
       currentPage: 1,
       // v1.16.141（主人定案）：总搜索每批 6 条 —— 该值即 searchAllAsync 的 target
       // （pageSize × page = 本轮要凑够的卡片数）；一个集凑不够会自动继续下一个集直到凑够
+      // v1.16.178：最近一次检索的真实耗时（ms），界面显示用于佐证性能
+      lastElapsedMs: 0,
       pageSize: 6,
       loading: false,
       allLoaded: false,
@@ -667,17 +669,16 @@
       // v1.16.143（诊断结论）：结果计数文案 —— 未搜完所有资料集时，totalCount 只是
       // 「已搜部分的命中数」，用「共」会让人以为搜出了那么多；按状态分文案更诚实。
       resultCountText() {
-        var n = this.totalCount || 0
-        // allLoaded=true 表示所有资料集都搜过（引擎权威值）
-        return this.allLoaded
-          ? ('共 ' + n + ' 条结果')
-          : ('已找到 ' + n + ' 条 · 点显示更多继续')
-      },
-      moreText() {
-        // v1.16.138：列表最多留 10 条，「还有 N 条」的语义已不适用（N 是分批累计的）；
-        // 保留按钮本意：继续从后面的资料集取下一批
-        return '显示更多'
+      var base = ''
+      if (this.allLoaded) {
+        base = '共 ' + this.totalCount + ' 条结果'
+      } else {
+        base = '已找到 ' + this.displayList.length + ' 条 · 点显示更多继续'
       }
+      // v1.16.178：附上本次检索的真实耗时（模拟器/真机实测值，可在界面直接核对）
+      if (this.lastElapsedMs > 0) base += ' · 检索 ' + this.lastElapsedMs + 'ms'
+      return base
+    }
     },
 
     onInit() {
@@ -1689,6 +1690,8 @@
         // 每批 5 条、列表上限 10 条 → 可见数即列表长度（无需再单独维护）
         this.visibleCount = this.displayList.length
         this.totalCount = result.total || 0
+        // v1.16.178：记录本次检索真实耗时（模拟器/真机实测，界面显示）
+        this.lastElapsedMs = result.elapsedMs || 0
         this.currentPage = page
         this.loading = false
         // v1.16.60 渐进式加载：翻页到底 = 全部命中 map 已加载完（引擎权威值）。
