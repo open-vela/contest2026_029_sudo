@@ -16,7 +16,7 @@ description: openvela 手表快应用（.ux 单文件组件）开发实战手册
 |---|---|---|---|
 | 1 | `show="{{false}}"` **仍占位**（非 display:none） | 隐藏的卡片/提示留出大片空白 | 需真正移除占位时用 `if`；需零占位又要常驻节点时，用**类切换把高度/字号/内距一并归零** |
 | 2 | `position:absolute` 在 flex 容器内**不渲染** | 绝对定位的角标/浮层整个消失 | 改用「flex 子项 + 负 margin」；或把节点挂到 border-box 覆盖整屏的父级上 |
-| 3 | `height` 是 **border-box**，`width` 是 **content-box**（两者语义不一致） | 同一套尺寸在两处表现不同、右侧溢出 | 宽度一律按「内容宽 + 左右 padding/border」心算；高度按 border-box |
+| 3 | `width`/`height` **都是 border-box**（v1.16.295 起实测定案；早期「width 是 content-box」的结论已撤销） | 若按 content-box 心算会低估占位、出现右侧溢出 | 尺寸直接写「含 padding/border 的总宽」。实测例：`.cat-icon` 58+border2 → 58.0；`.search-btn` 136+border3 → 135.7 |
 | 4 | `flex: 1` **不可靠** | 等分/自适应布局塌陷或被挤压 | 用显式百分比宽度；行内用 `justify-content: space-between` 配固定宽 |
 | 5 | 模板内**禁止复杂表达式** | 编译或运行期行为异常 | 所有类名/文案在 JS 侧预拼成字符串，模板只做变量插值 |
 | 6 | `if` 节点**插删会渲染错序** | 交替显隐后元素顺序错乱 | 高频切换的节点用常驻 + 类切换；确需 `if` 时避免与其它 DOM 变更同帧发生 |
