@@ -18,7 +18,7 @@
       <text class="bt-name" if="{{dsName}}">{{dsName}}</text>
 
       <div class="progress-bar">
-        <div class="progress-fill" style="width: {{progressPercent}}%;"></div>
+        <div class="{{progressCls}}"></div>
       </div>
       <text class="progress-text">{{percentText}}</text>
       <text class="bt-detail">{{detailText}}</text>
@@ -31,28 +31,50 @@
 
 <style>
   .bt-page { width: 100%; height: 100%; background-color: #000000; flex-direction: column; align-items: center; }
-  .statusbar { width: 100%; height: 22px; flex-direction: row; justify-content: flex-end; align-items: center; padding-left: 30px; padding-right: 30px; flex-shrink: 0; }
+  /* v1.16.264 统一：高度/内距/字号全部对齐主页面状态栏 */
+  .statusbar { width: 100%; height: 36px; padding-top: 10px; flex-direction: row; justify-content: flex-end; align-items: center; padding-left: 30px; padding-right: 30px; flex-shrink: 0; }
   .sb-block { flex: 1; flex-direction: column; align-items: flex-end; }
   .time { font-size: 16px; color: #757575; font-weight: 400; }
   .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
 
   .bt-body { flex: 1; width: 100%; flex-direction: column; justify-content: center; align-items: center; }
-  .bt-icon-box { width: 88px; height: 88px; border-radius: 44px; background-color: #1C1C1E; justify-content: center; align-items: center; margin-bottom: 18px; }
+  .bt-icon-box { width: 88px; height: 88px; border-radius: 44px; background-color: #16171A; justify-content: center; align-items: center; margin-bottom: 18px; }
   .bt-icon { width: 56px; height: 56px; }
   .bt-status { font-size: 24px; color: #FFFFFF; font-weight: 600; margin-bottom: 8px; }
   .bt-name { font-size: 18px; color: #4D9FEE; margin-bottom: 10px; }
 
   .progress-bar { width: 200px; height: 8px; border-radius: 4px; background-color: #333333; margin-top: 24px; margin-bottom: 16px; overflow: hidden; }
   .progress-fill { height: 100%; background-color: #4D9FEE; border-radius: 4px; }
+.p0 { width: 0%; }
+.p5 { width: 5%; }
+.p10 { width: 10%; }
+.p15 { width: 15%; }
+.p20 { width: 20%; }
+.p25 { width: 25%; }
+.p30 { width: 30%; }
+.p35 { width: 35%; }
+.p40 { width: 40%; }
+.p45 { width: 45%; }
+.p50 { width: 50%; }
+.p55 { width: 55%; }
+.p60 { width: 60%; }
+.p65 { width: 65%; }
+.p70 { width: 70%; }
+.p75 { width: 75%; }
+.p80 { width: 80%; }
+.p85 { width: 85%; }
+.p90 { width: 90%; }
+.p95 { width: 95%; }
+.p100 { width: 100%; }
   .progress-text { font-size: 20px; color: #FFFFFF; font-weight: 600; margin-bottom: 6px; }
   .bt-detail { font-size: 14px; color: #8E8E93; margin-bottom: 10px; }
-  .bt-hint { font-size: 14px; color: #5b6472; }
+  .bt-hint { font-size: 14px; color: #6E6E73; }
 
   @media (shape: pill-shaped) {
-    .statusbar { height: 91px; padding-top: 41px; justify-content: center; padding-left: 0; padding-right: 0; }
+    .statusbar { height: 110px; padding-top: 34px; justify-content: center; padding-left: 0; padding-right: 0; }
     .sb-block { align-items: center; }
-    .time { font-size: 21px; }
-    .app-title { font-size: 22px; }
+    .time { font-size: 26px; }
+    .app-title { font-size: 28px; }
     .bt-icon-box { width: 130px; height: 130px; border-radius: 65px; margin-bottom: 24px; }
     .bt-icon { width: 84px; height: 84px; }
     .bt-status { font-size: 34px; margin-bottom: 12px; }
@@ -62,10 +84,39 @@
     .bt-detail { font-size: 22px; }
     .bt-hint { font-size: 22px; }
   }
+  /* ================= v1.16.317 圆屏 466x466（Vela_Virtual_Device5） =================
+     逻辑画布 300x300（466x300/466），可见区 = 内切圆（圆心 150,150，R=150），四角完全不可见。
+     距顶/底 d 处可用全宽 = 2*sqrt(R^2-(R-d)^2)：d=20->150 | 30->180 | 40->204 | 50->224
+     | 60->240 | 70->254 | 80->265 | 150->300。
+     原则：不是等比缩小，而是把整块内容收进直径 300 的内切圆 —— 卡片宽度不超过 220，
+     顶部让出圆弧（y=0 处可用宽为 0），底部同理。
+     ⚠️ 圆屏 .statusbar 高度必须定值（本运行时 height:auto 在 flex 列里不可靠）。 */
+  @media (shape: circle) {
+    /* 页头：36 -> 44 */
+    .statusbar { height: 44px; padding-top: 8px; padding-left: 0; padding-right: 0; justify-content: center; }
+    .sb-block { align-items: center; }
+    .time { font-size: 13px; }
+    .app-title { font-size: 15px; margin-top: 1px; }
+
+    /* 图标与文案收进圆内：y 中部可用宽 300，留足余量 */
+    .bt-icon-box { width: 68px; height: 68px; border-radius: 34px; margin-bottom: 10px; }
+    .bt-icon { width: 42px; height: 42px; }
+    .bt-status { font-size: 17px; margin-bottom: 5px; }
+    .bt-name { font-size: 13px; margin-bottom: 6px; }
+    .progress-bar { width: 180px; height: 6px; border-radius: 3px; margin-top: 12px; margin-bottom: 10px; }
+    .progress-fill { border-radius: 3px; }
+    .progress-text { font-size: 14px; margin-bottom: 4px; }
+    .bt-detail { font-size: 12px; margin-bottom: 6px; }
+    .bt-hint { font-size: 12px; }
+  }
+
 </style>
 
 <script>
-  import { getTransferState } from '../../SearchEngine/BtTransfer.js'
+  // ★★★ v1.16.412：本页只需 getTransferState 一个函数，原先直接 import BtTransfer.js(29KB)
+  //   导致 btransfer.jsc 14,213B 里背整份闭包。改走 global（app.ux 已挂载），
+  //   且 BtTransfer 是模块级单例状态 —— 走 global 用的正是 app.ux 那份，
+  //   比原先各页各持一份更安全。
   import router from '@system.router'
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n }
@@ -84,8 +135,25 @@
       navigated: false
     },
 
+  // ★ v1.16.350（S5 OOM 六步之④）：原模板 progress-fill 挂动态 style `width: {{progressPercent}}%`，
+  //   每次进度回调都改内联样式（踩「动态 style 绑定」雷区，AI_CONTEXT #69 记手环 9 崩机级）。
+  //   改为 5% 阶梯的静态类名 .p0~.p100，模板只做纯变量插值（同 v1.16.48 范式）。
+  progressCls() {
+    var p = Math.round((this.progressPercent || 0) / 5) * 5
+    if (p < 0) p = 0
+    if (p > 100) p = 100
+    return "progress-fill p" + p
+  },
+
     onShow() {
       var self = this
+      // ★ v1.16.419：onShow 可能重复触发（前后台切换 / 从 loading 返回），
+      //   原实现每次都无条件 new interval 却不先清旧的 —— 旧句柄被覆盖后永远无法清理，
+      //   同时 poll() 的 300ms 轮询会叠加：两次 onShow = 2 个 timer 一起跑，三次 = 3 个……
+      //   本页是一个 300ms 高频轮询页，叠加后 CPU 占用随进出次数线性上升。
+      //   dataset.ux:647 早有同样的前置清理（当时标「审查中#4」），唯独本页漏了。
+      if (this.timer) { clearInterval(this.timer); this.timer = null }
+      if (this.timeTimer) { clearInterval(this.timeTimer); this.timeTimer = null }
       this.updateTime()
       this.timeTimer = setInterval(function() { self.updateTime() }, 30000)
       // 轮询传输状态（300ms）：进度/完成/失败驱动 UI 与跳转
@@ -106,7 +174,7 @@
     // 状态 → UI；done 由本页跳 loading 建缓存（传输页职责内聚，BtTransfer 只维护状态）
     poll() {
       if (this.navigated) return
-      var st = getTransferState()
+      var st = global.getTransferState()
       this.dsName = st.name || st.ds || ''
       this.isError = st.phase === 'error'
       if (st.phase === 'receiving') {

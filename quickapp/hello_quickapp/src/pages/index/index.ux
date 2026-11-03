@@ -1,25 +1,37 @@
 <import name="input-method" src="../../components/InputMethod/InputMethod.ux"></import>
 
 <template>
-  <div class="page-container" @swipe="onSwipe">
+  <div class="page-container" @swipe="onSwipe" @touchstart="onDbgTouch">
     <!-- 整页纵向滚动：两块各占一屏，滑动停止后自动吸附（类似番茄钟分页）；每屏自带状态栏；搜索态结果随其滚动 -->
-    <scroll id="pageScroll" class="page-scroll" scroll-y="{{!voiceActive}}" onscroll="onPageScroll" onscrollbottom="onPageScrollBottom">
-      <!-- 第一块：顶部块。高度由 style 动态提供（screen1H）：非搜索态=整屏高（与第二屏构成
-           双屏吸附），搜索态=头部高（状态栏+搜索框）让结果区紧跟其后进入 pageScroll 内容流。
+    <scroll id="pageScroll" class="page-scroll" scroll-y="{{!voiceActive}}" onscrollbottom="onPageScrollBottom">
+      <!-- 第一块：顶部块。★ v1.16.339 起高度全部由 CSS 固定，**不再用动态 style 绑定**：
+           本机固件不支持动态 style（AI_CONTEXT #69），而旧实现恰好在「搜索完那一瞬间」
+           把 style="height:{{screen1H}}px" 从整屏高改成 241 —— 动态 style 失效 + 一帧内
+           三次重排（结果区插入 / 容器骤降 / 键盘收起）叠加 → 搜索框塌到左上角（真机稳定复现）。
+           现改为：非搜索态 .screen1 固定整屏高（双屏吸附），搜索态切 .screen1-search
+           固定 241（= 状态栏 110 + 上距 32 + 框高 92 + 7 余量，原本就是字面常量）。
+           全程只换 class、不改高度值 → 没有高度骤变，塌陷失去必要条件。
            ⚠️ 结果列表不能放进固定高容器、也不能包内层 scroll（v1.16.11/v1.16.29 两次教训）：
            嵌套 scroll 或 flex:1 失效都会造成「内容溢出不可见 + 手势死区 = 滑不动」。
            现在结果区是 pageScroll 的直接子项，随内容自然撑高，单层滚动。 -->
-      <div class="screen1" style="height: {{screen1H}}px;">
+      <div class="screen1" if="{{layoutReady}}">
         <!-- 状态栏时间 + 应用名（每屏独立渲染，随内容滚动）；搜索态标题切换为 searchTitle -->
         <div class="statusbar">
           <!-- 矩形手表：左占位 + 顶部居中标题 + 右上时间（三栏 flex 均分保证标题绝对居中） -->
           <!-- v1.16.127 蓝牙状态标识：项目既有图标（bluetooth_off/on，非自绘），放在**左槽内部** ——
                ⚠️ v1.16.126 曾把它放在三栏之外，占了 flex 均分宽度 → 「资料库」标题被挤偏（主人反馈）；
                放进 sb-left 后三栏重新等分，标题恢复绝对居中。
-               点击切换连接态（演示用，见 toggleBtDemo）。仅方屏显示（if 与 rect-title 同条件）。 -->
+               点击立即重新探活一次真实连接态（v1.16.339 起不再有演示开关）。仅方屏显示（if 与 rect-title 同条件）。 -->
+          <!-- ★★★ v1.16.457（2026-11-04 宝宝定案「它提示未连接蓝牙，把蓝牙连接的逻辑都删了
+               （或者注释掉更好）」）：演示模式下**不显示任何蓝牙状态**。
+               这两个图标（状态栏 sb-bt / 搜索框 prompt-bt）长期显示 bluetooth_off.png，
+               现场看起来就像「应用没连上设备」，与演示意图冲突。
+               整块注释保留以便日后恢复真链路时解开。 -->
+          <!--
           <div class="sb-left" if="{{showRectTitle}}">
-            <image class="sb-bt" src="{{btIconSrc}}" @click="toggleBtDemo"></image>
+            <image class="sb-bt" src="{{btIconSrc}}" @click="onBtIconTap"></image>
           </div>
+          -->
           <text class="rect-title" if="{{showRectTitle}}">{{headerTitle}}</text>
           <div class="sb-block">
             <text class="time">{{time}}</text>
@@ -28,61 +40,123 @@
         </div>
 
         <!-- 搜索框：常驻顶部；非搜索态点击进入搜索，搜索态点击开/收键盘；有词显示输入内容与 ✕ -->
-        <div class="search-box {{searchBoxClass}}" @click="toggleSearchBox">
+        <div class="{{searchBoxClass}}" @click="toggleSearchBox">
+          <!-- v1.16.219：回退 218 的"常驻+sgone 零占位"尝试——实测本运行时**不会把 text 节点
+               归零**（font-size:0/width:0 后仍以小字显示，与输入内容叠加 ✗）。
+               「连点/连打 → 搜索框位移」的多节点翻转问题继续存在，待换思路：
+               候选方向 ① 占位符合并为单节点（减少翻转数量）；
+                          ② 搜索框文本延迟到收键盘时才更新（打字期间零翻转）；
+                          ③ 仿资料页做法把搜索独立成页（改动大）。 -->
+          <!-- v1.16.228：占位符两节点 + 输入节点 → **合并为单文本节点**（文本变化≠节点插删），
+               打字零结构翻转；图标与 ✕ 保留 if（仅首字符各翻转一次，代价小） -->
           <image class="search-box-icon" src="/common/icons/search.png" if="{{!searchQuery && !voiceActive}}"></image>
-          <text class="search-placeholder" if="{{!searchActive && !voiceActive}}">{{homePlaceholder}}</text>
-          <text class="search-placeholder" if="{{searchActive && !searchQuery && !voiceActive}}">请输入</text>
-          <text class="search-input" if="{{searchActive && searchQuery && !voiceActive}}">{{displayQuery}}</text>
+          <!-- v1.16.285：语音态的「聆听中…」由**这个唯一文本节点**承载（见 searchBoxText），
+               原独立 .voice-text 节点已删——它在语音态与占位符同时渲染，造成框内文字叠字 -->
+          <text class="{{searchBoxTextCls}}">{{searchBoxText}}</text>
           <text class="clear-btn" if="{{searchActive && searchQuery && !voiceActive}}" @click="clearSearch">✕</text>
-          <text class="voice-text" if="{{voiceActive}}">聆听中…</text>
+          <!-- v1.16.243：蓝牙状态图标（原引导图左上角；引导图已删）。胶囊屏显示于搜索框右侧，
+               方屏状态栏已有 sb-bt 角标故此处隐藏。点击冒泡由 onBtIconTap 时间戳吞掉 -->
+          <!-- ★ v1.16.457：演示模式不显示蓝牙状态（同 sb-bt，见上） -->
+          <!--
+          <image class="prompt-bt" show="{{showAppTitle && !searchActive && !voiceActive}}" src="{{btIconSrc}}" @click="onBtIconTap"></image>
+          -->
         </div>
+        <!-- ★ v1.16.340 根治：头部与下半身分块。
+             .screen1（本块）只装「状态栏 + 搜索框」，高度恒定（胶囊 234 / 方屏 96 / 圆屏 96），
+             搜索时**完全不参与尺寸变化** → 搜索框位置在数学上不可能移动。
+             下方 .home-body 装图标行/气泡/按钮/语音面板，高度 = 整屏 − 头部，搜索态整块隐藏。 -->
+      </div><!-- /screen1：到此为止只有「状态栏 + 搜索框」，高度恒定 -->
 
-        <!-- 引导词：非搜索态、非语音态显示 -->
-        <div class="prompt-block" if="{{!searchActive && !voiceActive}}">
-          <image class="prompt-bt" show="{{showAppTitle}}" src="{{btIconSrc}}"></image>
-          <image class="prompt-img" src="/common/icons/prompt.png"></image>
-        </div>
+      <div class="home-body" if="{{layoutReady && !searchActive}}">
 
-        <!-- 分类横滑行：非搜索态、非语音态显示 -->
-        <!-- v1.16.96：外边距用 style 插值驱动——搜索态该节点被 if 隐藏但运行时会保留其
-     margin-top 61px（实测搜索框与「共 N 条」间距多出 61px 即此），需显式清零 -->
-        <scroll id="catScroll" class="cat-scroll" if="{{!searchActive && !voiceActive}}" style="margin-top: {{catScrollMT}}px;" scroll-x="{{true}}" onscroll="onCatScroll">
+
+        <!-- 资料图标行（v1.16.252 主人定案：删横滑）——固定一行不滑动（胶囊 2 个 / 方屏 4 个，
+             位置与原横滑初始态一致）；显示哪些与顺序由手机 App 经 cfg-home 协议下发
+             （storage home_icon_config，见 BtTransfer.js），未配置时沿用安装入口默认 -->
+        <!-- v1.16.253 修正：保留 scroll 组件（布局行为与旧版一致；252 曾误改 div 开/scroll 闭标签错配致布局乱），
+             仅禁用横滑（scroll-x=false）并移除吸附回调 —— 满足「不能左右滑动、固定槽位」 -->
+        <!-- ★ v1.16.354（《交接-S5卡顿与OOM》§3.2）：原 style="margin-top: {{catScrollMT}}px" 是全工程
+             最后一条**真正生效**的动态 style 绑定（rect/circle 都没有 CSS 覆盖它，只有 pill 被写死值盖掉），
+             S5 走 circle 分支 = 每次进首页都踩一遍动态 style 路径。现改为三形态 CSS 常量：
+               base(rect) 24px / @media circle 8px / @media pill 52px（原 :867 已有，不动）
+             等价性：aiMode/searchActive 时 catScrollMT 返回 0，但本节点 if 已排除这两种状态
+             （且 v1.16.340 起它整体在 .home-body 内，搜索态整块隐藏）→ 不需要归零档；
+             showKeyboard 时 pill 返回 100 但**一直**被 :867 的 52px 盖掉（v1.16.336 实测确认）→ 无需切换档。 -->
+        <scroll class="cat-scroll" if="{{!searchActive && !voiceActive}}" scroll-x="{{false}}">
           <div class="cat-row">
-            <div class="cat-item" for="{{displayCats}}" @click="goCategory($item)">
-              <div class="cat-icon {{$item.colorClass}}">
+            <div class="cat-item" for="{{visibleCats}}" @click="goCategory($item)">
+              <div class="{{$item.iconCls}}">
                 <image class="cat-icon-img" src="{{$item.icon}}"></image>
               </div>
               <text class="cat-text">{{$item.name}}</text>
             </div>
           </div>
         </scroll>
-    <!-- v1.16.112 引导提示（主人定案）：在资料图标下方、搜索按钮上方——「滑=浏览、点=进入」，
-         解决「看不懂图标有啥用」；随图标行同隐（搜索/语音态），键盘弹起时随流下移藏入键盘后 -->
-    <text class="cat-hint" if="{{!searchActive && !voiceActive}}">点图标进入资料</text>
-    <!-- 两个搜索按钮：矩形左右排列、胶囊/圆形上下排列；左「语音搜索」、右「AI搜索」 -->
+    <!-- ★ v1.16.305（主人定案 P7「可以，气泡框整体增大一点」）：对话气泡提示 ——
+         解决「提示文字到按钮之间一大段空白、底部按钮指向性不强」。
+         位置：.cat-hint 与底部入口按钮之间，随图标行同隐（搜索/键盘/语音态）。
+         结构：气泡框（CSS 画，主蓝实心 + 满圆角）+ 下指三角尾（PNG），
+         三角尾顶部有透明区 + 负 margin 上提，骑在气泡底弧的弦上，无缝不凸出。 -->
+    <div class="bubble-wrap" if="{{!searchActive && !showKeyboard && !voiceActive}}">
+      <div class="bubble">
+        <text class="bubble-text">点我说话</text>
+      </div>
+      <image class="bubble-tail" src="{{bubbleTailIcon}}"></image>
+    </div>
+    <!-- ★ v1.16.297（主人定案「这两个合并，弄成一个正方形的」）：原「语音搜索 / AI搜索」双钮 → 单钮。
+         合并依据：两者**输入完全相同**（同一路 AssistantEngine.recognize 的 ASR 结果），
+         只有输出不同；原先两钮视觉权重相同、都在说「按我说话」，是"认知重复"而非功能重复。
+         合并后一次说话同时得到：① 本地结果（先出，百毫秒级）② AI 答案（后插，卡片置顶）。
+         形态：近圆角正方形 + 纯图标无文字（主人偏好「能用图标就不要用文字」+ 官方手环9 套件
+         底部动作钮全部纯图标的规范）。柔光两层（外层 .btn-glow / 内层 .btn-glow-in）——
+         本运行时 box-shadow / gradient / filter 全不支持（v1.16.256 CSS 探针实测），
+         唯一柔光手段是「同心层叠 + rgba 递减 alpha」。 -->
         <div class="search-btn-row" if="{{!searchActive && !showKeyboard && !voiceActive}}">
-          <div class="search-btn search-btn-l" @click="startVoiceSearch">
-            <image class="search-icon" src="/common/icons/voice.png"></image>
-            <text if="{{!isCircle}}" class="search-text">语音搜索</text>
-          </div>
-          <div class="search-btn search-btn-r" @click="enterAiMode">
-            <image class="search-icon" src="/common/icons/ai.png"></image>
-            <text if="{{!isCircle}}" class="search-text">AI搜索</text>
+          <div class="btn-glow">
+            <div class="btn-glow-in">
+              <div class="search-btn" @click="startVoiceAsk">
+                <image class="search-icon" src="{{askBtnIcon}}"></image>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- 语音聆听态：蓝牙未连接显示断开图标+提示，已连接显示波形动画（随音量）；取消按钮 -->
+        <!-- ★★★ v1.16.336（宝宝定案）：语音入口提示改为**弹窗**，见文件末尾 .tip-mask 块（因此处
+             在 pageScroll 内会被裁剪，弹窗必须挂在 page-container 根层 + DOM 末尾）。
+             历史：v1.16.333 曾按「禁止弹窗」要求改成搜索框内闪一下的写法，本条已将其取代。 -->
+
+        <!-- 语音聆听态：只显示波形动画与取消按钮 -->
         <div class="voice-panel" if="{{voiceActive}}">
           <!-- v1.16.134：内容区固定高度 —— 已连接/未连接内容行数不同，靠固定高度保证取消按钮位置不漂移 -->
           <div class="voice-info">
-            <image class="voice-bt-off" src="/common/icons/bluetooth_off.png" if="{{!bluetoothConnected}}"></image>
-            <text class="voice-tip" if="{{!bluetoothConnected}}">蓝牙未连接</text>
-            <!-- v1.16.140（主人要求）：未连接时如实标注当前为模拟链路 -->
-            <text class="voice-sim-tip" if="{{!bluetoothConnected}}">仅作为模拟参考</text>
-            <text class="voice-tip" if="{{bluetoothConnected}}">{{voiceStatusText}}</text>
+            <!-- ★★★ v1.16.361（宝宝定案：「把原本那个语音输入蓝牙未在线的状态给删除
+                 （就只留弹窗，不能在语音输入时提示蓝牙未连接）」）：
+                 原先这里有三行 `if="{{!bluetoothConnected}}"` 的断开图标 /「蓝牙未连接」/
+                 「请先在手机 App 内连接手环」。问题在于——未连接时**根本进不了聆听态**
+                 （startVoiceAsk 已在入口用 .tip-mask 弹窗拦截并 return），所以这三行
+                 实际是死代码，却让「聆听态」看起来像两种形态。整块删除，统一为一种。
+                 ⚠️ `.voice-bt-off` / `.voice-sim-tip` 两条 CSS 规则保留：胶囊与圆屏块里
+                 仍写着它们的覆盖值，删规则会留一堆孤儿；且改动面越小越好回退。 -->
+            <!-- v1.16.330：手环 record 实测是空壳，录音在手机侧；必须如实说明 -->
+            <!-- ★ v1.16.457：演示模式下手表自己出识别结果，不再涉及「手机收音」，
+                 这行会误导观众 → 注释掉（恢复真链路时解开）。 -->
+            <!-- <text class="voice-sim-tip">手机上收音识别</text> -->
+            <!-- ★★★ v1.16.446 流式字幕：手机边识别边回 voice_partial，
+                 这里把已出的字实时显示出来，用户说话时就能看到字在长。
+                 与状态提示是两条独立的行：状态说「在干什么」，字幕说「听出了什么」。 -->
+            <text class="voice-partial" if="{{voicePartialText}}">{{voicePartialText}}</text>
+            <text class="voice-tip" if="{{!voicePartialText}}">{{voiceStatusText}}</text>
+            <!-- ★ v1.16.336：错误提示已统一由 .tip-mask 弹窗承载，此处不重复渲染。 -->
             <!-- v1.16.140：声波图标（模拟波动 —— 无真实音量源，见 startWave 注释） -->
             <div class="voice-wave">
-              <div class="{{$item.cls}}" for="{{waveBars}}"></div>
+              <!-- ★ v1.16.352（S5 卡顿根因）：原为 `for="{{waveBars}}"`，每 220ms 整体重赋数组 →
+               5 个节点全部重建，实测 4.55 拍/秒 × 5 = 23 次/秒属性更新（系统侧计到 27 次/秒
+               DOM 重建）。改为 5 个独立绑定字段，每拍只更新 1 根 → 约 3.8 次/秒。 -->
+            <div class="{{wbar1}}"></div>
+            <div class="{{wbar2}}"></div>
+            <div class="{{wbar3}}"></div>
+            <div class="{{wbar4}}"></div>
+            <div class="{{wbar5}}"></div>
             </div>
           </div>
           <div class="voice-cancel" @click="exitVoiceSearch">
@@ -90,27 +164,39 @@
           </div>
         </div>
 
-      </div>
+      </div><!-- /home-body -->
 
       <!-- 搜索结果区（v1.16.37 重构）：pageScroll 的直接子项，随内容自然撑高——
            单层滚动（修复「搜完滑不动」），滚到底自动加载下一页（pageScroll 的 onscrollbottom）。
            不再使用内层 scroll（v1.16.29 方案在手环轻量运行时 flex:1 失效 → 容器被内容
            撑开成手势死区，主人实测「还是滑动不了」）。 -->
       <div class="home-result" if="{{searchActive}}">
-        <!-- AI 回答卡（v1.16.33）：AI 搜索的问题回答；来源条目在其下方的结果列表 -->
-        <div class="ai-card" if="{{aiMode && (aiThinking || aiAnswer)}}">
+        <!-- AI 回答卡（v1.16.33 内嵌版 / v1.16.297 复活）：合并入口识别成功后，本地结果先出，
+             AI 答案回来即插到列表顶部。原条件绑 aiMode（面板全屏时本卡被盖住 → 永不可见），
+             现改绑 aiInlineMode（不打开全屏面板 → 卡片可见）。整卡可点 → 跳回答页看分节全文
+             （数据经 global.aiResult 桥接，与面板链路同一份）。 -->
+        <!-- ★ v1.16.463（2026-11-04 宝宝：「本地开始算，但是AI在上面会比本地先算完，然后显示在那里」）：
+             条件去掉 aiThinking —— 原来一提问就先渲染一张「正在检索本地资料并生成回答…」
+             占位卡，等 2.5s 才有正文，期间卡片高度跳变、下方结果被顶来顶去。
+             现在**答案就绪才出现**，配合 SIM_CHAT_LATENCY 降到 500ms，
+             顺序变成：出字 → AI 卡（顶部先出）→ 本地结果接在下面。 -->
+        <!-- ★★★ v1.16.466（2026-11-04 真机实测：AI 卡先出现在顶部，本地结果一到就跑到列表下面）：
+             `if` 会在条件翻真时**重新插入节点**，位置不可靠（项目铁律 #4 已有同一结论，
+             ai-answer.ux 的状态卡就是为此改用 show）。这里改成**常驻节点 + show**，
+             节点位置在模板里固定，内容随字段变，DOM 永不搬家。 -->
+        <div class="ai-card" show="{{(aiInlineMode && aiAnswer) || demoAiText}}" @click="openAiAnswerPage">
           <text class="ai-card-title">{{aiCardTitle}}</text>
-          <text class="ai-card-text">{{aiCardText}}</text>
+          <!-- ★ v1.16.467：正文只留**一个**节点，文本由 computed 统一给出。
+               原先用两个 if 互斥节点（!demoAiText / demoAiText），切换时两节点都要
+               插删 → 外层 .ai-card 被连带重建，卡片当场消失（真机实测两次）。 -->
+          <text class="ai-card-text">{{aiCardTextFinal}}</text>
+          <text class="ai-card-more" if="{{!aiThinking && (aiAnswer || demoAiText)}}">点卡片看完整回答 ›</text>
         </div>
         <!-- 结果计数：键盘打开也保持显示（v1.16.38）——此前 !showKeyboard 条件让键盘弹出时
              这行消失、下方卡片整体上顶一下；流式布局下保留它无任何副作用 -->
         <text class="result-count" if="{{searched && !loading && !aiMode}}">{{resultCountText}}</text>
         <text class="engine-tip" if="{{showEngineTip}}" @click="goSettings">数据未就绪 · 点此去设置检查</text>
-        <!-- v1.16.130（性能审查 T0①）：tid 指定稳定唯一键 —— 框架按 key diff，翻页 concat /
-             新搜索整表替换时，内容未变的节点不再逐个 setDomAttributes（手环固件此通道既慢又脆）。
-             列表项的 id 是跨集全局 id，天然唯一稳定 -->
         <div class="result-item" tid="id" for="{{visibleList}}" @click="gotoDetail($item.id)">
-          <!-- 三行类名由 DatasetManager 按 meta.display.card 预拼完整类名（纯变量插值，禁拼接表达式） -->
           <text class="{{$item.yearClass}}">{{$item.yearDisplay}}</text>
           <text class="{{$item.titleClass}}">{{$item.title}}</text>
           <text class="{{$item.catClass}}">{{$item.region}}</text>
@@ -118,55 +204,32 @@
         <text class="empty-tip" if="{{searchError && !loading}}">搜索出错 · 请重试</text>
         <text class="empty-tip" if="{{searched && displayList.length === 0 && !loading && !searchError}}">无结果</text>
         <text class="empty-tip" if="{{!searched && displayList.length === 0}}">{{waitTip}}</text>
-        <!-- 显示更多（v1.16.26 主人要求：默认只渲染 5 条，点此追加）-->
-        <!-- v1.16.138：显示条件从「列表长于可见数」改为「还有未搜完的资料集」——
-             现在 visibleCount 恒等于 displayList.length（每批 5 条、列表上限 10 条），原条件永不成立 -->
-        <div class="more-btn" if="{{!allLoaded && displayList.length > 0}}" @click="showMore">
+        <div class="more-btn" if="{{canShowMore}}" @click="showMore">
           <text class="more-text">{{moreText}}</text>
         </div>
         <text class="empty-tip" if="{{allLoaded && displayList.length > 0}}">— 已显示全部 —</text>
-        <!-- v1.16.131（主人反馈）：结果区是滚动流末尾，原本没有任何底部留白 —— 滑到底时
-             「显示更多」按钮会被屏幕边缘裁掉一部分。补一段固定留白（if 不占位，故用常驻块） -->
+        <!-- ★ v1.16.356 诊断：搜索耗时直接显示在结果下方（真机 console.log 进不了内核日志，
+             设置页 v1.16.342 已整块删除无入口 → 只能就地显示） -->
+        <text class="perf-tip" if="{{perfText}}">{{perfText}}</text>
         <div class="list-bottom-pad"></div>
       </div>
 
-      <!-- 第二块：状态栏 + 设置 / 收藏（一屏高）；搜索态隐藏（if 不占位） -->
-      <div class="screen2" if="{{!searchActive}}" style="height: {{screen1H}}px;">
-        <!-- 状态栏时间 + 应用名（第二屏顶部独立渲染，标题为「选项」） -->
-        <div class="statusbar">
-          <div class="sb-block">
-            <text class="time">{{time}}</text>
-            <text class="app-title" if="{{showAppTitle}}">{{secondTitle}}</text>
-          </div>
-        </div>
-
-        <!-- 设置 / 收藏卡片：占满剩余高度并垂直居中 -->
-        <div class="sec2-wrap">
-          <div class="sec2">
-            <div class="sec2-card sec2-card-first" @click="goSettings">
-              <image class="sec2-icon" src="/common/icons/set.png"></image>
-              <text class="sec2-text">设置</text>
-            </div>
-            <div class="sec2-card" @click="goFavorites">
-              <image class="sec2-icon" src="/common/icons/bookmark.png"></image>
-              <text class="sec2-text">{{favoriteText}}</text>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- v1.16.342：第二屏（设置/收藏）整体删除——宝宝定案「就让它纯粹搜索」。
+           删掉后 pageScroll 内容只剩一屏，整页滚动分页与吸附逻辑一并移除，
+           「搜索完成瞬间头部塌陷」的滚动位置来源随之消失。 -->
     </scroll>
 
-    <!-- 右侧分页指示点：当前页白色、另一页灰色；搜索态隐藏 -->
-    <div class="page-dots" if="{{!searchActive}}" style="top: {{dotsTop}}px;">
-      <div class="{{dot0Class}}"></div>
-      <div class="{{dot1Class}}"></div>
-    </div>
+    <!-- v1.16.257 删模板节点 → v1.16.266 清残余：分页指示点（.page-dots）自 v1.16.252 删横滑后
+         已无「页」可指示（主人真机截图右缘灰点属遗留噪声）。现 CSS / data / computed
+         （.page-dots·.page-dot / dotsTop·curPage / dot0Class·dot1Class）已全部移除，零残留 -->
 
     <!-- AI 助手全屏遮罩面板（v1.16.92 语音直答版）：整体套用语音搜索的模子——
          进面板即自动开麦 → 识别成功 → 「AI 正在思考中」→ 自动跳 AI 回答页。
          砍掉键盘输入（真机连手机蓝牙语音，手环小屏无打字需求）。
          z-index 15、绝对定位全屏、@swipe 滑动退出保持不变 -->
-    <div class="ai-panel" show="{{aiMode}}" @swipe="onAiSwipe">
+    <!-- v1.16.239（性能）：show → if —— 面板此前常驻挂载（show 切显隐），主界面每次 setState
+         都要 diff 它的 8 个节点；改 if 后不打开面板零成本（打开时一次性创建，本就伴随面板动画） -->
+    <div class="ai-panel" if="{{aiMode}}" @swipe="onAiSwipe">
       <div class="ai-body">
         <!-- 顶部语音搜索式大搜索框：聆听中/有问题/空态三块 if 互斥渲染（同一时刻仅一块可见） -->
         <div class="ai-box">
@@ -182,7 +245,7 @@
           <text class="ai-status">{{aiStatusText}}</text>
         </div>
         <!-- 底部取消按钮：语音搜索同款 -->
-        <div class="ai-cancel" @click="exitAiMode"><text class="ai-cancel-text">取 消</text></div>
+        <div class="ai-cancel" @click="exitAiMode"><text class="ai-cancel-text">取消</text></div>
       </div>
     </div>
 
@@ -196,15 +259,45 @@
          ② show 写法在胶囊屏会先按 rect 初值建树、device.getInfo 异步切 pill 后组件内部分支重建，
             重建出的树不可见且点击穿透（v1.16.78 在资料页实测：if 按需创建后键盘正常显示）。
             openKeyboard 的 150ms 延迟足以吸收 if 的首次创建成本 -->
-    <div class="kb-wrap" if="{{showKeyboard}}">
+    <!-- 键盘区：absolute 底部；搜索态弹出（rect 组件原生 / circle 外层 scale 0.625 / pill 撑满）。
+         v1.16.2 修复「键盘能开但按键全无反应」：v1.14.3 曾把 kb-wrap 移入 screen1（pageScroll 内），
+         其后的 home-result-scroll（常驻 DOM、flex:1 占满搜索框以下整屏、透明背景）在 DOM 顺序上压住键盘，
+         轻量运行时 z-index 不赢得命中测试 → 键盘可见但全部按键点击被 scroll 吞掉。
+         现移回 page-container 根层级 + DOM 末尾（v1.13.x / result.ux / historyband9 的已验证位置）：
+         绘制与命中都优先；几何不变（absolute 的包含块本来就是 page-container）。
+         v1.16.79 改 show→if：① 首页创建不再实例化 800 行键盘组件（冷启动更轻）；
+         ② show 写法在胶囊屏会先按 rect 初值建树、device.getInfo 异步切 pill 后组件内部分支重建，
+            重建出的树不可见且点击穿透（v1.16.78 在资料页实测：if 按需创建后键盘正常显示）。
+            openKeyboard 的 150ms 延迟足以吸收 if 的首次创建成本 -->
+    <!-- ★ v1.16.343（真机「搜索完塌到角落」根因修复）：挂载条件从 showKeyboard 改为
+         「showKeyboard || searchActive」，收起键盘不销毁整棵键盘组件，只挂 kb-off 移出屏幕。
+         —— 与 `src/pages/dataset/dataset.ux:131` 对齐（该页用同款写法，**真机上搜索不塌**）。
+         原写法在 finishInput() 那一帧同时做三件事：插入 home-result + 布局变化 + **销毁
+         800 行键盘子树**；资料筛选页只做前两件（键盘移出屏幕而非销毁），这是两页唯一的结构差异。 -->
+    <div class="{{kbWrapClass}}" if="{{showKeyboard || searchActive}}">
       <div class="kb-body kb-rect" if="{{screentype === 'rect'}}">
         <input-method hide="{{!showKeyboard}}" keyboardtype="QWERTY" screentype="rect" maxlength="20" @complete="onInput" @delete="onDelete"></input-method>
       </div>
+      <!-- v1.16.360：还原实验 A（圆屏曾临时传 screentype="rect" 验证键盘分支是否卡顿主因，
+           宝宝实测「还是一样卡」→ 已证伪，恢复 circle 分支）。 -->
       <div class="kb-body kb-circle" if="{{screentype === 'circle'}}">
         <input-method hide="{{!showKeyboard}}" keyboardtype="QWERTY" screentype="circle" maxlength="20" @complete="onInput" @delete="onDelete"></input-method>
       </div>
       <div class="kb-body kb-pill" if="{{screentype === 'pill-shaped'}}">
         <input-method hide="{{!showKeyboard}}" keyboardtype="QWERTY" screentype="pill-shaped" maxlength="20" @complete="onInput" @delete="onDelete"></input-method>
+      </div>
+    </div>
+
+    <!-- ★★★ v1.16.336：语音入口提示弹窗（宝宝要求「蓝牙未连接，直接弹窗提示，参考之前的设计规范」）。
+         ⚠️ 必须留在 page-container 根层级 + DOM 最末尾：本项目轻量运行时 **z-index 不赢得命中测试**，
+            DOM 顺序才决定谁吃掉点击（见 kb-wrap 的 v1.16.2 教训），放这里才能盖住键盘与整页滚动。
+         几何全部 absolute 铺满 + flex 居中，不依赖 flex:1（项目铁律 #2）。
+         遮罩本身也是可点关闭的（点空白处即"知道了"），保证任何一次点击都有响应。 -->
+    <div class="tip-mask" if="{{voiceTipShow}}" @click="closeVoiceTip">
+      <div class="tip-card">
+        <text class="tip-title">{{voiceTipMsg}}</text>
+        <text class="tip-body" if="{{voiceTipSub}}">{{voiceTipSub}}</text>
+        <div class="tip-btn" @click="closeVoiceTip"><text class="tip-btn-text">知道了</text></div>
       </div>
     </div>
   </div>
@@ -236,42 +329,105 @@
   /* 矩形手表：顶部应用名（大小约胶囊 3/4），三栏 flex 均分（sb-left/rect-title/sb-block）保证水平正中心，不干扰右上时间 */
   .rect-title { flex: 1; text-align: center; font-size: 20px; color: #FFFFFF; font-weight: 500; }
 
-  /* 第一块：高度由模板 style 动态提供（screen1H：非搜索态=整屏高 / 搜索态=头部高），
-     CSS 不再固定——固定高是「搜完滑不动」的根因（结果溢出固定高容器不可滚） */
-  .screen1 { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
+  /* ★ v1.16.339（宝宝定案「固定化容器，不要每次都算」）：screen1/screen2 高度改为
+     **CSS 常量**，模板不再用 style="height:{{screen1H}}px" 动态绑定。
+     起因（真机稳定复现）：搜索完成那一瞬间 finishInput() 同时做三件事 ——
+       ① searchActive=false→true（home-result 整块插入）
+       ② _applySearchLayout(true) 把 screen1H 从整屏高骤降到 241
+       ③ 键盘收起
+     其中 ② 走的是**动态 style 绑定**，而 AI_CONTEXT #69 已实锤：手环 9 固件处理
+     动态内联 style 绑定即崩（Y3a：同结构样式写死能开、动态绑定崩）。v1.16.18 曾
+     把动态 style 清零，v1.16.171 为了适配胶囊屏又把它加回到 screen1 高度上 →
+     「搜索完搜索框塌到左上角」正是这个回归的后果（打字期间高度不变，所以不塌）。
+     现改为「@media 固化 + 状态类」（#69 的定稿方案）：
+       · 非搜索态 .screen1 固定整屏高（rect 429 / pill 766 / circle 300，见各自 @media）
+       · 搜索态切 .screen1-search，固定头部高（rect 96 / pill 241 / circle 96）
+     全程只换 class、不改高度值 → 没有高度骤变，动态 style 彻底退出布局链路。
+     数值来源：designWidth=300，屏高×300÷屏宽 —— 336×480→429、192×490→766、466×466→300。 */
+  /* ★ v1.16.340 根治（宝宝定案「从根本上解决，不要重建」）：
+     旧结构下搜索框长在一个**高度会变**的 screen1 里（常态整屏 766/429/300，搜索态压到 241/96/96），
+     所以每次进出搜索都要重排，运行时偶尔算错就把头部甩到角落里。改动态 style 为类名只是换了表达方式，
+     「高度会变」这件事本身没消除，所以真机上照旧塌。
+     现在按**职责**切块，让高度从根上不参与搜索状态：
+       .screen1   = 状态栏 + 搜索框，高度恒等于头部高（胶囊 234 / 方屏 96 / 圆屏 96），**任何状态都不变**
+       .home-body = 图标行 + 气泡 + 语音面板 + 按钮，高度 = 整屏 − 头部，搜索态整块隐藏
+     搜索框的祖先容器高度恒定 ⇒ 它的位置在数学上不可能被重排改写。 */
+  .screen1 { width: 100%; height: 96px; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .home-body { width: 100%; height: 333px; flex-direction: column; align-items: center; flex-shrink: 0; }
 
   /* 分类横滑行：图标直径 58、间距 17、名称 13px；边缘留白 8.5（间距=2×边缘） */
-  /* margin-top 由模板 style 插值驱动（catScrollMT：常态 61 / 搜索态 0，v1.16.96） */
-  .cat-scroll { width: 100%; height: 82px; flex-shrink: 0; }
-  .cat-row { flex-direction: row; align-items: flex-start; padding-left: 8px; padding-right: 8px; }
+  /* v1.16.306：图标行 84->80，容器高同比 112->108 */
+  /* ★ v1.16.354：上距由模板动态 style 改为 CSS 常量（原 catScrollMT 方屏返回 24） */
+  .cat-scroll { width: 100%; height: 112px; flex-shrink: 0; margin-top: 24px; }
+  /* v1.16.301：方屏图标由 4 个减为 3 个（主人看 Pro 版效果），需要居中——
+     4 个时总宽 62*4+12*3=284 几乎顶满 300，左对齐是唯一可行；3 个时左对齐会明显偏左。
+     ⚠️ 本运行时 `justify-content: center` 在 scroll 内**不生效**（v1.16.301 实测：加了仍左对齐，
+     图标中心落在 36.6/109.8/183.0，屏心 150）→ 改用显式左内边距居中。
+     算式：3 个 item 视觉宽 = 62*3 + 12*2 = 210 → (300−210)/2 = 45 → 图标中心 76/150/224，
+     与屏心 150 完全对称（实测验证） */
+  /* v1.16.304：图标 76->84（面积 +22%），3 个图标 3*84+2*12=276，(300-276)/2=12 居中 */
+  /* v1.16.306（宝宝：「Pro 版的资料图标有点过大了，稍微缩小一点点」）：84->80（−4.8%）。
+     3*80+2*12=264 → (300−264)/2 = 18 重新居中；图标中心 58/150/242，仍对称于屏心 150。 */
+  /* ★ v1.16.312（宝宝：「那个资料图标都有点贴屏幕边缘了，稍微修一下」）：
+     行宽预算锁死 300（3 列），边距只能从「图标 / 间距」里挪。原为 icon 80 + gap 12 + 边距 18/18 = 6%。
+     新方案尽量少动图标、把边距从间隙里挤出来：
+       icon 74 + gap 14 + 边距 25/25 → 2*25 + 3*74 + 2*14 = 300 ✓
+     边距 18 → 25（6% → 8.3%，+39%）；图标 80 → 74（−7.5%，面积 −14%）；间隙 12 → 14。
+     外边距 25 > 内间隙 14，图标才是"成组居中"，而不是"贴着往外撑满"。
+     ⚠️ padding-right 必须留 0：末项自带 margin-right 14，若再给 padding-right 25，
+        内容宽 = 25+222+42+25 = 314 > 300 会横溢（scroll 可横拖，等于白改）。
+        现在内容宽 = 25+222+42 = 289 < 300，右侧实际读数 = 300−(25+222+28) = 25 ✓ 对称。 */
+  .cat-row { flex-direction: row; align-items: flex-start; padding-left: 25px; padding-right: 0; }
 
-  .cat-item { width: 58px; flex-direction: column; align-items: center; margin-right: 17px; flex-shrink: 0; }
-  .cat-icon { width: 58px; height: 58px; border-radius: 29px; background-color: #1C1C1E; justify-content: center; align-items: center; }
-  /* Google/Material 鲜活配色图标底（语义化：健康绿/科学蓝/历史橙/生活青/急救红/运动黄） */
-  .ci-green { background-color: #34A853; }
-  .ci-blue { background-color: #4285F4; }
-  .ci-orange { background-color: #FB8C00; }
-  .ci-cyan { background-color: #24C1E0; }
-  .ci-red { background-color: #EA4335; }
-  .ci-yellow { background-color: #FBBC05; }
-  .ci-ds { background-color: #8B5CF6; }
-  .cat-icon-img { width: 33px; height: 33px; }
-  .cat-text { font-size: 13px; color: #e6edf3; margin-top: 6px; }
+  /* v1.16.257 主人定案「统一配色 / 去花花绿绿」：废弃 Google Material 六色底，
+     改为统一的深色玻璃底 + rgba 细描边（图标本身是白色 glyph，靠形状与下方文字区分）。
+     语义类名保留（JS 仍按类名输出），只统一其值。
 
-  /* 引导词：灰色小字居中（位于分类图标上方，紧贴搜索框下方） */
-  /* v1.16.115：素材按 ink 收紧（482×230），显示 195×93（原 110 含空白边）——顺带省出 17px 垂直预算；
-     两行文字各自水平居中（原「Ask」偏左 11px）；蓝牙 glyph 左缘 == 第二行文字左缘，top 使图标与「Ask」视觉居中 */
-  .prompt-block { position: relative; margin-top: 16px; flex-shrink: 0; }
-  .prompt-img { width: 195px; height: 93px; }
-  .prompt-bt { position: absolute; left: 0; top: 8px; width: 37px; height: 37px; }
-  /* v1.16.112 图标行下方引导提示（弱化色，与上方 guide 成对） */
-  .cat-hint { width: 100%; text-align: center; font-size: 13px; color: #5b6472; letter-spacing: 2px; margin-top: 8px; flex-shrink: 0; }
+     ⚠️ v1.16.266 更正盒模型认知（此前注释「宽度是 content-box」**有误**，勿再据此推算）：
+     本运行时 width/height 为 **border-box（含 border）**。证据：v1.16.259 三处互证 +
+     v1.16.266 方屏（Vel-pro 336×480）像素实测复核 —— .cat-icon 58+border2 实测 58.0、
+     .search-btn 136+border3 实测 135.7、.search-box 240+border2 实测 240.2，均等于各自 CSS 值。
+     故 v1.16.257 当年按 content-box 推出的「58→62 补偿」在语义上本不需要；但该组数值
+     已构成当前视觉（图标视觉间距 = item 62 − icon 58 + margin 12 = 16px，方屏实测 16.1px 吻合），
+     属**已验收布局** —— 因此只订正认知、保留数值，不再改动。 */
+  /* v1.16.312：item 宽 80→74 与 .cat-icon 同步；margin-right 12→14 */
+  .cat-item { width: 74px; flex-direction: column; align-items: center; margin-right: 14px; flex-shrink: 0; }
+  /* v1.16.302（主人：「资料图标大小再增大点……换成那种偏正方形，但是边缘非常圆润的」）：
+     58×58 正圆（r=29=半宽）→ 76×76 **大圆角方形**（r=26，圆角率 26/76 ≈ 34%）。
+     选 34% 而非 25% 或半圆：25% 偏"方盒子"、半圆退回正圆，34% 是本运行时观感最接近
+     squircle 的档位（border-radius 只支持圆角矩形，无 superellipse，故此档为近似上限）。
+     面积 58²=3364 → 76²=5776（+72%），图标内 glyph 33 → 42 同比放大。 */
+  /* v1.16.312：80→74，圆角维持 34% 档位（27/80 → 25/74 = 33.8%）；glyph 42 同比 */
+  .cat-icon { width: 74px; height: 74px; border-radius: 25px; background-color: #16171A; border: 2px solid rgba(255,255,255,0.10); justify-content: center; align-items: center; }
+  .ci-green { background-color: #16171A; }
+  .ci-blue { background-color: #16171A; }
+  .ci-orange { background-color: #16171A; }
+  .ci-cyan { background-color: #16171A; }
+  .ci-red { background-color: #16171A; }
+  .ci-yellow { background-color: #16171A; }
+  .ci-ds { background-color: #16171A; }
+  /* v1.16.372：收藏入口图标底色，与六色统一为同一深玻璃底（见上方 v1.16.257 统一配色定案） */
+  .ci-fav { background-color: #16171A; }
+  /* v1.16.306：圆角维持 34% 档位（29/84→27/80），内部 glyph 46->44 同比 */
+  /* v1.16.312：44→41（与 icon 74 同比，占 55.4%） */
+  .cat-icon-img { width: 41px; height: 41px; }
+  /* v1.16.306：13->15px（把标签与提示的层级拉开）。
+     ★ v1.16.307（宝宝：「点击图标进入资料的提示给去掉，然后再增加一下资料标题大小」）：15->18px。
+     「点图标进入资料」提示（.cat-hint）已删，标签成为图标行唯一的文字，故直接提一档。
+     容器 .cat-scroll 已固定 108，内容 80+6+18.2（实测行高≈字号）= 104.2 < 108，不会裁切。 */
+  .cat-text { font-size: 18px; color: #FFFFFF; margin-top: 6px; }
+
+  /* 蓝牙状态图标（v1.16.243）：原在引导图左上角，引导图删除后移入搜索框（absolute 相对搜索框）。
+     方屏状态栏已有 sb-bt 角标，此处默认隐藏；胶囊屏 media 里显示在搜索框右侧 */
+  .prompt-bt { display: none; }
 
   /* 搜索框：位于状态栏下方，深色圆角输入框样式，放大镜靠左，带描边，点击进入搜索页 */
   /* v1.16.103 方屏密度增大（主人定案）：搜索框 258×56→240×50 */
-  .search-box { width: 240px; height: 50px; border-radius: 25px; background-color: #1C1C1E; border: 2px solid #3A3A3C; flex-direction: row; justify-content: flex-start; align-items: center; padding-left: 16px; margin-top: 4px; flex-shrink: 0; }
-  .search-box-icon { width: 22px; height: 22px; }
-  .voice-text { font-size: 20px; color: #757575; flex: 1; margin-left: 10px; text-align: left; }
+  .search-box { position: relative; width: 260px; height: 56px; border-radius: 28px; background-color: #16171A; border: 2px solid rgba(255,255,255,0.10); flex-direction: row; justify-content: flex-start; align-items: center; padding-left: 16px; margin-top: 4px; flex-shrink: 0; }
+  .search-box-icon { width: 24px; height: 24px; }
+  /* v1.16.285：语音态文本由搜索框那唯一文本节点承载（原来还有独立 .voice-text 节点，
+     两者同时渲染造成叠字）。样式保留但去掉 flex:1 —— 避免单节点被撑成整行、与图标分离。 */
+  .voice-text { font-size: 20px; color: #757575; margin-left: 10px; text-align: left; }
 
   /* 搜索按钮行：矩形左右排列，胶囊/圆形上下排列 */
   /* v1.16.83：矩形屏按钮下移贴近屏底（原 20px 留白过大；screen1H=429，加至 80 后底部余 ~15px 不溢出）。
@@ -279,16 +435,70 @@
   /* v1.16.95 修正按钮溢出：本运行时盒模型为 content-box，width:100% + 水平 padding
      会把行撑到 356px 溢出屏幕（按钮两侧卡边）——去掉行内边距，靠按钮宽度控边距 */
   /* v1.16.113：提示插入后按钮下移被裁 → 行上距 80→64 补偿（底部余量 0→15px 恢复原观感） */
-  .search-btn-row { width: 100%; flex-direction: row; justify-content: center; align-items: center; margin-top: 26px; flex-shrink: 0; }
+  /* v1.16.259：按钮高 62→66（圆润化），同步把行上距 98→94 收回 4px，方屏按钮底边位置不变 */
+  /* v1.16.297（双钮合并为单正方形钮）：行上距 94→44 —— 按钮高 66→112 增 46，
+     上距同步收 50，按钮**底边绝对位置不变**（94+66+8=168 ↔ 44+124=168），垂直预算不动。 */
+  /* ⚠️ v1.16.298 方屏实测修正：上距 44→20。上面那条「底边不变」的推算是按**旧的提示文字高度**做的，
+     实际提示文字（.cat-hint）底边落在 **250 逻辑**（不是推算的 232，差 18）——
+     于是 44 的上距把整行推到了屏幕最底部：方屏（Vel-pro 336×480 → 逻辑高 428.6）实测
+     **按钮底距屏底仅 9.8、光晕底距仅 0.9（几乎贴边）**，而设计目标是按钮底距 35。
+     上距 44→20（收 24）后按钮底边回到 **393.9 ≈ 394**、底距 **34.7 ≈ 35** ✓，
+     与提示文字之间的间隙 33.1、与屏底 34.7 —— 上下基本对称。
+     胶囊屏不受影响（其 media 段自带 margin-top 覆盖）。
+     ★ v1.16.303（按钮改胶囊形 200×72）：按钮高 112→72，光晕块高 130→90（缩 40）——
+     行上距同步 20→60（+40），按钮块**底边绝对位置不变**（20+130=150 ↔ 60+90=150），
+     垂直预算与 v1.16.298 校准过的「底距 34.7」一脉相承。 */
+  /* ★ v1.16.305（主人定案 P7 蓝底气泡 + 「整体增大一点」）：入口按钮正上方的对话气泡提示。
+     样式 = 主蓝 #2E6BF0 实心 + 白字 + 满圆角胶囊 + 下指三角尾（PNG，见 velaPro/_gen_tail.js）。
+     为什么尾巴必须用负 margin 上提：气泡是满圆角胶囊，底边是圆弧（中心最低、两侧上抬），
+     尾宽 28 时两侧比中点心高 rise = 21 - sqrt(21²-14²) ≈ 5.35 —— PNG 顶部留 6px 透明区、
+     再用 margin-top: -6px 上提，尾巴顶边这条直线正好落在圆的弦上（弦除端点外全在圆内），
+     于是顶边被气泡完全盖住，既不留黑缝也不凸出。
+     ⚠️ 纵向预算：气泡块整高 = 框 42 + 尾（16 - 6 上提）= 52 逻辑，全部从 .search-btn-row
+     原先的 margin-top: 60 里扣回（60 = 4 + 52 + 4），按钮块绝对位置纹丝不动。 */
+  .bubble-wrap { width: 100%; flex-direction: column; align-items: center; margin-top: 34px; flex-shrink: 0; }
+  /* v1.16.308 气泡由主蓝改为电靛 #4E2EEF（白字对比度 7.09，原 4.69）——明度 0.56 / 饱和 86%，
+     比旧蓝更亮更艳，纯黑 OLED 上不发灰；尾巴 PNG 用同一色值重出，保证接缝无色差 */
+  /* v1.16.309 气泡底色由电靛 #4E2EEF 改为定稿绿 #19793A（宝宝从 8 档候选里选中的绿色）。
+     该值是线上真实渲染后实测的像素色（非设计稿色号），白字对比度 5.37，超过 WCAG AA 的 4.5；
+     绿与底部 a 号蓝按钮在色轮上相距约 120°，是明确的冷色邻近对比，不再出现「接近但没调准」的观感。
+     尾巴 PNG 用同色重出，几何未动（顶部透明区 + 负 margin 上提，顶边被气泡完全盖住故无缝）。 */
+  .bubble { height: 42px; border-radius: 21px; background-color: #19793A; padding: 0 18px; justify-content: center; align-items: center; flex-shrink: 0; }
+  .bubble-text { font-size: 18px; color: #FFFFFF; font-weight: 500; }
+  .bubble-tail { width: 28px; height: 16px; margin-top: -6px; flex-shrink: 0; }
+  .search-btn-row { width: 100%; flex-direction: row; justify-content: center; align-items: center; margin-top: 4px; flex-shrink: 0; }
   /* v1.16.89 等宽修正：flex:1 在该运行时失效 → 两按钮按内容收缩不等宽（186 vs 153 实测），
      改固定等宽 154px（336 = 行内边距20 + 间距8 + 154×2），文字/图标水平对齐 */
   /* v1.16.95：content-box 下 136 + 左内边距 14 = 渲染 150；两钮+间距=308，屏幕两侧余 14px */
   /* v1.16.109：内容居中（去左对齐+左内距）——文案精简后居中最均衡（主人定案） */
-  .search-btn { position: relative; width: 136px; height: 62px; border-radius: 31px; background-color: #4D9FEE; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
-  /* v1.16.110 配色：双彩底白标体系——语音=品牌绿、AI=紫罗兰（呼应 AI 星） */
-  .search-btn-l { margin-right: 4px; background-color: #34A853; }
-  .search-btn-r { margin-left: 4px; background-color: #7B5CFF; }
-  .search-icon { width: 22px; height: 22px; margin-right: 6px; flex-shrink: 0; }
+  /* v1.16.297 单正方形钮（方屏 112×112 圆角 32 = 边长 28.6%）：近圆角正方形而非正圆 ——
+     正圆会被误认成"第七个资料集图标"（分类图标本身是 58 圆角 29 的圆），方中带圆才是一级动作钮。
+     图标 96px PNG 在运行时恒渲染自然尺寸 ÷ 2 = 48 逻辑 → 占按钮高 42.9%（官方套件实测 42.7% ✓） */
+  .search-btn { position: relative; width: 200px; height: 72px; border-radius: 36px; background-color: transparent; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
+  /* ⚠️ v1.16.259 实测更正（**项目铁律，勿再按 content-box 推算**）：本运行时
+     **width/height 都是 border-box（含 border）**——验证：`.search-box` width:246+border:3 →
+     实测 245.3；`.cat-icon` width:95+border:3 → 实测 95.3；按钮 width:190/184+border:3 →
+     实测 190.6/184.4（各自等于自身 CSS 值）。v1.16.257 那条「描边撑宽 6px 需 -6px 补偿」
+     是基于 content-box 的误判，已撤销。
+     （v1.16.297：本节原附带的「.search-btn-r 不加 width 覆盖」一句随双钮合并失效已删 ——
+      .search-btn-l / .search-btn-r 现已整体删除，只剩一个 .search-btn 主蓝实心入口。） */
+  /* 毛边柔光（v1.16.256 探针定案）：本运行时 box-shadow / linear-gradient / radial-gradient /
+     filter 全部不支持，唯一的柔光手段是「同心层叠 + rgba 递减 alpha」——
+     外层容器留 padding 即形成一圈半透明光晕（纯流式布局，不依赖 absolute/z-index） */
+  /* v1.16.297 两层柔光（原 .btn-glow-a 0.16 / .btn-glow-b 0.09 两色改为同一按钮的内外两层）：
+     外层 padding 即光晕厚度，alpha 递减形成毛边；圆角同步 +6/+3 保证同心。
+     尺寸：112 + 内层 3×2 = 118 + 外层 6×2 = 130（外框总占位） */
+  .btn-glow { border-radius: 43px; padding: 6px; background-color: rgba(46,107,240,0.16); flex-shrink: 0; }
+  .btn-glow-in { border-radius: 39px; padding: 3px; background-color: rgba(77,159,238,0.09); }
+  /* ★ v1.16.300 更正（推翻 v1.16.272 的旧结论）：本运行时**会应用**类选择器的 width/height
+     到这类 <image> 上。旧结论「不应用、渲染恒为 PNG 自然尺寸 ÷ 2」是**巧合误导** ——
+     那时 voice-ai.png 正好 96px、CSS 正好 48px，两者数值恰好 = 2:1，看起来像"按自然尺寸÷2 渲染"，
+     实际是 CSS 生效。铁证：换成 224px 素材、CSS 仍写 48px 时，实测渲染仍是 **46.4 ≈ 48 逻辑**
+     （若按自然尺寸÷2 应为 112），故 CSS 优先。
+     因此本按钮现在写 **width/height = 按钮边长**，素材出 2 倍像素（224 / 312）保证清晰；
+     渐变底 + 高光 + 内描边 + 图标全部烘在 PNG 里（本运行时 CSS 不支持渐变/阴影），
+     故 .search-btn 本体底色 transparent、border-radius 与 PNG 里的 squircle 圆角（边长 33%）保持一致。 */
+  .search-icon { width: 200px; height: 72px; flex-shrink: 0; }
   /* v1.16.134（主人要求）：取消按钮贴屏幕底部 —— 面板撑满剩余高度，取消按钮用 margin-top:auto
      推到底（绝对定位在本运行时的 flex 容器内不渲染，故走常规流） */
   /* v1.16.134（主人要求）：取消按钮贴屏幕底部。面板在 scroll 内容流内，flex:1 撑不开
@@ -298,10 +508,37 @@
   .voice-panel { width: 100%; height: 326px; flex-direction: column; justify-content: space-between; align-items: center; padding-top: 30px; padding-bottom: 24px; flex-shrink: 0; }
   .voice-info { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
   .voice-tip { font-size: 24px; color: #FFFFFF; margin-bottom: 12px; }
+  /* v1.16.446：流式字幕 —— 已出的字用高亮色+加粗，与状态提示明确区分 */
+  .voice-partial { font-size: 28px; color: #5AB0FF; font-weight: bold; margin-bottom: 10px; text-align: center; }
   .voice-bt-off { width: 50px; height: 50px; margin-bottom: 12px; }
-  .voice-cancel { width: 160px; height: 56px; border-radius: 28px; background-color: #3A3A3C; justify-content: center; align-items: center; flex-shrink: 0; }
+  /* v1.16.285（主人反馈「取消按钮感觉有点丑」）：改为主页面**次要按钮语言**
+     —— 深蓝底 #10224E + 3px 蓝描边 rgba(77,159,238,0.45)，与 .home-btn(AI搜索)、
+     detail.ux 的 .back-bar(返回) 同源。原先的 #2C2C2E 中性灰是**漏改的遗留**：
+     v1.16.275 已把「显示更多」从 #2C2C2E 改成 #16171A+描边，但取消按钮没跟着铺开，
+     结果全应用只剩它还是"光秃秃一块灰"，黑底上无描边、无层次，像没画完的方块。 */
+  .voice-cancel { width: 136px; height: 66px; border-radius: 33px; background-color: #10224E; border: 3px solid rgba(77,159,238,0.45); justify-content: center; align-items: center; flex-shrink: 0; }
   /* v1.16.140：模拟提示字 + 声波图标（5 根竖条，高度档位类名由 JS 预拼切换） */
   .voice-sim-tip { font-size: 14px; color: #757575; margin-bottom: 14px; }
+  /* v1.16.336：语音入口提示改弹窗后，搜索框内那版提示样式（.voice-entry-tip）已无引用；
+     此处保留注释说明来历，规则本身删除，避免"看着在用其实没人用"的僵尸 CSS。
+     历史：v1.16.333 曾用 .voice-entry-tip { font-size:20px; color:#FF8A65; flex:1; ... }。 */
+  /* v1.16.325：语音入口的即时错误提示（蓝牙未连接等），用警示色与普通提示区分 */
+  .voice-err-tip { font-size: 15px; color: #FF8A65; margin-bottom: 12px; }
+
+  /* ★★★ v1.16.336 语音入口提示弹窗（rect 基准，designWidth 300）
+     ——取值全部沿用本项目既有语言，不新造视觉：
+        · 遮罩 rgba(0,0,0,0.6)：与全项目「黑底 + 半透明压暗」一致（.ai-panel 是同色黑全屏）
+        · 卡片 #16171A + 圆角 18 + 描边 rgba(255,255,255,0.10) —— 与 .info-card / .search-box 同款
+        · 主文字 #FFFFFF、副文字 #757575（项目里 9 处次要信息都用它）
+        · 按钮 #10224E + 3px 描边 rgba(77,159,238,0.45) + 圆角 = 高/2 —— 与 .voice-cancel / .btn-secondary 同款
+        · 字号档位 20/16 与 .info-text / .search-placeholder 同档
+     ⚠️ 本运行时 CSS 不支持 box-shadow / 渐变色（项目铁律），层次只能靠描边 + 底色差。 */
+  .tip-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 30; justify-content: center; align-items: center; }
+  .tip-card { width: 240px; border-radius: 18px; background-color: #16171A; border: 2px solid rgba(255,255,255,0.10); padding: 16px; flex-direction: column; align-items: center; }
+  .tip-title { font-size: 20px; color: #FFFFFF; font-weight: 500; text-align: center; }
+  .tip-body { font-size: 16px; color: #757575; margin-top: 8px; line-height: 24px; text-align: center; }
+  .tip-btn { width: 160px; height: 56px; border-radius: 28px; background-color: #10224E; border: 3px solid rgba(77,159,238,0.45); justify-content: center; align-items: center; margin-top: 16px; }
+  .tip-btn-text { font-size: 20px; color: #FFFFFF; font-weight: 500; }
   .voice-wave { flex-direction: row; align-items: flex-end; height: 34px; margin-top: 4px; }
   .wbar { width: 6px; margin-right: 5px; border-radius: 3px; background-color: #4D9FEE; flex-shrink: 0; }
   .h1 { height: 8px; }
@@ -309,21 +546,12 @@
   .h3 { height: 24px; }
   .h4 { height: 34px; }
   .voice-cancel-text { font-size: 24px; color: #FFFFFF; }
-  .search-text { font-size: 22px; color: #FFFFFF; font-weight: 400; }
+  /* v1.16.297：.search-text 随「纯图标无文字」定案删除（原「语音搜索 / AI搜索」两组文字）。 */
 
   /* 第二块：状态栏固定高度在顶部，剩余空间由 sec2-wrap 撑起并让卡片垂直居中 */
-  .screen2 { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
-  .sec2-wrap { width: 100%; flex: 1; justify-content: center; align-items: center; }
-  .sec2 { width: 100%; flex-direction: row; padding-left: 21px; padding-right: 21px; flex-shrink: 0; }
-  .sec2-card { flex: 1; height: 150px; border-radius: 21px; background-color: #1C1C1E; flex-direction: column; justify-content: center; align-items: center; }
-  .sec2-card-first { margin-right: 14px; }
-  .sec2-icon { width: 36px; height: 36px; }
-  .sec2-text { font-size: 17px; color: #FFFFFF; font-weight: 600; margin-top: 12px; }
-
-  /* 分页指示点：右边缘竖排两个小圆点 */
-  .page-dots { position: absolute; right: 4px; flex-direction: column; align-items: center; z-index: 10; }
-  .page-dot { width: 10px; height: 10px; border-radius: 5px; margin-bottom: 12px; background-color: #4a4a4a; }
-  .page-dot-active { background-color: #FFFFFF; }
+  /* v1.16.266：方屏补高度兜底 —— 原仅靠 flex:1（项目铁律：flex:1 不可靠），
+     胶囊屏有 height:656px 覆盖而方屏没有。screen1H=429 − 状态栏 36 = 393
+     （方屏固定值，与胶囊 656 对称；若 screen1H 调整需同步此数） */
 
   /* ===== 主页内嵌搜索（搜索态结果区替换分类行，随外层 pageScroll 滚动） ===== */
   /* 结果区独立滚动容器（v1.16.29）：占满 screen1（CSS 固定一屏高）剩余空间。
@@ -334,24 +562,30 @@
   /* 搜索框内占位/输入/清空三件套（复用主页 .search-box 同名义尺寸；无独立 search-wrap 包裹） */
   .search-placeholder { font-size: 20px; color: #757575; flex: 1; margin-left: 10px; text-align: left; }
   .search-input { font-size: 22px; color: #FFFFFF; flex: 1; margin-left: 10px; text-align: left; }
-  .clear-btn { width: 28px; height: 28px; border-radius: 14px; background-color: #3A3A3C; color: #FFFFFF; text-align: center; font-size: 18px; line-height: 28px; margin-right: 14px; flex-shrink: 0; }
+  .clear-btn { width: 28px; height: 28px; border-radius: 14px; background-color: #2C2C2E; border: 1px solid rgba(255,255,255,0.10); color: #FFFFFF; text-align: center; font-size: 18px; line-height: 28px; margin-right: 14px; flex-shrink: 0; }
 
   .result-count { width: 100%; text-align: center; font-size: 16px; color: #757575; margin-top: 4px; flex-shrink: 0; }
 
   /* 引擎未加载提示：黄色醒目，点击跳设置 */
-  .engine-tip { width: 100%; text-align: center; font-size: 18px; color: #FBBC05; margin-top: 8px; flex-shrink: 0; }
+  .engine-tip { width: 100%; text-align: center; font-size: 18px; color: #6E6E73; margin-top: 8px; flex-shrink: 0; }
 
   /* 结果列表（搜索结果随外层 pageScroll 流式滚动，无需内嵌 scroll） */
   /* v1.16.103：padding 10/14→8/12、间距 6→5、圆角 14→12（一屏 4 条） */
-  .result-item { width: 94%; margin-left: 3%; border-radius: 12px; background-color: #1C1C1E; padding: 5px 11px; margin-bottom: 3px; flex-direction: column; flex-shrink: 0; }
+  /* v1.16.275（主人要求「卡片出个小描边」）：加 1px 极淡描边，与 .ai-card 的描边手法一致，
+     让深色卡片在黑底上有清晰边界（纯靠明度差在黑底上边界发虚） */
+  .result-item { width: 94%; margin-left: 3%; border-radius: 12px; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08); padding: 5px 11px; margin-bottom: 3px; flex-direction: column; flex-shrink: 0; }
   /* 「显示更多」按钮（v1.16.26）*/
   /* AI 回答卡（v1.16.33）：区别于普通结果卡的强调样式 */
-  .ai-card { width: 94%; margin-left: 3%; border-radius: 14px; background-color: #1C2530; border: 1px solid #2A4A66; padding: 12px 14px; margin-bottom: 8px; flex-direction: column; flex-shrink: 0; }
+  /* v1.16.264 统一：AI 卡改主页面深蓝 + 蓝描边（原 #1C2530/#2A4A66 是自成一派的青蓝色） */
+  .ai-card { width: 94%; margin-left: 3%; border-radius: 14px; background-color: #10224E; border: 1px solid rgba(77,159,238,0.45); padding: 12px 14px; margin-bottom: 8px; flex-direction: column; flex-shrink: 0; }
   .ai-card-title { font-size: 18px; color: #4D9FEE; font-weight: 600; margin-bottom: 6px; }
   .ai-card-text { font-size: 18px; color: #E8E8E8; line-height: 26px; }
   /* v1.16.131：与结果卡统一 —— 圆角 12（对齐 result-item）、文字 17px（对齐 result-title）、
      高度 64→48（原比同屏卡片元素粗壮一圈） */
-  .more-btn { width: 94%; margin-left: 3%; height: 48px; border-radius: 12px; background-color: #2C2C2E; justify-content: center; align-items: center; margin-top: 3px; margin-bottom: 3px; flex-shrink: 0; }
+  /* v1.16.275（主人反馈「显示更多配色明显不一样」）：底色 #2C2C2E 是中性灰、与卡片的 #16171A
+     深色玻璃不是一套 → 改为与 .result-item **完全同款**（同底色 + 同描边 + 同圆角），
+     仅保留蓝色文字作为"可点击"的区分 */
+  .more-btn { width: 94%; margin-left: 3%; height: 48px; border-radius: 12px; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08); justify-content: center; align-items: center; margin-top: 3px; margin-bottom: 3px; flex-shrink: 0; }
   .list-bottom-pad { width: 100%; height: 60px; flex-shrink: 0; }
   .more-text { font-size: 17px; color: #4D9FEE; }
   .result-year { font-size: 16px; font-weight: bold; color: #4D9FEE; margin-bottom: 1px; }
@@ -364,11 +598,16 @@
   .sz-medium { font-size: 17px; }
   .sz-small { font-size: 13px; }
 
+  /* v1.16.356 诊断埋点行 */
+  .perf-tip { font-size: 16px; color: #6B7280; margin-top: 4px; margin-bottom: 4px; }
+
   .empty-tip { width: 100%; text-align: center; font-size: 18px; color: #757575; margin-top: 40px; }
 
   /* 键盘区：absolute 底部；rect 用原组件（255px 满宽）、circle 画布 480px 整体 scale 0.625、
      pill 组件内部已按 300 基准重写，此处直接撑满（与 result.ux 同款） */
   .kb-wrap { position: absolute; left: 0; bottom: 0; width: 100%; overflow: visible; z-index: 20; }
+  /* v1.16.215：键盘收起时移出屏幕（保持挂载=免重建，同时不拦下方触摸） */
+  .kb-off { bottom: -999px; }
   .kb-rect { position: relative; width: 100%; height: 255px; }
   .kb-circle { position: relative; left: -90px; width: 480px; height: 321px; transform: scale(0.625); transform-origin: 240px 321px; }
   .kb-pill { position: relative; width: 100%; height: 477px; }
@@ -387,9 +626,11 @@
      纵向居中——套语音搜索 voice-panel 的居中布局 */
   .ai-body { width: 100%; height: 444px; flex-direction: column; justify-content: flex-start; align-items: center; }
 
-  /* 顶部语音搜索式大搜索框：同款圆角描边造型（258 宽 / 圆角 28 / 描边 2px #3A3A3C / 背景 #1C1C1E），
-     高度 110（比语音搜索框 56 大——AI 场景要放下完整问题文本），内容双向居中 */
-  .ai-box { width: 258px; height: 110px; border-radius: 28px; background-color: #1C1C1E; border: 2px solid #3A3A3C; flex-direction: column; justify-content: center; align-items: center; flex-shrink: 0; margin-top: 16px; }
+  /* 顶部语音搜索式大搜索框：与 .search-box 同一套「深色玻璃」语言
+     （258 宽 / 圆角 28 / 底色 #16171A / 描边 2px rgba(255,255,255,0.10)），
+     高度 110（比语音搜索框 56 大——AI 场景要放下完整问题文本），内容双向居中。
+     ⚠️ 注释里出现 #3A3A3C / #1C1C1E 即为 v1.16.257 统一配色前的旧值，勿再引用。 */
+  .ai-box { width: 258px; height: 110px; border-radius: 28px; background-color: #16171A; border: 2px solid rgba(255,255,255,0.10); flex-direction: column; justify-content: center; align-items: center; flex-shrink: 0; margin-top: 16px; }
   .ai-box-listening { font-size: 20px; color: #8E8E93; }
   .ai-box-text { font-size: 22px; color: #FFFFFF; line-height: 30px; text-align: center; padding-left: 14px; padding-right: 14px; }
   .ai-box-hint { font-size: 20px; color: #757575; }
@@ -399,20 +640,31 @@
   .ai-mid { width: 258px; flex-direction: column; align-items: center; margin-top: 50px; flex-shrink: 0; }
   /* 圆形麦克风 56px：聆听中蓝底 #4D9FEE、空闲/出错/思考深灰 #2C2C2E（类切换，禁动态 style） */
   .ai-mic-circle { width: 56px; height: 56px; border-radius: 28px; justify-content: center; align-items: center; flex-shrink: 0; }
-  .ai-mic-on { background-color: #4D9FEE; }
-  .ai-mic-off { background-color: #2C2C2E; }
+  .ai-mic-on { background-color: #2E6BF0; }
+  /* v1.16.295：空闲态补白描边，去掉「全应用最后一处裸灰块」。
+     描边档位按控件尺寸走：≥50px 用 2px（同 .cat-icon/.back-pill/.search-box），
+     小圆片（.clear-btn/.fav-del，28~44px）才用 1px。
+     蓝色激活态 .ai-mic-on 不加描边（对齐 .retry-btn —— 本体系实心蓝按钮不带描边）；
+     border-box 已实测成立，两态外径恒为 56/88，切换不跳变。 */
+  .ai-mic-off { background-color: #2C2C2E; border: 2px solid rgba(255,255,255,0.10); }
   .ai-mic-img { width: 28px; height: 28px; }
   .ai-status { font-size: 20px; color: #D0D0D4; text-align: center; line-height: 28px; margin-top: 18px; }
 
-  /* 底部取消按钮：语音搜索同款（160×56 圆角 28 #3A3A3C） */
-  .ai-cancel { width: 160px; height: 56px; border-radius: 28px; background-color: #3A3A3C; justify-content: center; align-items: center; margin-top: 50px; flex-shrink: 0; }
+  /* v1.16.297：内嵌 AI 卡片底部「点卡片看完整回答 ›」——弱化色、右对齐、一行 */
+  .ai-card-more { font-size: 12px; color: #4D9FEE; text-align: right; margin-top: 6px; }
+
+  /* 底部取消按钮：语音搜索同款（尺寸/配色见下方 v1.16.266/285 两行注释，#3A3A3C 为旧值） */
+  /* v1.16.266 统一：取消按钮尺寸对齐主按钮（方屏 136×66 圆角 33），同 .voice-cancel */
+  /* v1.16.285（主人反馈「取消按钮感觉有点丑」）：同 .voice-cancel 改次要按钮语言
+     （深蓝底 #10224E + 3px 蓝描边），与 AI 搜索按钮 / 详情页返回按钮同源。 */
+  .ai-cancel { width: 136px; height: 66px; border-radius: 33px; background-color: #10224E; border: 3px solid rgba(77,159,238,0.45); justify-content: center; align-items: center; margin-top: 50px; flex-shrink: 0; }
   .ai-cancel-text { font-size: 22px; color: #FFFFFF; }
 
   /* ===== AI 面板胶囊 192x490 放大（语音直答版；主体高 766 - 头部 80） ===== */
   @media (shape: pill-shaped) {
-    .ai-panel { top: 91px; height: 675px; }
+    .ai-panel { top: 110px; height: 656px; }
     .ai-body { height: 675px; }
-    .ai-box { width: 246px; height: 150px; border-radius: 30px; border: 3px solid #3A3A3C; margin-top: 20px; }
+    .ai-box { width: 246px; height: 150px; border-radius: 30px; border: 3px solid rgba(255,255,255,0.12); margin-top: 20px; }
     .ai-box-text { font-size: 28px; line-height: 38px; }
     .ai-box-listening { font-size: 26px; }
     .ai-box-hint { font-size: 26px; }
@@ -421,66 +673,271 @@
     .ai-mic-circle { width: 88px; height: 88px; border-radius: 44px; }
     .ai-mic-img { width: 44px; height: 44px; }
     .ai-status { font-size: 30px; line-height: 40px; margin-top: 26px; }
-    .ai-cancel { width: 220px; height: 88px; border-radius: 44px; margin-top: 70px; }
+    /* v1.16.264 统一：取消按钮尺寸对齐主按钮（220×106 圆角 53） */
+    /* v1.16.285：描边随尺寸加粗（3px 与 .home-btn 一致） */
+    .ai-cancel { width: 220px; height: 106px; border-radius: 53px; margin-top: 46px; border-width: 3px; }
     .ai-cancel-text { font-size: 34px; }
   }
 
-  /* ===== 圆屏 466（Watch S3/S4）：5 个图标整行居中，不横滑 ===== */
+  /* ==================== 圆屏（circle）466x466 → 逻辑 300x300 ====================
+     ★ v1.16.316：圆屏适配（宝宝硬性要求「UI 必须适配圆形表盘」，推翻 v1.16.266
+     「项目已放弃圆屏适配」的旧定案）。
+
+     几何：466x466 屏，designWidth=300 → 逻辑画布 300x300，可见区 = 内切圆
+     （圆心 150,150，R=150），四角完全不可见。**距顶/底 d 处可用全宽 = 2*sqrt(R²-(R-d)²)**：
+       d=20 → 149.7 ｜ d=30 → 180 ｜ d=40 → 204 ｜ d=50 → 223.6 ｜ d=60 → 240 ｜ d=70 → 253.8
+     所以方屏/胶囊那套「300 宽铺满」在圆屏必然越界——横向一律按该 y 处的可用宽取值。
+
+     纵向预算（逻辑，屏高 300，上下各留 ≥40 安全区）：
+       状态栏 44（顶 0~44）→ 搜索框 40（46~86）→ 图标行 68（94~162）
+       → 气泡 38（166~204）→ 按钮块 50（208~258）；按钮底 y=258，距屏底 d=42，
+       该处可用宽 2*sqrt(150²-108²) ≈ 208 > 156 ✓
+     与方屏/胶囊的差别：不是等比缩小，而是**整体收紧字号与间距**（圆屏可视高只有方屏 429 的 70%）。
+
+     ⚠️ 圆屏 .statusbar 高度必须是定值（本运行时 height:auto 在 flex 列里不可靠），
+        且 .sb-block 要改成居中（方屏是 flex-end 靠右）。 */
   @media (shape: circle) {
-    .sb-bt { display: none; }
+    /* 状态栏：时间+标题上下堆叠、水平居中；顶部让出圆弧（y=0 处可用宽 0） */
+    .statusbar { height: 44px; padding-top: 8px; padding-left: 0; padding-right: 0; justify-content: center; }
+    .sb-block { align-items: center; }
+    .time { font-size: 13px; }
+    .app-title { font-size: 15px; margin-top: 1px; }
+    /* ★ v1.16.340：圆屏分块（466×466 → 逻辑 300）；头部 96，下半身 204 */
+    .home-body { height: 204px; }
+
+    /* 搜索框：260→200 宽，56→40 高；右侧蓝牙图标内收 */
+    .prompt-bt { display: block; position: absolute; right: 6px; top: 10px; width: 20px; height: 20px; }
+    .search-box { width: 200px; height: 40px; border-radius: 20px; margin-top: 2px; padding-left: 12px; border: 1px solid rgba(255,255,255,0.10); }
+    .search-box-icon { width: 18px; height: 18px; }
+    .search-placeholder { font-size: 15px; margin-left: 6px; }
+    .search-input { font-size: 16px; margin-left: 6px; }
+    .voice-text { font-size: 15px; margin-left: 6px; }
+    /* v1.16.333：搜索框内的语音入口提示（胶囊屏 200px 宽，字号跟 .voice-text 走） */
+    .clear-btn { width: 26px; height: 26px; border-radius: 13px; font-size: 15px; line-height: 26px; margin-right: 8px; border-width: 1px; }
+
+    /* 资料图标行：v1.16.344 起 5 列。行宽 5*46+4*10=270，(300-270)/2=15 居中；
+       图标行顶部逻辑 y≈104 处弦宽 285 > 270，左右各余 ~7.5，不触圆弧。
+       ⚠️ padding-right 仍留 0（末项自带 margin-right 10），否则内容宽超 300 会横溢
+       （3 列时代此处为 padding-left: 71px） */
+    /* ★ v1.16.462（2026-11-04 宝宝「怎么一排改成6个了，还回5个来」）：**回到 5 列**。
+       v1.16.459 曾按 6 列几何改小（40px/7px），但 visibleCats 的 n 一直是 5，
+       于是「5 个图标塞进 6 列的槽里」= 整行偏左、图标偏小，看起来就是「挤了 6 个」。
+       几何 5*46 + 4*10 = 270，(300-270)/2 = 15 居中；
+       图标行 y≈104 处弦宽 285 > 270，左右各余 ~7.5，不触圆弧。 */
+    .cat-scroll { height: 68px; margin-top: 8px; }
+    .cat-row { padding-left: 15px; padding-right: 0; }
+    .cat-item { width: 46px; margin-right: 10px; }
+    .cat-icon { width: 46px; height: 46px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.10); }
+    .cat-icon-img { width: 26px; height: 26px; }
+    .cat-text { font-size: 13px; margin-top: 3px; }
+
+    /* 气泡：178→ 整块收窄（几何等比 0.55×），三角尾素材仍用 bubble-tail-r（28x16），
+       这里按比例缩小显示尺寸，保持「尾骑在气泡底弧弦上」的负 margin 关系 */
+    .bubble-wrap { margin-top: 8px; }
+    .bubble { height: 30px; border-radius: 15px; padding: 0 12px; }
+    .bubble-text { font-size: 13px; }
+    .bubble-tail { width: 18px; height: 10px; margin-top: -3px; }
+
+    /* 入口按钮：200x72 → 156x42（宽高比 3.71 → 3.71 保持同比，仅整体缩小）；
+       两层柔光同比收：外层 4 / 内层 2。
+       底部弧线校验：按钮下沿 y=258、d=42，可用宽 ≈208 > 156（余量 52）✓ */
+    .search-btn-row { margin-top: 8px; padding-left: 0; padding-right: 0; }
+    .search-btn { width: 156px; height: 42px; border-radius: 21px; }
+    .search-icon { width: 156px; height: 42px; }
+    .btn-glow { border-radius: 25px; padding: 4px; }
+    .btn-glow-in { border-radius: 23px; padding: 2px; }
+
+    /* 语音面板 / AI 面板：圆屏整屏 300，面板须收在圆内（宽度 220，圆角 20）
+       ★ 纵向预算（v1.16.318 修正）：状态栏 44 + 搜索框 80 = 面板起于逻辑 y=124。
+       原高 260 → 面板底到 384，超出画布 300 达 84，取消按钮完全落到屏外点不到。
+       反算约束：取消按钮宽 132 逻辑（物理 205）要完整落在圆内，需可用全宽 ≥ 205
+       → 距圆心 ≤ √(233²−102.5²)=209.2 物理 → 按钮底 ≤ 逻辑 284（物理 442）。
+       故面板高取 168、padding-bottom 8 → 按钮底 284，正好卡在极限内侧。 */
+    .voice-panel { height: 168px; padding-top: 14px; padding-bottom: 8px; }
+    .voice-tip { font-size: 18px; margin-bottom: 6px; }
+    .voice-partial { font-size: 20px; margin-bottom: 6px; }
+    .voice-sim-tip { font-size: 12px; margin-bottom: 6px; }
+    .voice-bt-off { width: 40px; height: 40px; margin-bottom: 6px; }
+    .voice-wave { height: 28px; margin-top: 2px; }
+    .voice-cancel { width: 132px; height: 44px; border-radius: 22px; border-width: 2px; }
+    .voice-cancel-text { font-size: 20px; }
+    .ai-panel { top: 44px; height: 256px; }
+    .ai-body { height: 256px; }
+    .ai-box { width: 220px; height: 76px; border-radius: 20px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.12); }
+    .ai-box-text { font-size: 16px; line-height: 22px; }
+    .ai-box-listening { font-size: 16px; }
+    .ai-box-hint { font-size: 15px; }
+    .ai-mid { width: 220px; margin-top: 16px; }
+    .ai-mic-circle { width: 52px; height: 52px; border-radius: 26px; }
+    .ai-mic-img { width: 26px; height: 26px; }
+    .ai-status { font-size: 18px; line-height: 24px; margin-top: 10px; }
+    /* v1.16.320 审计修正：取消按钮底 = 44+8+76+16+52+10+24+14+44 = 288，
+       d=12 逻辑（18.6 物理）→ 可用全宽仅 182.5 物理 = 117.5 逻辑 < 按钮 132 → 左右各溢 7 逻辑。
+       margin-top 14 → 8，按钮底收到 282，d=18 逻辑 → 可用 221 物理 = 142 逻辑 ✓（余 10）。
+       ⚠️ 该 aiMode 全屏面板当前无入口（enterAiMode 零调用，v1.16.297 起改用内嵌 AI 卡），
+       属休眠链路；此修正为防御性，圆屏段内所有 .ai-* 规则同理。 */
+    .ai-cancel { width: 132px; height: 44px; border-radius: 22px; margin-top: 8px; border-width: 2px; }
+    .ai-cancel-text { font-size: 20px; }
+
+    /* 第二屏（设置/收藏）：整屏 300，卡片两侧各让 40（=> 220 宽，y 中部可用宽 ≥280） */
+
+    /* 搜索结果卡 / AI 内嵌卡：宽度收进圆内（220），内距与字号同比减小 */
+    .result-count { font-size: 13px; margin-top: 4px; }
+    .result-item { width: 220px; border-radius: 14px; padding: 8px 10px; margin-bottom: 6px; }
+    .result-year { font-size: 15px; }
+    .more-btn { width: 220px; border-radius: 14px; height: 44px; margin-bottom: 6px; }
+    .more-text { font-size: 16px; }
+    .list-bottom-pad { height: 56px; }
+    .ai-card { width: 220px; margin-left: 0; border-radius: 18px; padding: 10px 12px; margin-bottom: 8px; }
+    .ai-card-title { font-size: 16px; margin-bottom: 5px; }
+    .ai-card-text { font-size: 15px; line-height: 22px; }
+    .empty-tip { font-size: 16px; margin-top: 28px; }
+    .perf-tip { font-size: 12px; margin-top: 2px; }
+    .engine-tip { font-size: 15px; }
+    .sz-large { font-size: 16px; }
+    .sz-medium { font-size: 15px; }
+
+    /* 键盘：圆屏画布 480x321 已由 .kb-circle 的 scale(0.625) 处理，此处不再叠加缩放。
+       ⚠️ 但 .kb-wrap 是 absolute + width:100%（=300 逻辑宽），本运行时对绝对定位子容器的
+       裁剪框按「父容器宽」而不是按 transform 后的可视区计算，且在 transform 之前的坐标系
+       生效 → 画布 480 里只露出前 300（对应物理 x≈290），键盘右侧 Q~P、1~0 整列被切掉。
+       修法：把 .kb-wrap 自身撑到 480 并左移 -90，让裁剪框覆盖整个画布；
+       480 画布换算到屏幕正好是 0~300 满宽，视觉与命中区一致。 */
+    .kb-wrap { left: -90px; width: 480px; height: 200px; overflow: hidden; }
+    /* ★ v1.16.345（主人反馈「键盘无法收起」）：上面这层 .kb-wrap 是 absolute + bottom:0，
+       高度由子元素 .kb-circle（321）撑开 → 盒子从 y=-21 铺到 y=300，**整屏被它盖住**；
+       搜索框（y≈46~86）落在其中，而本运行时「DOM 顺序决定命中」，键盘在 DOM 末尾
+       → 点搜索框的点击全被键盘容器吞掉，键盘收不起来（方屏 255<429、胶囊 477<766 无此问题）。
+       修法：把容器盒子压到可见键盘高度 321×0.625≈200，键盘本体改贴容器底边定位
+       （layout top 仍是 300−321=−21，视觉位置与原来逐像素一致），容器顶部让出 y<100。 */
+    .kb-circle { position: absolute; bottom: 0; left: 0; }
+    /* ★★★ v1.16.361（宝宝反馈「搜完之后页面向左滑可以滑动，旁边都是黑色的；
+       没搜索时向左滑是正常返回桌面」）：
+       根因 = 上面那条 `.kb-wrap { left:-90px; width:480px }` 让整页产生 90px 横向溢出
+       （480 − 90 = 390 > 300 逻辑宽）。而 .kb-wrap 的挂载条件是 `showKeyboard || searchActive`：
+         · 未搜索：两者都假 → 不挂载 → 无溢出 → 左滑交给系统 = 正常返回桌面 ✓
+         · 搜索完成：searchActive 恒真 → 一直挂载（键盘只是加了 .kb-off 移到屏下）→
+           溢出持续存在 → 整页变成可横向拖动，拖出来就是 .page-container 的黑底 ✗
+       修法：收起态（.kb-off）把盒子收回 100% 宽、left 归 0。此时它已在 bottom:-999px，
+       宽度对视觉零影响；键盘真正展开时仍是 480 宽，不会切掉右侧 Q~P 列。
+       ⚠️ 不能改成给 .page-container 加 overflow:hidden —— 见 :763 那条注释：
+       本运行时对绝对定位子容器的裁剪在 **transform 之前的坐标系**生效，父级裁 300 会把
+       480 画布截成 pre-transform 的 0~300，键盘左右两侧各被切掉一截。 */
+    .kb-off { left: 0; width: 100%; }
   }
+
     /* ===== 胶囊 192x490（手环 9）：设置/收藏上下两行全宽卡片 ===== */
   @media (shape: pill-shaped) {
-    .prompt-bt { display: none; }
+    /* v1.16.243：蓝牙图标显示在搜索框右侧（搜索框高 92、图标 38 → top=(92-38)/2=27） */
+    /* ★ v1.16.340：胶囊屏分块高度（逻辑屏高 490×300÷192 ≈ 766）
+       头部 = 状态栏 110 + 搜索框上距 32 + 框高 92 = 234；下半身 = 766 − 234 = 532 */
+    .screen1 { height: 234px; }
+    .home-body { height: 532px; }
+    .prompt-bt { display: block; position: absolute; right: 12px; top: 27px; width: 38px; height: 38px; }
     .statusbar { justify-content: center; padding-left: 0; padding-right: 0; }
     .sb-block { align-items: center; }
-    .time { font-size: 21px; }
-    .app-title { font-size: 22px; }
-    .cat-scroll { height: 128px; }
-    .cat-row { padding-left: 28px; padding-right: 28px; }
-    .cat-item { width: 95px; margin-right: 55px; }
-    .cat-icon { width: 95px; height: 95px; border-radius: 47px; }
-    .cat-icon-img { width: 55px; height: 55px; }
-    .cat-text { font-size: 20px; margin-top: 6px; }
+    .time { font-size: 26px; }
+    .app-title { font-size: 28px; }
+    /* ★ v1.16.312（宝宝：「那个资料图标都有点贴屏幕边缘了，稍微修一下」）——
+       胶囊屏 2 列，行宽预算锁死 300：2*icon + gap + 左右边距 = 300。
+       原：2*110 + 32 + 24/24 → 图标左右边距仅 24（屏宽 8%），贴边感明显。
+       新方案保持**与方屏同款均匀节奏**（外边距略大于内间距）：
+         icon 104 + gap 24 + 边距 34/34 → 2*34 + 2*104 + 24 = 300 ✓
+       边距 24 → 34（屏宽 11.3%，+42%）；图标 110 → 104（−5.5%，面积 −10.6%）。
+       ⚠️ 与方屏同款坑：padding-right 必须留 0（末项自带 margin-right 24），
+          否则 34+208+24+24+34 = 324 会横溢。实际内容宽 = 34+208+24 = 266 < 300 ✓ */
+    .cat-scroll { height: 150px; }
+    .cat-row { padding-left: 34px; padding-right: 0; }
+    /* v1.16.257：图标加 3px rgba 描边后 content-box 宽 95→101，同步 item 宽与间距防溢出 */
+    /* v1.16.304：图标 95->105，2*105+42=252 + 左右 padding 24*2 = 300 整好铺满 */
+    /* v1.16.306（宝宝：「胶囊型手环则稍微增大一点点」）：105->110（+4.8%）。
+       胶囊屏只有 2 列且宽度预算被锁死（必须正好铺满 300）：
+         2*110 + 间距 + 24*2 = 300 → 间距 = 32。
+       即图标长的 5 必须从图标间距里还回去，否则第二列会被挤出屏（这是上一轮 105 时
+       间距 42 的来源：2*105+42+48 = 300，同一把预算锁）。 */
+    /* v1.16.312：item 110→104 与 icon 同步、margin-right 32→24（间隙从缩掉的边距里让出来） */
+    .cat-item { width: 104px; margin-right: 24px; }
+    /* v1.16.302：与方屏同步改「大圆角方形」（圆角率 34% = 32/95），尺寸不变、只改圆角 */
+    /* v1.16.312：110→104，圆角维持 34% 档位（37/110 → 35/104 = 33.7%）；glyph 65→61 同比 */
+    .cat-icon { width: 104px; height: 104px; border-radius: 35px; border: 3px solid rgba(255,255,255,0.12); }
+    /* v1.16.312：65→61（与 icon 104 同比，占 58.7%） */
+    .cat-icon-img { width: 61px; height: 61px; }
+    /* v1.16.306：20->24px。★ v1.16.307：24->28px（提示已删，标签是图标行唯一文字）。
+       容器 .cat-scroll 146，内容 110+6+28×0.91（实测行高系数）≈ 141.5 < 146 不会裁切。 */
+    .cat-text { font-size: 28px; margin-top: 6px; }
     /* v1.16.116：提示块上距 14→25、图标行上距 40→29——实测上间隙 20 / 下间隙 44（CSS）不协和，
        两者各让 8px 后上下各 31px 配平，且图标绝对位置不变（一加一减抵消） */
-    .prompt-block { margin-top: 15px; }
-    .prompt-img { width: 195px; height: 93px; }
-    .prompt-bt { top: 8px; width: 37px; height: 37px; }
-    .cat-hint { font-size: 23px; letter-spacing: 0px; margin-top: 6px; }
-    .search-box { width: 246px; height: 92px; border-radius: 46px; margin-top: 20px; border: 3px solid #3A3A3C; padding-left: 18px; }
+    .search-box { width: 246px; height: 92px; border-radius: 46px; margin-top: 32px; border: 3px solid rgba(255,255,255,0.12); padding-left: 18px; }
     .search-box-icon { width: 40px; height: 40px; }
-    .search-btn-row { flex-direction: column; padding-left: 0; padding-right: 0; margin-top: 0; }
+    /* v1.16.297：原「margin-top: 0 后又在下方覆盖 44px」的同属性双声明一并清理，
+       直接写最终值。单钮外框 178（156 + 内 4×2 + 外 7×2），按钮 y≈548~704、外光晕 541~719。 */
+    /* v1.16.305：气泡同比例放大（字 18→28 = 1.56×，与 .cat-hint 13→23 的 1.77× 取折中）。
+       气泡块整高 = 框 74 + 尾（29 - 10 上提）= 93 逻辑，从 margin-top 147 里扣回（147 = 26 + 93 + 28）。
+       ★ v1.16.306（宝宝：「胶囊型手环气泡框往下移，稍微贴近点按钮」）：
+       上距 26→40、下距 28→14 —— **一加一减各 14，气泡整体下移 14、按钮绝对位置不动**
+       （40+93+14 = 147，与改前 26+93+28 = 147 相等）。
+       改前：提示文字→气泡 34.3、气泡→按钮 37.5（两头差不多，气泡悬在正中间、指向感弱）；
+       改后：48.3 / 23.5，气泡明显贴向它所指的那个按钮。 */
+    /* ★ v1.16.338 实测校正：28 → 43。
+       v1.16.337 把 cat-scroll 28→52、此处 73→28（以为是等量回扣 24），
+       但重启模拟器后实测：图标只下移 **+14px**（不是 24），气泡和按钮被抬高 **−15px**。
+       原因：cat-scroll 的 margin-top 当时**同时受模板 style 插值（catScrollMT=34）与
+       CSS 类（52）两条来源影响**，合成量不等于任一条的差值 —— 不能靠算术推，只能按像素实测回补。
+       ★ v1.16.354：模板那条来源已删除（改 CSS 常量），现只剩 CSS 一条，算术恢复可推。
+       这里 +15 把气泡与按钮恢复到改动前（按钮 354~450 → 369~465，那是宝宝验收过的位置）。
+       ⚠️ 以后再调图标间距，**必须重启模拟器后量像素**：热装包不刷新布局，会得出"改了没生效"的假结论。 */
+    .bubble-wrap { margin-top: 43px; }
+    .bubble { height: 74px; border-radius: 37px; padding: 0 28px; }
+    .bubble-text { font-size: 28px; }
+    .bubble-tail { width: 50px; height: 29px; margin-top: -10px; }
+    .search-btn-row { flex-direction: column; padding-left: 0; padding-right: 0; margin-top: 14px; }
     /* v1.16.113：提示插入后按钮下移被裁 → margin 20→10 补偿（底部余量 0→20px） */
     /* v1.16.115 按钮略缩 + 行上距 71→24：提示块占位后总高溢出 85px（胶囊屏 766 实测推算），
        压缩行距与按钮高换回底部余量；图标行 margin 仍 40（主人要求图标下移给提示词留空间） */
     /* v1.16.128（主人要求）：胶囊按钮再放大一点点 —— 200×78 → 212×86（v1.16.115 曾为腾垂直
        预算缩到 78，现底部余量充足故加回并略宽）。圆角同步 39→43 */
-    .search-btn { width: 212px; height: 78px; border-radius: 39px; flex: none; margin-top: 8px; }
-    .search-btn-l { margin-right: 0; }
-    .search-btn-r { margin-left: 0; }
-    .search-icon { width: 34px; height: 34px; margin-right: 10px; }
+    /* v1.16.259：212×78（长宽比 2.72、宽占屏 70.8%）→ 190×92（长宽比 2.07、宽占屏 63.3%）。
+       更敦实 = 更圆润；同时把整行下沉进屏幕底部弧线区（见 .search-btn-row）。
+       底部弧线安全宽校验：屏底 52 逻辑处胶囊可用宽 = 2×√(151²−(151−52)²) ≈ 228 > 200（按钮+光晕）✓ */
+    /* v1.16.297 单正方形钮（胶囊屏 156×156 圆角 44 = 边长 28.2%）。
+       底部弧线安全宽校验：外框 178 宽，按钮下沿距屏底 d≈62 处可用宽
+       2×√(150²−(150−62)²) ≈ 243 > 178 ✓（余量 65，不再有 v1.16.289 那种"贴弧线"风险） */
+    /* ★ v1.16.303（主人定案 pt7）：正方形 156×156 → 胶囊 184×130（宽高比 1.42 = 小米官方动作钮比例，
+       主人明确「感觉宽板容器的胶囊型形状比较不错」）。光晕块 178→152（缩 26），
+       行上距 121→147（+26）保持按钮块底边不动。
+       底部弧线安全宽校验：按钮下沿 d≈66 处可用宽 2×√(150²−(150−66)²) ≈ 249 > 184 ✓（余量 65） */
+    .search-btn { width: 184px; height: 130px; border-radius: 65px; flex: none; margin-top: 0; }
+    /* v1.16.300：胶囊屏按钮 156 → 图标同步 156（素材 312px = 2 倍） */
+    .search-icon { width: 184px; height: 130px; }
+    /* v1.16.257：垂直间距从按钮移到外层柔光容器（按钮已在容器内，margin 会变成容器内空隙） */
+    /* v1.16.297 两层柔光放大：156 + 内 4×2 = 164 + 外 7×2 = 178 */
+    .btn-glow { border-radius: 72px; padding: 7px; }
+    .btn-glow-in { border-radius: 69px; padding: 4px; }
     .voice-tip { font-size: 36px; margin-bottom: 20px; }
+    .voice-partial { font-size: 40px; margin-bottom: 16px; }
     .voice-bt-off { width: 80px; height: 80px; margin-bottom: 20px; }
     .voice-panel { height: 470px; padding-top: 40px; padding-bottom: 40px; }
-    .voice-cancel { width: 220px; height: 88px; border-radius: 44px; }
+    /* v1.16.264 统一：取消按钮尺寸对齐主按钮（220×106 圆角 53） */
+    .voice-cancel { width: 220px; height: 106px; border-radius: 53px; border-width: 3px; }
     .voice-cancel-text { font-size: 36px; }
     .voice-text { font-size: 28px; }
-    .search-text { font-size: 35px; }
-    .statusbar { height: 91px; padding-top: 41px; }
-    .cat-scroll { margin-top: 28px; }
-    .search-btn-row { margin-top: 12px; }
+    .statusbar { height: 110px; padding-top: 34px; }
+    /* ★ v1.16.336（宝宝：「资料图标可以向下移动一点，和搜索框贴太紧了」）：
+       28 → 52。实测截图（192×490）搜索框底 y=148、图标行顶 y=157，净间隔仅 **8px**。
+       ⚠️ 关键：本行所在的 @media(pill-shaped) 块（743 起）排在 758 的
+          `.cat-scroll { height: 150px; }` 之后，同特异性下后声明的 margin-top 胜出，
+          **把模板 style 插值的 catScrollMT 整个盖掉了** —— 所以胶囊屏真正生效的
+          间距一直是这里写死的 28，改 JS 的 catScrollMT 完全没用（v1.16.336 已验证）。
+       下移 24 后净间隔 32，与图标间 24 的间距同一量级。
+       ⚠️ 下方 `.bubble-wrap` 同步 52 → 28（等量回扣 24），
+          气泡与麦克风按钮绝对位置纹丝不动。 */
+    .cat-scroll { margin-top: 52px; }
     .searchbox-voice { height: 130px; }
-    .sec2 { flex-direction: column; padding-left: 27px; padding-right: 27px; }
-    .sec2-card { width: 100%; height: 108px; border-radius: 54px; flex-direction: row; justify-content: center; align-items: center; flex: none; }
-    .sec2-card-first { margin-right: 0; margin-bottom: 14px; }
-    .sec2-icon { width: 40px; height: 40px; margin-right: 12px; }
     /* 「收藏 · N」比「收藏」长，33px 会挤出卡片：降到 28px + 单行省略兜底 */
-    .sec2-text { font-size: 28px; margin-top: 0; }
     /* 搜索层（胶囊屏）：与 result.ux 胶囊屏尺寸一致 */
     .search-placeholder { font-size: 30px; margin-left: 16px; }
     .search-input { font-size: 34px; margin-left: 16px; }
-    .clear-btn { width: 46px; height: 46px; border-radius: 23px; font-size: 28px; line-height: 46px; margin-right: 22px; }
+    .clear-btn { width: 46px; height: 46px; border-radius: 23px; font-size: 28px; line-height: 46px; margin-right: 22px; border-width: 2px; }
     .result-count { font-size: 20px; margin-top: 8px; }
     /* 胶囊结果卡加大：一屏约 3 个符合腕上观感（原约 6-7 个过小） */
     /* v1.16.93 卡片缩小适配：原 54px 标题+26px 内边距一张卡占满一屏（主人实测） */
@@ -496,19 +953,88 @@
     .result-region { font-size: 21px; }
     .empty-tip { font-size: 28px; margin-top: 60px; }
     .engine-tip { font-size: 28px; }
-    .sz-large { font-size: 22px; }
     .sz-medium { font-size: 23px; }
     .sz-small { font-size: 17px; }
   }
   /* 搜索框状态类（手环9固件禁动态style，改类切换） */
   .searchbox-voice { height: 80px; }
   .searchbox-typed { padding-left: 6px; }
+
+  /* ★ v1.16.454（宝宝：「圆屏蓝牙语音搜索时输入框会过大，被部分遮挡或裁剪；
+     改成就比普通搜索框高一点点，不要大太多」）：
+     圆屏语音态搜索框高度 40 → 46（普通态 40，只高 6 = +15%，不「大太多」）。
+
+     上限被 .screen1 的固定高卡死：圆屏 .screen1 = 96 定值，
+     构成 = 状态栏 44 + 搜索框上距 2 + 框高 H，即 H ≤ 50
+     （再大就会被 .screen1 裁掉下半截，正是宝宝这次看到的现象）。
+     取 46 → 44 + 2 + 46 = 92 ≤ 96，留 4 余量。
+
+     ⚠️ 历史（贴在这里，免得同一个坑再被踩）：这条规则曾被 tools/gen_src_s5.py 的
+     圆屏摊平逻辑误删 —— 它在整段 CSS 里直接找媒体查询标记，而**解释性注释里也写着那串字**，
+     先命中注释 → 从注释中段开始找到真正的开括号 → 把注释结束符连同块内这条规则一起吞掉，
+     于是 S5 包里语音框退回基础值 80px（普通态 40 的两倍）→ 一进聆听就被下方内容压住。
+     已于 2026-11-03 在生成器里加注释区间感知（_comment_spans）修掉。
+     规则：以后**不要在 CSS 注释里原样写出该媒体查询标记**，也不要写注释结束符本身。 */
+  @media (shape: circle) {
+    .searchbox-voice { height: 46px; }
+  }
+
+  /* ===== v1.16.336 提示弹窗：胶囊屏（192×490 → 逻辑 766 高）与圆屏（466×466 → 逻辑 300） =====
+     数值取法全部按既有同档规则等比对齐：
+       卡片宽 .info-card 是 90%（胶囊）/ 圆屏可用宽按 y 处弧宽收；
+       按钮高沿用 106（胶囊主按钮档）/ 圆屏沿用 74（.ai-cancel 圆屏档）；
+       字号沿用胶囊 28 档、圆屏收紧到 22/16 档（圆屏可视高只有方屏 70%）。 */
+  @media (shape: pill-shaped) {
+    .tip-card { width: 300px; border-radius: 32px; border: 3px solid rgba(255,255,255,0.12); padding: 24px; }
+    .tip-title { font-size: 30px; }
+    .tip-body { font-size: 24px; line-height: 34px; margin-top: 12px; }
+    .tip-btn { width: 220px; height: 106px; border-radius: 53px; margin-top: 24px; }
+    .tip-btn-text { font-size: 34px; }
+  }
+  @media (shape: circle) {
+    .tip-card { width: 224px; border-radius: 24px; border: 2px solid rgba(255,255,255,0.10); padding: 12px; }
+    .tip-body { font-size: 15px; line-height: 20px; margin-top: 6px; }
+    .tip-btn { width: 156px; height: 52px; border-radius: 26px; margin-top: 10px; }
+  }
+
 </style>
 
 <script>
+// ══════════════════════════════════════════════════════════════════════════
+// 语音搜索演示模式（v1.16.459 · 2026-11-04 宝宝定案）
+//
+//   为什么走硬编码：S5 的 @system.record 引擎帧率被钉死在 ~2900 采样/秒
+//   （声明 16000），采集率只有 18~22%，长句必然残缺；且同一轮结束后引擎释放
+//   不及时，第二轮 3 秒就报「没听到声音」。语音真链路短期无解 → 现场演示用本地识别。
+//
+//   两个常量必须在**模块作用域**：写成页面对象属性时实例上读不到
+//   （页面实例只承诺 private 里的字段），入口分支会静默落回真链路。
+//   2026-11-04 真机踩过这个坑：装了演示版仍然提示「没听清」。
+//
+//   三个词都经实际检索验证能命中真实条目：
+//     演示词挑选标准（2026-11-04 实测）：**必须同时满足两条**——
+//      ① 资料库检索能命中（不能出现空白结果）；
+//      ② AssistantEngine 的 SIM_AI_ANSWERS 有对应预置答案（现场才看得到 AI 卡）。
+//     实测命中：「记忆」→ study 40 条 + health 1 条，AI 预置有；
+//               「感冒」→ health 3 条 + life 1 条，AI 预置有（含结构化作答卡）；
+//               「存钱」→ life 12 条，AI 预置有。
+//   刻意不用「你好」这类无语料寒暄词 —— 它会走空结果，演示最忌。
+// ══════════════════════════════════════════════════════════════════════════
+var DEMO_QUERIES = ['记忆', '感冒', '存钱']
+/** 演示开关。答辩现场保持 true；改 false 即回真链路（手表录音 + 手机 ASR）。 */
+var DEMO_ENABLED = true
+
+
   // 语音搜索 / AI 搜索统一引擎（真链路=interconnect 手机 App；模拟链路=本地可运行模拟源）
-  import { getAssistant } from '../../SearchEngine/AssistantEngine.js'
-  import { isCacheBuilt } from '../../SearchEngine/DatasetManager.js'
+  // ★ v1.16.396：删掉 AssistantEngine 的 import，改用 app.ux 挂的 global.getAssistant。
+  //   构建器不做 tree-shaking，这里 import 一次就会把 AssistantEngine(55KB) +
+  //   AudioUp(19KB) + BtTransfer(18KB) 整份内联进本页 .jsc（且与别的页面互不共享）。
+  //   app.ux 早已 import 它起心跳，挂 global 后运行时仍是同一个单例，功能零变化。
+  // ★ v1.16.388：删掉 DatasetManager 的 import，改用 app.ux 挂的 global.isCacheBuilt。
+  //   原因（包内实证）：构建器不做 tree-shaking，页面 import 任一函数都会把整条
+  //   DatasetManager→SearchEngine 依赖链内联进本页 .jsc —— 首页为此背了 267,466B
+  //   闭包，而实际只调用 isCacheBuilt 6 次。真正的引擎实例在 app.ux 就已创建，
+  //   这两份内联副本从未被用来建实例，纯属重复代码。
   import router from '@system.router'
   import device from '@system.device'
   import storage from '@system.storage'
@@ -520,6 +1046,15 @@
 
   export default {
     private: {
+      // ★ v1.16.459：演示语音的步进计数（0→1→2 循环三个演示词）。
+      //   必须声明在 private 里 —— 页面实例只保证 private 声明的字段可读写。
+      _demoStep: 0,
+      // ★ v1.16.465：演示 AI 卡用**独立字段**，不与 aiAnswer/aiInlineMode 共用。
+      //   原因：resetAndSearch 开头有「换词即清 AI 卡」逻辑（清 aiInlineMode/aiAnswer），
+      //   而它紧接着又起异步 loadPage；本地结果回来时若再触发一次清理，
+      //   演示卡就会被无端抹掉（真机实测：AI 卡先出现，本地结果到达后消失）。
+      demoAiOn: false,
+      demoAiText: '',
       time: '00:00',
       timeTimer: null,
       statusbarHeight: 17,
@@ -527,23 +1062,25 @@
       catsMarginTop: 43,
       screen1H: 429,
       screenAdjusted: false,
+      // v1.16.214（主人建议「判定好样式后再渲染」）：屏幕形态由 device.getInfo 异步返回，
+      // 此前先按 rect 初值渲染、拿到形态后再跳成 pill → 用户看到「布局突然乱一下又恢复」的反差。
+      // 现改为：形态判定完成前不渲染两屏内容（黑屏约百毫秒），就绪后一次性渲染。
+      layoutReady: false,
+      // v1.16.316：圆屏标识（原用于隐藏按钮文字，按钮文字已于 v1.16.297 删除；
+      // 现作为圆屏专用布局分支的判据之一，与 CSS 的 @media (shape: circle) 互为冗余保底）
       isCircle: false,
       showAppTitle: false,
       showRectTitle: false,
-      guideText: '左右滑动 · 切换分类',
-      curPage: 0,
-      dotsTop: 200,
-      catScrollTimer: null,
-      pageScrollTimer: null,
-      snapParams: { iconW: 58, spacing: 17, count: 6, padLeft: 8.5, enabled: true },
+      // v1.16.342：分页指示点 / 当前页 / 滚动吸附相关字段随第二屏一并清空。
       displayCats: [],
       // 结果列表渐进显示：默认 6 条（v1.16.141 起与每批搜索结果数一致）
       visibleCount: 6,
       // v1.16.131：✕ 清除的时间戳（用于吞掉冒泡到搜索框的同一次点击）
-      _clearedAt: 0,
+      clearedAt: 0,
       // v1.16.140：声波图标（5 根竖条，类名 JS 预拼 —— 模板禁复杂表达式）
-      waveBars: [{ cls: 'wbar h2' }, { cls: 'wbar h3' }, { cls: 'wbar h4' }, { cls: 'wbar h3' }, { cls: 'wbar h2' }],
-      _waveTimer: null,
+      wbar1: 'wbar h2', wbar2: 'wbar h3', wbar3: 'wbar h4', wbar4: 'wbar h3', wbar5: 'wbar h2',
+      waveTurn: 0,
+      waveTimer: null,
       // AI 搜索（v1.16.33）：aiMode=输入的问题将交给 AssistantEngine.answer 生成回答；
       // aiThinking=等待回答；aiAnswer=回答文案（本地由检索结果真实拼出）
       // v1.16.91 起 aiMode 语义改为「AI 助手全屏面板开启」；v1.16.92 面板改语音直答：
@@ -551,6 +1088,9 @@
       aiMode: false,
       aiThinking: false,
       aiAnswer: '',
+      // v1.16.297：主界面「内嵌 AI 答案卡」开关（合并入口专用）—— 与 aiMode 互斥：
+      // aiMode=true 走全屏面板（历史链路，现无入口调用、代码保留休眠）；false 走内嵌卡片
+      aiInlineMode: false,
       // AI 语音直答面板状态（v1.16.92，全布尔+纯文本——show/if 里禁 === 字符串比较，
       // 布尔是全项目已验证形态）：aiListening=识别中；aiQuestion=识别出的问题；
       // aiStatusText=状态提示；aiMicCircleClass=麦克风圆形图标类（JS 预拼，模板纯插值）
@@ -564,7 +1104,11 @@
       groupEntries: [],
       activeGroupId: null,
       secondTitle: '选项',
+      // v1.16.356 诊断：最近一次首搜耗时（就地在结果下方显示）
+      perfText: '',
       favoriteCount: 0,
+      // ★ v1.16.454：收藏图标可由手机配置更换（cfg-home 里 ds='__fav__' 的 icon 字段）
+      favoriteIcon: '/common/icons/bookmark.png',
       // 搜索态 screen1 显式高度（运行时不支持 height:auto）：结果条数 × 卡片高 + 顶部/底部余量，最小不低于一屏
       searchError: false,
       searchSeq: 0,
@@ -585,19 +1129,26 @@
       currentPage: 1,
       // v1.16.141（主人定案）：总搜索每批 6 条 —— 该值即 searchAllAsync 的 target
       // （pageSize × page = 本轮要凑够的卡片数）；一个集凑不够会自动继续下一个集直到凑够
-      // v1.16.178：最近一次检索的真实耗时（ms），界面显示用于佐证性能
-      lastElapsedMs: 0,
       pageSize: 6,
       loading: false,
       allLoaded: false,
       searched: false,
       activeCategory: 'all',
       activeRegion: 'all',
-      searchTimer: null,
       isClearing: false,
       showEngineTip: false,
       voiceActive: false,
-      bluetoothConnected: true
+      bluetoothConnected: false,   // ★ v1.16.325：默认按「未连接」起，由 ping/pong 探活翻转
+      // ★★★ v1.16.336：语音入口提示改为**弹窗**（宝宝要求「蓝牙未连接，直接弹窗提示」）
+      voiceTipShow: false,        // 弹窗显隐
+      voiceTipMsg: '',            // 主文案（如「蓝牙未连接」）
+      voiceTipSub: '',            // 副文案（引导语，可为空）
+      voiceTipTimer: null,
+      // ★ v1.16.378：语音面板提示文案。录音在手表上，所以默认「对着手表说」；
+      // 识别过程中会改成「正在识别…」这类更准确的实时状态。
+      voiceRecordHint: '',
+      // v1.16.446：流式识别已出的文本（voice_partial 帧），空串表示还没出字
+      voicePartialText: '',
     },
 
     computed: {
@@ -608,39 +1159,132 @@
         }
         return '输入关键词开始搜索'
       },
-      // 收藏卡片文案：有收藏显示「收藏 · N」，无收藏仍显示「收藏」
+      // 收藏卡片文案（v1.16.453 宝宝定案「收藏之后后面不要追加数字，就保留收藏两个字」）：
+      // 恒为「收藏」，不再拼收藏条数。favoriteCount 仍由 refreshFavoriteCount 维护（收藏页在用），
+      // 只是不再显示在主界面图标下方。
       favoriteText() {
-        return this.favoriteCount > 0 ? '收藏 · ' + this.favoriteCount : '收藏'
+        return '收藏'
       },
       // 键盘打开时追加光标（与输入组件内部光标一致，避免特殊字符缺字）
       displayQuery() {
         return this.searchQuery + (this.showKeyboard ? '_' : '')
       },
-      // 搜索框状态类：语音态变高、有词缩边距（手环9固件禁动态style，改类切换）
-      // v1.16.111：分类行上边距改为 computed（自动跟随搜索态/键盘态，免手动同步）
-      // 胶囊屏键盘弹起（空词搜索框点击）时图标下移藏入键盘后——原 61 会从键盘上缘凸出 25px（主人反馈）；
-      // 100 = 203(盒底) + 100 = 303 > 键盘顶 289，完全隐藏且留 14px 余量
-      catScrollMT() {
-        if (this.aiMode || this.searchActive) return 0
-        if (this.showKeyboard && this.screentype === 'pill-shaped') return 100
-        // v1.16.114：提示块占位后重算——方屏 20 / 胶囊 40（原 61 是按无提示块版面调的）
-        // v1.16.116：胶囊 40→29（与 prompt-block 上距 +11 配平提示文字上下间隙，图标净位置不变）
-        return this.screentype === 'pill-shaped' ? 29 : 20
-      },
+      // ⚠️ v1.16.354：catScrollMT() 已删除 —— 上距全部改 CSS 常量
+      //    base(rect) 24 / @media(pill) 52 / @media(circle) 8，见 .cat-scroll 三处定义。
+      //    原实现里的「aiMode/searchActive → 0」「showKeyboard+pill → 100」两档都不再需要：
+      //    ① 本节点有 if="{{!searchActive && !voiceActive}}" 且整体在 .home-body 内，搜索态整块不渲染；
+      //    ② showKeyboard 那档**从来没生效过**（一直被 @media(pill) 的写死 52px 盖掉，v1.16.336 实测）。
+      //    这正是《交接-S5卡顿与OOM》§3.2 要求的「删绑定 + 补 CSS」完整落地。
       // v1.16.127：改用项目既有的一对图标（off=深红底红标 / on=浅蓝底蓝标）
       btIconSrc() { return this.btOn ? '/common/icons/bluetooth_on.png' : '/common/icons/bluetooth_off.png' },
       // v1.16.126：改用既有图标 bluetooth_off.png（自带圆底），不再需要拼圆底色类
       homePlaceholder() { return this.screentype === 'pill-shaped' ? '搜点…' : '搜索诗词、历史…' },
-      searchBoxClass() {
-        var c = 'searchbox-normal'
-        if (this.voiceActive) c = 'searchbox-voice'
-        if (this.searchQuery) c += ' searchbox-typed'
-        return c   // 完整类名（模板纯变量插值，v1.16.48 消除拼接）
+  // v1.16.300：主界面唯一入口按钮的「渐变面」素材（方屏 224px / 胶囊 312px）。
+  // 本运行时 CSS 不支持 linear-gradient / radial-gradient / box-shadow / filter（v1.16.256 探针实测），
+  // 但 <image> 能正常渲染大尺寸渐变 PNG（v1.16.299 实测 192/240/312 全部正常 —— 推翻了
+  // v1.16.272「144px 即渲染碎裂」的旧结论，那次碎裂另有原因）。
+  // 故把「渐变底 + 高光 + 内描边 + 麦克风声波 + 四芒星」整体烘进一张 PNG，运行时由 CSS .search-icon
+  // 强制尺寸（rect 200x72 / circle 156x42 / pill 184x130），图片靠拉伸适配。
+  // v1.16.415：素材按各形态真实物理像素重采样 —— 方屏/圆屏共用 ask-btn-200x72.png 现为 260x94
+  //   （rect 需 224x81、circle 需 242x65，取 260 留余量），胶囊 ask-btn-184x130.png 现为 130x92
+  //   （pill 倍率仅 0.64，需 118x83）。解码内存 225KB→95KB、373KB→46KB，共省 457KB 堆。
+  askBtnIcon() { return this.screentype === 'pill-shaped' ? '/common/icons/ask-btn-184x130.png' : '/common/icons/ask-btn-200x72.png' },
+  /* v1.16.305：气泡三角尾。两形态尾宽差 1.79×（28 vs 50），用同一生成器出两份，按形态取。 */
+  bubbleTailIcon() { return this.screentype === 'pill-shaped' ? '/common/icons/bubble-tail-p.png' : '/common/icons/bubble-tail-r.png' },
+      // v1.16.252（删横滑）：固定槽位 —— 胶囊一行 2 个 / 方屏一行 4 个（与原横滑可见数一致），
+      // 手机下发的配置若更多则只显示前 N（排序即优先级，见设计文档 cfg-home 协议）
+      visibleCats() {
+        // v1.16.316：圆屏也用 3 个（图标 46 + 间隙 10 => 行宽 158，圆屏 y94~140 处可用宽 ≥280）
+        // ★ v1.16.344（宝宝定案「可以资料图标扩展两个，应该塞得进去」）：圆屏由 3 个扩到 5 个。
+        //   几何：5×46 + 4×10 = 270；居中 padding-left 15 → 总占 295 ≤ 300 画布。
+        //   圆弧校验：图标行顶部逻辑 y≈104，此处弦宽 285 > 270，左右各余 ~7.5，不触弧。
+        // ★ v1.16.372（宝宝定案「替换其中 5 个资料图标的一个，实际图标变 7 个，其中一个是收藏，
+        //   首屏显示 4 个资料图标 + 1 个收藏」）：收藏入口钉在末位，资料集只取前 n-1 个。
+        //   几何完全不变（仍 5 格 270 宽），被挤出可视区的那个资料集仍可经搜索栏检索到。
+        var n = this.screentype === 'pill-shaped' ? 2 : (this.screentype === 'circle' ? 5 : 3)
+        // ★★★ v1.16.454（2026-11-04 宝宝要求「收藏的图标也可以更换」）：
+        //   收藏不再硬编码在末位、也不再用写死的 bookmark.png，而是**参与手机下发的
+        //   cfg-home 配置**（手环端用保留键 '__fav__' 暴露给配置面板）。
+        //   配置里有 '__fav__' → 按配置顺序渲染，图标取 cfg 指定的；没有 → 保持旧行为
+        //   （末位固定收藏，图标用默认 bookmark.png），保证老配置与恢复默认都不异常。
+        var cfg = (typeof global !== 'undefined') ? global.homeIconCfg : null
+        var cfgIcons = (cfg && cfg.icons && cfg.icons.length) ? cfg.icons : null
+        var FAV = '__fav__'
+        // 已完成映射的图标（displayCats 已按 cfg 排好序且滤掉了失效项）
+        var cats = this.displayCats || []
+        var favItem = {
+          name: this.favoriteText,
+          icon: (this.favoriteIcon || '/common/icons/bookmark.png'),
+          iconCls: 'cat-icon ci-fav',
+          isFav: true
+        }
+        if (cfgIcons) {
+          // 配置模式：displayCats 里已不含收藏（它是虚拟项），这里按配置位置插回去
+          var out = []
+          var used = 0
+          for (var i = 0; i < cfgIcons.length && out.length < n; i++) {
+            var key = String(cfgIcons[i].ds)
+            if (key === FAV) {
+              out.push(favItem)
+            } else {
+              // 取下一个尚未使用的资料图标（顺序即配置顺序）
+              if (used < cats.length) { out.push(cats[used]); used++ }
+            }
+          }
+          // 配置里没写收藏 → 补在末位（仍占一格，保持 5 格几何）
+          if (out.length < n) {
+            var hasFav = false
+            for (var j = 0; j < out.length; j++) if (out[j].isFav) hasFav = true
+            if (!hasFav && out.length > 0) out.push(favItem)
+          }
+          if (out.length) return out
+        }
+        // 无配置（或配置全失效）→ 旧行为：资料集取前 n-1，收藏钉末位
+        var withFav = n >= 3
+        var keep = withFav ? n - 1 : n
+        var base = cats.slice(0, keep)
+        if (!withFav) return base
+        return base.concat([favItem])
       },
-      // v1.16.18：分页指示点由「动态 style + 三元」改为「纯变量类名」
-      //（交接块 #82 定稿：模板禁三元、动态 style 清零——否则滚动时反复重算属性，是卡顿来源）
-      dot0Class() { return this.curPage === 0 ? 'page-dot page-dot-active' : 'page-dot' },
-      dot1Class() { return this.curPage === 1 ? 'page-dot page-dot-active' : 'page-dot' },
+      /* ★ v1.16.339：screen1 / screen2 的高度类（替代原来的 style="height:{{screen1H}}px"）。
+         为什么改：动态 style 绑定在手环 9 固件是崩机级（AI_CONTEXT #69），而旧实现恰好
+         在「搜索完那一瞬间」把高度从整屏高改成 241 —— 动态绑定失效 + 同帧三次重排叠加，
+         于是搜索框塌到左上角（宝宝真机稳定复现：打字时不塌、搜索完必塌）。
+         现在高度全部由 CSS 固定（各 @media 块里给值），这里只负责**换类名**：
+           非搜索态 → 整屏高（双屏吸附）
+           搜索态   → 头部高（screen1-search，让结果区紧跟其后进内容流）
+         纯变量插值返回完整类名，是 #69 确认安全的形态（禁三元表达式）。 */
+      // v1.16.228：搜索框文本合并为单节点（占位符两态 + 输入回显），文本变化≠节点插删，
+      // 打字零结构翻转（大翻转=searchActive/screen1H 已推迟到收键盘，见 finishInput）
+      // v1.16.285（主人反馈「蓝牙语音搜索界面搜索框里有问题」）：
+      // 旧实现在语音态下**两个文本节点同时渲染** —— 单文本节点仍返回占位符「搜点…」，
+      // 右侧又插一个 .voice-text「聆听中…」→ 框内两段文字叠在一起（主人截图实锤）。
+      // 现改为：语音态时**这个唯一的文本节点自己显示「聆听中…」**，
+      // 并把模板里那个重复的 .voice-text 节点删掉（少一个节点也顺带省渲染）。
+      searchBoxText() {
+        if (this.voiceActive) return '聆听中…'
+        if (this.searchQuery) return this.displayQuery
+        if (this.searchActive) return '请输入'
+        return this.homePlaceholder
+      },
+      searchBoxTextCls() {
+        if (this.voiceActive) return 'voice-text'
+        if (this.searchQuery) return 'search-input'
+        return 'search-placeholder'
+      },
+      // ★ v1.16.343：键盘容器类（完整类名，模板纯变量插值）。收起键盘时挂 kb-off 移出屏幕，
+      //   保持挂载=免重建，同时不拦下方触摸。与 dataset.ux 的 kbWrapClass 同款。
+      kbWrapClass() {
+        return this.showKeyboard ? 'kb-wrap' : 'kb-wrap kb-off'
+      },
+      searchBoxClass() {
+        // ★ v1.16.354（交接单 §3.4）：原模板 class="search-box {{searchBoxClass}}"，改为
+        // 本方法返回**完整类名**（含 search-box 基类），模板纯变量插值 —— 消除拼接表达式。
+        var c = 'search-box searchbox-normal'
+        if (this.voiceActive) c = 'search-box searchbox-voice'
+        if (this.searchQuery) c += ' searchbox-typed'
+        return c   // 完整类名（模板纯变量插值，v1.16.48 起；v1.16.354 补上 search-box 基类）
+      },
       // 渐进显示：只渲染前 visibleCount 条（模板禁表达式，故在此切片）
       visibleList() {
         var n = this.visibleCount || 5
@@ -651,32 +1295,69 @@
       headerTitle() {
         return this.searchActive ? this.baseTitle : '资料库'
       },
-      // 语音面板状态：真链路=「聆听中」，模拟链路=「聆听中（演示）」——识别链路真实运行
+      // 语音面板状态文案
+      // ★★★ v1.16.378：录音改为**手表自己录**（S5 的 @system.record 是真实现，
+      //   经 AudioUp.js 流式取 PCM 后回传手机识别），所以提示必须改成「对着手表说」。
+      //   旧文案「请对着手机说话」来自「手环 9 无录音能力、只能手机麦」的年代，
+      //   对 S5 已经反了 —— 用户照着念会永远识别不到，是很误导的错误提示。
       voiceStatusText() {
-        try {
-          var a = getAssistant()
-          return a.getMode() === 'real' ? '聆听中…' : '聆听中·演示'
-        } catch (e) { return '聆听中…' }
+        return this.voiceRecordHint || '请对着手表说话'
       },
       // AI 卡片文案（模板禁表达式，在此预拼）
       aiCardTitle() {
         return this.aiThinking ? 'AI 思考中…' : 'AI 回答'
       },
+      // ★ v1.16.467：卡片正文统一出口 —— 演示卡优先，其次走原有 aiCardText 逻辑。
+      //   模板只绑这一个字段，避免两个 if 节点互斥导致卡片被重建。
+      aiCardTextFinal() {
+        if (this.demoAiText) return this.demoAiText
+        return this.aiCardText
+      },
       aiCardText() {
         if (this.aiThinking) return '正在检索本地资料并生成回答…'
-        return this.aiAnswer
+        var a = this.aiAnswer || ''
+        if (!a) return ''
+        // v1.16.297：卡片只放**摘要**（完整分节内容点卡片进回答页）——
+        // 取前 2 句（。！？与换行为界），再硬截 90 字兜底。
+        // 必要性：真机大模型可能回几百字，全量塞进卡片会把本地结果列表整段挤出屏幕，
+        // 而「本地结果先看到」正是本次合并要保住的东西。用循环而非正则 split ——
+        // 避开本运行时对正则 lookbehind 的支持不确定性。
+        var cut = a.length
+        var n = 0
+        for (var i = 0; i < a.length; i++) {
+          var code = a.charCodeAt(i)
+          // 句界：。(12290) ！(65281) ？(65311) 换行(10) —— 用码点比较，避开转义
+          if (code === 12290 || code === 65281 || code === 65311 || code === 10) {
+            n++
+            if (n >= 2) { cut = i + 1; break }
+          }
+        }
+        var out = a.substring(0, cut)
+        if (out.length > 90) out = a.substring(0, 90) + '…'
+        else if (cut < a.length) out = out + '…'
+        return out
       },
       // v1.16.143（诊断结论）：结果计数文案 —— 未搜完所有资料集时，totalCount 只是
       // 「已搜部分的命中数」，用「共」会让人以为搜出了那么多；按状态分文案更诚实。
+      // v1.16.254 恢复（上轮重构误删，模板 {{moreText}} 悬空）：「显示更多」按钮文案
+      moreText() { return '显示更多' },
+      // v1.16.277：按钮可见条件改为「列表不完整」——
+      // 旧条件 `!allLoaded` 在"所有 map 都加载完但结果多于首页展示的 6 条"时会隐藏按钮，
+      // 导致剩余结果**没有入口**；现补上 `totalCount > displayList.length` 这一支。
+      canShowMore() {
+        if (!this.displayList.length) return false
+        return !this.allLoaded || this.totalCount > this.displayList.length
+      },
       resultCountText() {
       var base = ''
-      if (this.allLoaded) {
+      if (this.allLoaded && this.totalCount <= this.displayList.length) {
         base = '共 ' + this.totalCount + ' 条结果'
       } else {
-        base = '已找到 ' + this.displayList.length + ' 条 · 点显示更多继续'
+        // v1.16.277（主人要求「把『还有更多』在计数行说清楚」）：
+        // 旧文案「已找到 N 条」里的 N 是**首页当前展示的条数**，不点更多永远不变，
+        // 容易让人误以为"就这么多"。现明确区分「已显示 N 条」与「还有更多」。
+        base = '已显示 ' + this.displayList.length + ' 条 · 还有更多（点下方看全部）'
       }
-      // v1.16.178：附上本次检索的真实耗时（模拟器/真机实测值，可在界面直接核对）
-      if (this.lastElapsedMs > 0) base += ' · 检索 ' + this.lastElapsedMs + 'ms'
       return base
     }
     },
@@ -687,26 +1368,108 @@
         // 入口清单由 app.ux onCreate 挂 global（避免 index 直接 import 库模块的双实例坑）
         this.datasetEntries = global.datasetEntries || []
         this.groupEntries = global.groupEntries || []
-        console.log('[DS] entries=' + this.datasetEntries.length + ' groups=' + this.groupEntries.length)
       } catch (e) {
         console.log('[DS] datasetEntries 异常: ' + e.message)
       }
       // 优先大类入口（≤6 个，真机渲染不卡）；无分组数据回退资料集入口；再回退硬编码分类
-      // 大 类入口（≤6 个，真机渲染不卡）；无分组数据回退资料集入口
-      this.displayCats = this.groupEntries.length > 0
-        ? this.groupEntries
-        : this.datasetEntries
+      // v1.16.252：改为走 _applyIconConfig（手机配置 home_icon_config 优先，无配置=上述默认）
+      this._applyIconConfig()
+      // 注册刷新钩子：手机下发 cfg-home 生效后若主界面在前台可即时刷新（BtTransfer 调用）
+      var selfIcon = this
+      if (typeof global !== 'undefined') {
+        global._homeIconRefresher = function() {
+          if (!selfIcon.isDestroyed) selfIcon._applyIconConfig()
+        }
+      }
       this.updateTime()
       this.timeTimer = setInterval(() => { this.updateTime() }, 30000)
       // v1.16.46 主人定案：不在首页后台预热——缓存构建只在加载页单独执行
       //（常规触发=设置页「重新加载」；蓝牙传输完成由 BtTransfer 自动唤醒 loading 单集加载）
     },
 
+    // v1.16.252：主界面图标配置应用 —— 手机 App 经 cfg-home 下发的 home_icon_config 优先，
+    // 按 ds 标识映射到真实入口（entry 的 name/icon/色以手环端为准，防两端不一致）；
+    // 无配置 / 解析失败 / 全部 ds 失效 → 回默认（分组优先，回退资料集入口）
+    /**
+     * ★ v1.16.454：从配置里取收藏项的自定义图标。
+     * 手环端 cfg-home 用保留键 '__fav__' 表示收藏，其 icon 字段即用户选的图。
+     * 没有配置或没写 icon → 用默认 bookmark.png。
+     */
+    _syncFavIcon() {
+      var cfg = (typeof global !== 'undefined') ? global.homeIconCfg : null
+      var icon = '/common/icons/bookmark.png'
+      if (cfg && cfg.icons && cfg.icons.length) {
+        for (var i = 0; i < cfg.icons.length; i++) {
+          if (String(cfg.icons[i].ds) === '__fav__') {
+            var ic = cfg.icons[i].icon || cfg.icons[i].favIcon
+            if (ic) icon = String(ic)
+            break
+          }
+        }
+      }
+      if (this.favoriteIcon !== icon) this.favoriteIcon = icon
+    },
+
+    _applyIconConfig() {
+      var entries = (this.groupEntries && this.groupEntries.length > 0)
+        ? this.groupEntries
+        : this.datasetEntries
+      var cfg = (typeof global !== 'undefined') ? global.homeIconCfg : null
+      var out = entries
+      if (cfg && cfg.icons && cfg.icons.length) {
+        var byKey = {}
+        entries.forEach(function(en) {
+          var k = (en.groupId !== undefined && en.groupId !== null) ? String(en.groupId) : String(en.dsId)
+          byKey[k] = en
+        })
+        var list = []
+        cfg.icons.forEach(function(ic) {
+          var en = byKey[String(ic.ds)]
+          if (en) list.push(en)
+        })
+        if (list.length) out = list
+      }
+      // ★ v1.16.354（交接单 §3.4）：for 内 `class="cat-icon {{$item.colorClass}}"` 是拼接表达式，
+      // 改为在这里预拼完整类名（含 cat-icon 基类），模板纯变量插值。
+      // 用 map 生成新对象，不污染 global.datasetEntries/groupEntries 的原始引用。
+      this.displayCats = out.map(function(en) {
+        return {
+          name: en.name, icon: en.icon, isGroup: en.isGroup,
+          groupId: en.groupId, dsId: en.dsId,
+          colorClass: en.colorClass,
+          iconCls: 'cat-icon ' + (en.colorClass || 'ci-ds')
+        }
+      })
+    },
+
     // onShow 时 DOM 已 ready，获取屏幕信息做形态/安全偏移适配（仅执行一次）
     onShow() {
+      // ★ v1.16.325：订阅链活变化 —— 心跳探到「断开/恢复」时立刻刷 UI，
+      //   不再依赖 10s 轮询（用户反馈「断开后马上又连上，界面还是未连接」）。
+      // ★ v1.16.457：演示模式下不再订阅链活 —— 它唯一的作用是驱动蓝牙图标/文案，
+      //   而图标已移除。保留注释便于恢复。
+      // var selfBt = this
+      // try {
+      //   global.getAssistant().onBtChange(function (alive) {
+      //     if (selfBt.isDestroyed) return
+      //     selfBt.bluetoothConnected = alive
+      //     selfBt.log('[HOME-SEARCH] 链活变化：' + (alive ? '已连接' : '已断开'), alive ? 'info' : 'warn')
+      //   })
+      // } catch (e) {}
+      // v1.16.266：TEMP-TOUR v1.16.264 验证用自动巡游代码已按注释要求整块删除
+      //（原为冷启动后 3/8/13/18/23/28s 依次自动进 AI 面板→语音态→设置→收藏→资料→蓝牙页；
+      //  v1.16.264 的 UI 验证使命已完成，且它会干扰后续模拟器/真机验证与演示录制）
+      // v1.16.252：手机端下发了新图标配置（cfg-home 置脏）→ 回主页立即应用
+      if (typeof global !== 'undefined' && global.homeIconDirty) {
+        global.homeIconDirty = false
+        this._applyIconConfig()
+      }
+      // ★ v1.16.454：收藏图标跟随配置（首次与每次回主页都同步，配置改了立即生效）
+      this._syncFavIcon()
       // 每次回主页都刷新收藏数（详情页/收藏列表增删后返回即时更新；只在此做，避免 onInit 异步回调丢失）
       this.refreshFavoriteCount()
-      this.refreshBtStatus()
+      // ★ v1.16.457：演示模式不再探活蓝牙（探活失败的提示没有意义，图标也已移除）
+      // this.refreshBtStatus()
       // v1.16.155：消费 AI 回答页的返回意图（回答页底部双按钮写入 global.aiReturnAction）——
       //   'ask'  重新提问 → 面板保持打开，并立刻重开麦克风，用户开口即接着问；
       //   'home' 直接返回 → 关掉 AI 面板，真正回到主界面（否则返回后仍停在面板上）。
@@ -716,12 +1479,15 @@
         global.aiReturnAction = ''
         if (aiAct === 'home') {
           if (this.aiMode) this.exitAiMode()
-        } else if (aiAct === 'ask' && this.aiMode) {
+          // v1.16.297：内嵌链路（无面板）返回主界面时只收起 AI 卡片？——不收起：
+          // 卡片是本次问答的结果，用户「直接返回」要回的就是带这张卡的主界面。
+        } else if (aiAct === 'ask') {
+          // v1.16.297：合并入口后不再有「面板」，「重新提问」= 直接回到聆听态再问一次。
           // 延迟 250ms：让主界面先完成一次重排（返回瞬间 DOM 未稳定时开麦会丢状态）
           var selfAi = this
           setTimeout(function() {
-            if (selfAi.isDestroyed || !selfAi.aiMode) return
-            selfAi.startAiVoice()
+            if (selfAi.isDestroyed || selfAi.aiMode) return
+            selfAi.startVoiceAsk()
           }, 250)
         }
       }
@@ -747,8 +1513,11 @@
         // ① 超时不再跳加载页——冷启动 storage 回调普遍超 800ms，旧逻辑每次启动都误判
         //    「未建」→ 跳加载页真跑一遍完整初始化+预热（数秒）。现超时先留首页；
         //    若稍后回调确认未建（真首次/数据更新），仍会进加载页（不漏真重建）。
-        // ② 留首页后触发一次后台预热（global.warmupBackground，app 作用域 keepAlive
-        //    填充各集引擎内存池）——首次总搜索不再冷读块文件（修复「感觉又重建一次」）。
+        // ② 留首页后**不再**做后台预热（v1.16.85 曾在此触发 global.warmupBackground；
+        //    v1.16.196 真机实测该预热会导致「几十秒冻结」故而停用；
+        //    v1.16.276 主人定案彻底删除该函数——手环端留给快应用的内存极端仅 ~1.6MB，
+        //    内存峰值过大会直接触发重启，不值得用峰值换一个本就未生效的首搜提速）。
+        //    现行：首搜直读 storage 缓存（真机 400~800ms，达标）。
         setTimeout(function() {
           if (selfC.isDestroyed) return
           var navigated = false
@@ -759,23 +1528,58 @@
             router.replace({ uri: '/pages/loading' })
           }
           var timer = setTimeout(function() {
-            if (navigated) return
-            console.log('[DS] 缓存判断超时：留首页，回调后到再补判')
-            if (typeof global !== 'undefined' && typeof global.warmupBackground === 'function') {
-              global.warmupBackground()
-            }
-          }, 3000)
+            if (navigated || selfC.isDestroyed) return
+            // v1.16.215（真机反馈「二次进入还是莫名其妙进加载页，好像开键盘时突然进」）：
+            // 真机 storage 读取可能**慢于 5 秒** → 这个兜底定时器在用户操作中途迟到触发 → 突然跳加载页。
+            // 回顾：204 我把这里改成「超时即跳加载页」，本意是修「从不进加载页」——但那个症状的真因
+            // 其实是**探测键拼错**（214 已修）。现改回 v1.16.85 原始设计：**超时只留首页、不跳转**；
+            // 等 isCacheBuilt 回调真正返回后，确认「未建」才跳加载页（晚几秒，但不会误跳）。
+            console.log('[DS] 缓存判断超时：留首页等回调（确认未建才跳加载页）')
+          }, 5000)
           try {
-            isCacheBuilt().then(function(built) {
+            global.isCacheBuilt().then(function(built) {
               clearTimeout(timer)
               if (selfC.isDestroyed || navigated) return
               if (!built) {
                 goLoading('缓存未建')
               } else {
-                if (typeof global !== 'undefined' && typeof global.warmupBackground === 'function') {
-                  global.warmupBackground()
-                }
+                // v1.16.196（真机教训）：已建缓存也不做后台预热（同为几十秒冻结）；
+                // 首次搜索直读 storage 缓存（真机实测 400~800ms，可接受）。
+                console.log('[DS] 缓存已建，直接进主界面（不做后台预热）')
               }
+            })
+            // ⚠️⚠️ v1.16.291 真机首装「从不建缓存」修复（主人 2026-10-17 真机反馈：
+            //     「第一次进入似乎没有进行加载页面建立缓存」）—— 这是本应用最严重的一类故障，
+            //     后果链：不建缓存 → 首次搜索时引擎临时建索引（数十秒）→ 卡死/点不动；
+            //     建索引内存峰值飙升 → 手环内存紧张 → **直接重启**；即便返回也「什么都搜不到」。
+            //
+            //     **根因**：上面这个 `.then` 是**唯一**的跳加载页入口，而它完全依赖
+            //     `isCacheBuilt()` 决议；`isCacheBuilt()` 内部又**只靠 `storage.get` 的
+            //     success/fail 回调**来 resolve。而本项目**多处实测真机 storage 回调会丢**
+            //     （见 loading.ux v1.16.207 原话「窗口 2.5s→6s，失败后重试一次（手环 storage
+            //     回调慢/偶发丢失）」）。**回调一旦丢失 → Promise 永不 settle → .then 永不执行
+            //     → 既不跳加载页也不报错，应用安静地停在主界面、缓存一个字节都不建。**
+            //     模拟器上 storage 回调稳定，所以这个 bug **只在真机暴露**（这也解释了为何
+            //     我在模拟器上反复复现不出主人的症状）。
+            //
+            //     **修法**：再挂一条**不依赖回调**的兜底 —— 给 isCacheBuilt() 套硬超时
+            //     （Promise.race）。8 秒内没等到「已建」的明确结论，就**一律按「未建」处理**、
+            //     跳加载页。代价可控：loading 页自身会先快速复探一次，缓存确实已建时会
+            //     「命中缓存，快速加载」秒过；而首装/缓存失效时正是我们要的建缓存。
+            //     宁可多跑一次探询，也绝不能让首装永远不建缓存。
+            // ★ v1.16.387：这个 8s 定时器也要随决议清掉。isCacheBuilt() 内部已有 6s 硬超时，
+            //   8s 这条几乎永远不会赢，但每次进首页仍会留一个悬空定时器到点才消失。
+            var _cacheTimer = null
+            Promise.race([
+              global.isCacheBuilt(),
+              new Promise(function(res) { _cacheTimer = setTimeout(function() { res('timeout') }, 8000) })
+            ]).then(function(r) {
+              if (_cacheTimer) { clearTimeout(_cacheTimer); _cacheTimer = null }
+              if (navigated || selfC.isDestroyed) return
+              if (r !== true) goLoading('缓存未确认（' + r + '）→ 保守建缓存')
+            }).catch(function(e) {
+              if (_cacheTimer) { clearTimeout(_cacheTimer); _cacheTimer = null }
+              if (!navigated && !selfC.isDestroyed) goLoading('缓存探测异常 → 保守建缓存')
             })
           } catch (e) { console.log('[DS] 缓存判断异常: ' + e.message) }
         }, 300)
@@ -788,12 +1592,8 @@
           this.resetAndSearch()
         }
       }
-      // v1.16.95 返回主界面偶发布局畸形闪动（轻量运行时重排竞态，胶囊屏出现过）：
-      // 400ms 后补一次整屏吸附复位——位置已正确时为无害空操作，短暂偏差时立即校回
-      var selfSettle = this
-      setTimeout(function() {
-        if (!selfSettle.isDestroyed) selfSettle.snapPageScroll()
-      }, 400)
+      // v1.16.342：随第二屏删除，这里的「400ms 补一次整屏吸附」也删除——
+      // 吸附目标 page × 整屏高本身就是把滚动位置拽回的分页产物，单屏后不需要。
       if (this.screenAdjusted) return
       this.screenAdjusted = true
       this.adjustForScreen()
@@ -801,26 +1601,33 @@
 
     onDestroy() {
       this.isDestroyed = true
+      if (typeof global !== 'undefined' && global._homeIconRefresher) global._homeIconRefresher = null
       if (this.timeTimer) clearInterval(this.timeTimer)
       if (this.btTimer) clearInterval(this.btTimer)
-      if (this.catScrollTimer) clearTimeout(this.catScrollTimer)
-      if (this.pageScrollTimer) clearTimeout(this.pageScrollTimer)
-      if (this.searchTimer) clearTimeout(this.searchTimer)
       if (this._emptyExitTimer) clearTimeout(this._emptyExitTimer)
       // AI 面板（v1.16.92）：清语音超时定时器 + 作废在途识别/问答请求
       if (this._aiVoiceTimer) { clearTimeout(this._aiVoiceTimer); this._aiVoiceTimer = null }
-      getAssistant().cancel()
+      global.getAssistant().cancel()
     },
 
     // v1.16.114 蓝牙状态刷新（实时查询；失败按未连接）
+    // ★ v1.16.385：删掉 10s 轮询 setInterval。
+    //   原来这里每 10s 跑一次 checkBtStatus → probe() + _ping()（ping 超时 3s），
+    //   而应用级心跳 startHeartbeat 本来就每 5s 探一次，并且探到变化时经
+    //   onBtChange 直接把 btOn / bluetoothConnected 推给 UI（见 onShow）。
+    //   两套探活并行 = 同样的 ping 被并发打三遍，蓝牙未连时每 5s 刷一串 fail 日志。
+    //   现在只保留一次即时探活，后续状态全部由心跳推送。
     refreshBtStatus() {
-      var self = this
-      if (this.btTimer) { clearInterval(this.btTimer); this.btTimer = null }
-      var probe = function () {
-        getAssistant().checkBtStatus(function (on) { if (!self.isDestroyed) self.btOn = on })
-      }
-      probe()
-      this.btTimer = setInterval(probe, 10000)
+      // ★★★ v1.16.457（2026-11-04 宝宝定案「把蓝牙连接的逻辑都删了（或者注释掉更好）」）：
+      //   演示模式下**彻底停掉蓝牙探活**。原实现走 checkBtStatus → probe() + _ping()，
+      //   未连接时会失败并把 btOn 置 false → 界面/音频面板显示「未连接」。
+      //   现在整个应用不依赖链路（语音走本地硬编码、图标配置走已读入的 storage），
+      //   探活只剩负价值。整段保留注释，日后恢复真链路时解开即可。
+      //
+      // var self = this
+      // if (this.btTimer) { clearInterval(this.btTimer); this.btTimer = null }
+      // global.getAssistant().checkBtStatus(function (on) { if (!self.isDestroyed) self.btOn = on })
+      this.btOn = true   // 演示模式恒按「在线」呈现，避免任何未连接样式的残留
     },
 
     updateTime() {
@@ -836,6 +1643,7 @@
         success: function(data) {
           var shape = data.screenShape
           self.screentype = shape === 'circle' ? 'circle' : (shape === 'pill-shaped' ? 'pill-shaped' : 'rect')
+          self.isCircle = (shape === 'circle')   // v1.16.316：圆屏布局分支判据
           // v1.16.3 补回 UI 状态（v1.14.0 精简时误删）：标题显隐 + 分页圆点位置
           self.showAppTitle = (shape === 'pill-shaped') || (shape === 'circle')
           self.showRectTitle = !self.showAppTitle
@@ -847,29 +1655,28 @@
           var _dw = 300
           var _sh = (data.screenWidth && data.screenHeight)
             ? Math.round(data.screenHeight * _dw / data.screenWidth) : 0
+          // v1.16.316：圆屏 300 是「逻辑画布边长」（466x466 → 466*300/466 = 300），
+          // 即 _sh 本身；写成常量是因为圆屏只有正方形一种比例，_sh 与之恒等。
           var h = shape === 'pill-shaped' ? (_sh || 766) : (shape === 'circle' ? 300 : 429)
-          // ⚠️ screen1H 必须随形态更新：screen2 用 style="height:{{screen1H}}px" 定高，
-          // 若恒为 data 初值 429，则整页总高 = screen1 + 429，滚动范围严重不足
-          // → 第二屏底部（设置/收藏卡）永远滑不到（小米手环 pill 屏 766 上必现）
+          // ★ v1.16.339：这里算出的 h 现在**只喂滚动吸附步长**（_fullScreenH），
+          //   不再赋给模板高度——容器高度已由 CSS 各形态 @media 固定（宝宝定案
+          //   「固定化容器，不要每次都算」）。设计画布宽 300 + designWidth:300，
+          //   等价于 CSS 里写死的 429/766/300，两边必须同步：
+          //     rect 336×480 → 480×300÷336 = 429 ｜ pill 192×490 → 490×300÷192 ≈ 766
+          //     circle 466×466 → 300
           self._fullScreenH = h
-          self.screen1H = h
-          self.dotsTop = Math.round(h / 2) - 16
-          // ⚠️ 吸附参数随形态（审查修复）：snapParams 基准值是 rect 设计（58/17/8.5），
-          // pill（手环9）实际 cat-item 95px、间距 55、padding 28——用 rect 步长吸附
-          // 图标永远对不到屏幕中心
-          if (shape === 'pill-shaped') {
-            self.snapParams = { iconW: 95, spacing: 55, count: 6, padLeft: 28, enabled: true }
-          } else if (shape === 'circle') {
-            self.snapParams = { iconW: 58, spacing: 17, count: 6, padLeft: 8.5, enabled: false }
-          } else {
-            self.snapParams = { iconW: 58, spacing: 17, count: 6, padLeft: 8.5, enabled: true }
-          }
+          self.screen1H = h   // 只读镜像：滚动吸附/翻页按整屏高算，永远不等于搜索态高度
+          // v1.16.266 清理：原 self.dotsTop 赋值（分页点定位）随 .page-dots 一并移除
+          // 形态/高度/吸附参数全部就绪 → 放行渲染（避免先按 rect 渲染再跳 pill 的反差）
+          self.layoutReady = true
           if (self.shouldOpenKeyboard) {
             self.shouldOpenKeyboard = false
             self.openKeyboardDelayed()
           }
         },
         fail: function() {
+          // 形态判定失败也必须放行渲染（否则永久黑屏）；此时沿用 rect 初值，CSS @media 仍会兜住观感
+          self.layoutReady = true
           if (self.shouldOpenKeyboard) {
             self.shouldOpenKeyboard = false
             self.openKeyboardDelayed()
@@ -878,92 +1685,9 @@
       })
     },
 
-    // 整页滚动：实时更新当前页指示，停止（debounce 150ms）后吸附到最近的整屏位置；
-    // 搜索态下结果随外层滚动，不做双屏分页吸附
-    onPageScroll(e) {
-      var y = (e && e.scrollY) || 0
-      this._lastPageY = y   // 非响应式：滚动帧高频写入，绝不进 setState
-      if (this.searchActive) return
-      var h = this.screen1H || 429
-      var page = Math.round(y / h)
-      if (page < 0) page = 0
-      if (page > 1) page = 1
-      if (page !== this.curPage) this.curPage = page
-      var self = this
-      if (this.pageScrollTimer) clearTimeout(this.pageScrollTimer)
-      this.pageScrollTimer = setTimeout(function() {
-        self.snapPageScroll()
-      }, 100)
-    },
-
-    // 吸附到最近的整屏位置：目标 scrollY = page * 屏设计高
-    snapPageScroll() {
-      var h = this.screen1H || 429
-      var y = this._lastPageY || 0
-      var page = Math.round(y / h)
-      if (page < 0) page = 0
-      if (page > 1) page = 1
-      this.curPage = page
-      var target = page * h
-      // v1.16.64 滑动手感优化（v1.16.71 debounce 150→100）：偏离目标 < 屏高 18% 时不吸附——
-      // 留出自由滑动的余量，只有「跨过半屏意图」才触发一次平滑对齐
-      //（原实现任何小偏移都会被 smooth 拽回，是主人反馈「滑动卡卡的」的主要手感来源）
-      if (Math.abs(target - y) > h * 0.18) {
-        var el = this.$element('pageScroll')
-        if (el) {
-          el.scrollTo({ left: 0, top: target, behavior: 'smooth' })
-        }
-      }
-    },
-
-    // 分类横滑停止（debounce 100ms）后，把最近「两符号中点」对齐屏幕中心
-    onCatScroll(e) {
-      this._lastCatScrollX = (e && e.scrollX) || 0   // 非响应式：横滑每帧写入
-      var self = this
-      if (this.catScrollTimer) clearTimeout(this.catScrollTimer)
-      this.catScrollTimer = setTimeout(function() {
-        self.snapCatScroll()
-      }, 100)
-    },
-
-    // 步长法计算吸附目标：gap 中点 = padLeft + i*step + iconW + spacing/2（step = iconW + spacing），
-    // 目标 scrollX = gap - 视口中心(150)，钳制到 [0, 内容宽(含左右 padLeft) - 视口宽]
-    // 计算第 idx 位的对齐 scrollX（两符号中点对齐屏幕中心，钳制边界）
-    _catTargetX(idx) {
-      var p = this.snapParams
-      var step = p.iconW + p.spacing
-      var padLeft = p.padLeft || 0
-      var viewportW = 300
-      var maxX = Math.max(0, (2 * padLeft + p.count * p.iconW + (p.count - 1) * p.spacing) - viewportW)
-      var gap = padLeft + idx * step + p.iconW + p.spacing / 2
-      var target = gap - viewportW / 2
-      if (target < 0) target = 0
-      if (target > maxX) target = maxX
-      return target
-    },
-    // v1.16.82 主人定案：去掉 v1.16.65「翻页式归位」的一次一格限制——实测不够方便且无有效改良。
-    // 恢复自由横滑（随手势滑多格），停止（debounce 100ms）后吸附到最近的图标位（自动复位）。
-    // 吸附目标由 curX 直接反推 gap 序号（与 _catTargetX 的 gap 公式互逆），不再基于 _catIdx ±1 步进。
-    snapCatScroll() {
-      var p = this.snapParams
-      if (!p || !p.enabled) return
-      var scrollEl = this.$element('catScroll')
-      if (!scrollEl) return
-      var curX = this._lastCatScrollX || 0
-      var step = p.iconW + p.spacing
-      var padLeft = p.padLeft || 0
-      var viewportW = 300
-      // 逆运算：curX ≈ _catTargetX(idx) → idx = (curX + viewportW/2 - padLeft - iconW - spacing/2) / step
-      var rawIdx = (curX + viewportW / 2 - padLeft - p.iconW - p.spacing / 2) / step
-      var idx = Math.round(rawIdx)
-      if (idx < 0) idx = 0
-      if (idx > p.count - 1) idx = p.count - 1
-      this._catIdx = idx
-      var target = this._catTargetX(idx)
-      if (Math.abs(target - curX) > 1) {
-        scrollEl.scrollTo({ left: target, top: 0, behavior: 'smooth' })
-      }
-    },
+    // v1.16.342：整页滚动分页 + 吸附（onPageScroll / snapPageScroll）随第二屏一并删除。
+    // 这两段会把 pageScroll 的 scrollY 拽到 page × 整屏高，是「搜索完头部塌陷」的嫌疑源；
+    // 现在只有一屏内容，滚动就是普通滚动，不再有任何吸附。
 
     // ===== AI 助手全屏面板（v1.16.92 语音直答版：进面板即开麦 → 思考 → 跳回答页，无键盘） =====
 
@@ -991,13 +1715,15 @@
       this.aiMicCircleClass = 'ai-mic-circle ai-mic-off'
       if (this._aiVoiceTimer) { clearTimeout(this._aiVoiceTimer); this._aiVoiceTimer = null }
       this._aiVoiceBusy = false
-      getAssistant().cancel()
+      global.getAssistant().cancel()
       this.showKeyboard = false
       this.log('[AI-PANEL] 退出 AI 助手面板')
     },
 
     // 语音识别（v1.16.92 直答链路第一环）：识别文本 → 自动 chat() → 自动 push 回答页。
-    // 模拟链路约 1.5s 返回；12s 超时兜底防真链路手机不回包时无限卡在聆听态。
+    // 模拟链路约 1.5s 返回；35s 超时兜底防真链路手机不回包时无限卡在聆听态。
+    // ★ v1.16.372：12s → 35s，理由同 _enterVoiceUI —— S5 的 record.stop() 阻塞约 12s，
+    //   12s 看门狗会在 stop() 刚返回时到期，把 _voiceCb 清掉、audio_end 发不出去。
     // _aiVoiceBusy 为非响应式在途标记（识别进行中禁止重复开麦）；aiListening 只管显示态
     startAiVoice() {
       if (!this.aiMode || this.aiThinking || this._aiVoiceBusy) return
@@ -1013,9 +1739,9 @@
         self.aiListening = false
         self.aiStatusText = '没听清，点麦克风再说一次'
         self.aiMicCircleClass = 'ai-mic-circle ai-mic-off'
-        getAssistant().cancel()
-      }, 12000)
-      getAssistant().recognize(function(r) {
+        global.getAssistant().cancel()
+      }, 35000)
+      global.getAssistant().recognize(function(r) {
         if (self._aiVoiceTimer) { clearTimeout(self._aiVoiceTimer); self._aiVoiceTimer = null }
         // 过期回调防护：已离页/已退出面板/已被取消（_aiVoiceBusy 复位）→ 直接丢弃
         if (self.isDestroyed || !self.aiMode || !self._aiVoiceBusy) return
@@ -1049,7 +1775,7 @@
           return global.searchHistory(kw, { page: 1, pageSize: 5, category: 'all', region: 'all' })
         })
       }
-      getAssistant().chat(q, searchFn, function(r) {
+      global.getAssistant().chat(q, searchFn, function(r) {
         // 过期回调防护：已离页/已退出面板/已不在思考态（被取消）→ 直接丢弃，
         // 防旧答案把面板从失败态/聆听态拽回回答跳转
         if (self.isDestroyed || !self.aiMode || self.aiThinking !== true) return
@@ -1070,6 +1796,61 @@
       })
     },
 
+    // 内嵌 AI 提问（v1.16.297 合并入口专用）：本地结果已先出，此处在后台问 AI，
+    // 答案回来插进结果区顶部的 .ai-card。与面板链路三点不同：
+    //   ① 不设 aiMode（不盖全屏）、② 不跳页、③ 失败不打扰（本地结果照常可见，
+    //   故失败只静默收起卡片，不像面板那样显示「AI 暂时不可用」）。
+    // searchFn 复用 global.searchHistory —— AI 的「来源条目」就是本地检索查出来的，
+    // 这也是「本地检索才是 AI 的底座、AI 不是替代品」的代码实证。
+    // _aiInlineToken：作废上一轮 —— 连续两次提问时，先发的迟到回调不得覆盖新答案。
+    aiInlineAsk(q) {
+      q = (q || '').trim()
+      if (!q) return
+      var self = this
+      var token = (this._aiInlineToken || 0) + 1
+      this._aiInlineToken = token
+      this.aiInlineMode = true
+      this.aiThinking = true
+      this.aiAnswer = ''
+      this.log('[HOME-SEARCH] 内嵌 AI 提问：' + q + '（链路=' + global.getAssistant().getMode() + '）')
+      var searchFn = function(kw) {
+        return Promise.resolve().then(function() {
+          return global.searchHistory(kw, { page: 1, pageSize: 5, category: 'all', region: 'all' })
+        })
+      }
+      global.getAssistant().chat(q, searchFn, function(r) {
+        if (self.isDestroyed || self._aiInlineToken !== token) return
+        self.aiThinking = false
+        if (r && r.ok && r.answer) {
+          // 结果经 global 桥接给回答页（模块实例按页面作用域隔离，不能靠页面间 import 共享）
+          global.aiResult = { question: q, answer: r.answer, card: r.card || null, sources: r.sources || [] }
+          self.aiAnswer = r.answer
+          self.log('[HOME-SEARCH] 内嵌 AI 答案就绪（' + r.answer.length + ' 字）')
+        } else {
+          self.aiInlineMode = false
+          self.aiAnswer = ''
+          self.log('[HOME-SEARCH] 内嵌 AI 不可用，仅保留本地结果' +
+            (r && r.reason ? '（' + r.reason + '）' : ''), 'warn')
+        }
+      })
+    },
+
+    // 点内嵌 AI 卡片 → 打开 AI 回答页看分节全文（思考中不可点，防半成品跳页）
+    openAiAnswerPage() {
+      if (this.aiThinking) return
+      if (typeof global === 'undefined' || !global.aiResult) return
+      this.log('[HOME-SEARCH] 点卡片打开完整 AI 回答页')
+      router.push({ uri: '/pages/ai/ai-answer' })
+    },
+
+    // 收起内嵌 AI 卡片并作废在途提问（换词/退出搜索时必须调，否则旧答案留在新结果上方）
+    _clearInlineAi() {
+      this._aiInlineToken = (this._aiInlineToken || 0) + 1
+      this.aiInlineMode = false
+      this.aiThinking = false
+      this.aiAnswer = ''
+    },
+
     // 面板自身滑动：左右滑退出 AI 模式（exitAiMode 内清定时器、作废在途请求）
     onAiSwipe(eve) {
       if (eve.direction === 'left' || eve.direction === 'right') {
@@ -1077,33 +1858,344 @@
       }
     },
 
-    // 语音搜索（v1.16.33）：进入聆听态 → AssistantEngine.recognize ——
+    // ★ 合并入口（v1.16.297）：一次说话 → 本地结果 + AI 答案（原 startVoiceSearch）。
+    // 进入聆听态 → AssistantEngine.recognize ——
     // 真链路=interconnect 发到手机 App 做 ASR 后回传文本；模拟链路=本地演示词源。
-    // 两条链路共用此回调：识别文本真实填入搜索框并触发本地搜索（整条链路真实执行）。
-    startVoiceSearch() {
+    // 两条链路共用此回调：识别文本真实填入搜索框并触发本地搜索（整条链路真实执行），
+    // 随后**并行**发起内嵌 AI 提问（aiInlineAsk）——本地结果不等 AI，先出即用。
+    // ★★★ v1.16.455（2026-11-04 宝宝定案「手环语音就不扯它了，直接硬编码吧，
+    //   到时候场上就当模拟吧」）：
+    //   现场演示走**本地硬编码识别**，完全不碰手表录音 / 手机 ASR / 蓝牙链路。
+    //
+    //   为什么要放弃真链路：
+    //     · S5 的 record 引擎帧率被钉死在 ~2900 采样/秒（声明 16000），采集率只有 18~22%，
+    //       长句必然残缺 →「说长一点就提示未识别」；
+    //     · 同一轮结束后引擎释放不及时，第二轮 3 秒就报「没听到声音」；
+    //     · 手机侧 ASR 链路本身已通，但上面两条决定了识别质量，短期无解。
+    //
+    //   演示规则（三档轮播，每档都**保证命中真实条目**，见下方命中实测注释）：
+    //     第 1 次点击 → 「记忆」（学习类，命中最多 41 条）
+    //     第 2 次点击 → 「感冒」（健康类，4 条 + 结构化 AI 卡）
+    //     第 3 次点击 → 「存钱」（生活类，12 条）
+    //     第 4 次起  → 循环回第 1 档
+    //   这样答辩时无论点几次都能看到「说话 → 出字 → 有搜索结果」的完整闭环。
+    // ★ 三个词都经过实际检索验证能命中真实条目（2026-11-04 实测）：
+    //     演示词挑选标准（2026-11-04 实测）：**必须同时满足两条**——
+//      ① 资料库检索能命中（不能出现空白结果）；
+//      ② AssistantEngine 的 SIM_AI_ANSWERS 有对应预置答案（现场才看得到 AI 卡）。
+//     实测命中：「记忆」→ study 40 条 + health 1 条，AI 预置有；
+//               「感冒」→ health 3 条 + life 1 条，AI 预置有（含结构化作答卡）；
+//               「存钱」→ life 12 条，AI 预置有。
+    //   刻意**不用**「你好」这类无语料的寒暄词 —— 它会走空结果，演示时最忌讳。
+    /**
+     * 演示开关。答辩/Demo 现场保持 true；
+     * 想回到真链路（手表录音 + 手机 ASR）把它改成 false 即可，其余代码不用动。
+     */
+
+    /**
+     * 硬编码演示语音的完整流程（不依赖任何链路）：
+     *   点麦克风 → 进聆听态 → 模拟「正在听」1.2s → 出识别文本 → 自动进搜索态并出结果。
+     *
+     * ★ 刻意保留语音交互的所有视觉反馈（波形、聆听文案、字幕逐字出现），
+     *   否则界面上会像「点了直接跳到结果」，反而更假。
+     */
+    _demoVoiceStart() {
+      var self = this
+      if (this.isDestroyed || this.voiceActive) return
+      // 取本轮该说的词（循环三档）
+      var idx = (this._demoStep || 0) % DEMO_QUERIES.length
+      var text = DEMO_QUERIES[idx]
+      this._demoStep = idx + 1
+
+      this.voiceActive = true
+      this.voicePartialText = ''
+      this.voiceRecordHint = '正在聆听…'
+      this.startWave()
+      this.log('[HOME-SEARCH] 语音搜索（演示模式）：进入聆听状态，第 ' + (idx + 1) + ' 档 → 「' + text + '」')
+      if (this._voiceTimer) { clearTimeout(this._voiceTimer); this._voiceTimer = null }
+      if (this._demoTimer) { clearTimeout(this._demoTimer); this._demoTimer = null }
+
+      // 阶段一：聆听 1.2s（给用户「它真的在听」的反馈）
+      this._demoTimer = setTimeout(function () {
+        if (self.isDestroyed || !self.voiceActive) return
+        self.voiceRecordHint = '正在识别…'
+        // 阶段二：逐字出字幕，模拟流式识别
+        var n = 0
+        var tick = function () {
+          if (self.isDestroyed || !self.voiceActive) return
+          n++
+          self.voicePartialText = text.substring(0, n)
+          if (n < text.length) {
+            self._demoTimer = setTimeout(tick, 90)
+            return
+          }
+          // 阶段三：出字完成 → 收尾进搜索
+          self._demoTimer = setTimeout(function () {
+            if (self.isDestroyed || !self.voiceActive) return
+            // ★ 收尾序列**必须与真链路成功分支逐行一致**（见 recognize 回调里那段）：
+            //   exitVoiceSearch → 清筛选态 → 先填 searchQuery 再 enterSearch(true)
+            //   → resetAndSearch。少任何一步结果区都不会渲染（v1.16.455 之前踩过）。
+            self.exitVoiceSearch()
+            self.activeDatasetId = null
+            self.activeGroupId = null
+            self._resetSearchFilters()
+            self.aiMode = false
+            self.searchQuery = text
+            global.searchQuery = text
+            self.enterSearch(true)   // 不唤醒键盘，与真链路一致
+            self.resetAndSearch()
+            self.log('[HOME-SEARCH] 语音识别（演示）：' + text)
+            // ★★★ v1.16.464（2026-11-04 宝宝：「本地开始算，但是AI在上面会比本地先算完」）：
+            //   演示分支**直接写死 AI 答案**，不走 chat 链路。
+            //   为什么不用 aiInlineAsk：它要先 probe() 判真/模拟链路、再 fetchSources 本地检索、
+            //   最后等 SIM_CHAT_LATENCY —— 任一环节挂住（模拟器无 interconnect、真机链路抖动）
+            //   卡片就永远不出现。演示要的是「一定有」，不是「可能没有」。
+            self._demoShowAi(text)
+          }, 300)
+        }
+        self._demoTimer = setTimeout(tick, 60)
+      }, 1200)
+    },
+
+
+    /**
+     * 演示：写死 AI 答案（v1.16.464）。
+     *
+     * ★ 为什么不用 aiInlineAsk：它要走 probe() 判链路 → fetchSources 本地检索
+     *   → 等 SIM_CHAT_LATENCY 三关，任一环节挂住（模拟器无 interconnect / 真机链路抖动）
+     *   卡片就永不出现。演示要「一定有」，所以这里直接把答案塞进去，500ms 后显示。
+     *
+     * 文案取自 AssistantEngine 的 SIM_AI_ANSWERS（同一份口径，答辩时与代码一致）。
+     */
+    _demoShowAi(text) {
+      var MAP = {
+        '记忆': {
+          answer: '记忆的关键不是重复次数，而是「回想」的难度。看完一段就合上复述一遍，比再读三遍有效。',
+          card: {
+            summary: '记忆的关键不是重复次数，而是「回想」的难度。',
+            sections: [
+              { name: '主动回想', items: ['看完合上，凭记忆复述一遍', '想不起来再看，卡壳处就是该加固的地方'] },
+              { name: '间隔重复', items: ['当天、第 2 天、第 7 天各复习一次', '间隔逐渐拉长，比一次长时间背诵有效'] }
+            ],
+            note: '内容来自本地资料库与内置知识，仅作学习参考。'
+          }
+        },
+        '感冒': {
+          answer: '感冒多由病毒引起，通常 7 天左右自愈，重点在缓解症状和观察危险信号。',
+          card: {
+            summary: '感冒多由病毒引起，通常 7 天左右自愈，重点在缓解症状和观察危险信号。',
+            sections: [
+              { name: '居家护理', items: ['多喝温水，保证充足休息', '体温超过 38.5℃ 可酌情使用退烧药', '鼻塞可用生理盐水洗鼻'] },
+              { name: '需要就医', items: ['持续高烧超过 3 天', '呼吸困难或胸痛', '症状 10 天仍不见好转'] }
+            ],
+            note: '以上为一般性健康常识，不能替代医生诊断。'
+          }
+        },
+        '存钱': {
+          answer: '存钱先定比例再谈金额：每月收入到账先划走固定比例，剩下的才用于开销。',
+          card: {
+            summary: '存钱先定比例再谈金额：到账先划走固定比例，剩下的才用于开销。',
+            sections: [
+              { name: '先付给自己', items: ['工资到账当天自动转出 10%~20%', '把这张卡从支付工具里解绑'] },
+              { name: '记账找漏', items: ['连续记一个月，找出占比最高的三类支出', '只砍这三类里最不痛的那一项'] }
+            ],
+            note: '内容来自本地资料库与内置知识，仅作参考。'
+          }
+        }
+      }
+      var item = MAP[text]
+      if (!item) return
+      var self = this
+      this.demoAiOn = true
+      this.demoAiText = ''
+      global.aiResult = { question: text, answer: item.answer, card: item.card, sources: [] }
+      // ★ v1.16.467（宝宝定案「等正常搜完，它显示 AI 卡片，就可以正常了」）：
+      //   500 → 2600ms。本地检索实测要 1~3 秒，若 AI 卡先出，会先占满屏、
+      //   本地结果一到又把它挤掉（无论 if 还是 show 都有重建/位置问题）。
+      //   现在等本地结果铺好（约 2.5s）再出卡，顺序稳定：出字 → 本地结果 → 顶部 AI 卡。
+      if (this._demoAiTimer) clearTimeout(this._demoAiTimer)
+      this._demoAiTimer = setTimeout(function () {
+        if (self.isDestroyed) return
+        self.demoAiText = item.answer
+        self.log('[HOME-SEARCH] 演示 AI 答案就绪：' + text)
+      }, 2600)
+    },
+
+    startVoiceAsk() {
       if (this.$app.$def.isNavigating) return
       if (this.voiceActive) return
+      // ★ 硬编码演示分支（放在所有链路判定之前，链路好坏都不影响演示）
+      //   ⚠️ 必须用模块级常量 DEMO_ENABLED —— 写成页面对象属性时 this.DEMO_ENABLED
+      //   在实例上读不到（页面实例只承诺 private 里的字段），分支永远不命中、
+      //   静默落回真链路（2026-11-04 真机踩过：装了演示版还是提示「没听清」）。
+      if (DEMO_ENABLED) {
+        this._demoVoiceStart()
+        return
+      }
+      // ★★★ v1.16.336（宝宝定案：「蓝牙未连接，直接弹窗提示，参考之前的设计规范」）：
+      //   这是对 v1.16.333「搜索框内提示、禁止弹窗」的**主动反转**，以本条为最新要求。
+      //   现在的行为：
+      //     ① 已经明确断开（_alive===false）→ 点击的同一帧直接弹窗，不等任何超时；
+      //     ② 从未探活过 → 先弹一个「正在连接…」（点击必须有即时反馈），并异步 probe；
+      //     ③ 链路正常 → 进聆听态。
+      //   保留 333 的一条成果：**失败提示一定是"点到就有反应"**，不允许点了没动静。
+      var self0 = this
+      var asst = global.getAssistant()
+      if (asst._probeDone && asst.conn && asst._alive === false) {
+        this._showVoiceTip('蓝牙未连接', '请先在手机 App 内连接手环')
+        return
+      }
+      if (!asst._probeDone || !asst.conn) {
+        // 首次点击：必须先 probe 才能拿到 conn（否则 ping 无从发）。
+        this._showVoiceTip('正在连接…', '请稍候')
+        asst.probe(function () { self0._startVoiceAskNow() })
+        return
+      }
+      this._startVoiceAskNow()
+    },
+
+    /**
+     * 语音入口提示弹窗（v1.16.336）：遮罩 + 卡片 + 一个「知道了」按钮。
+     *
+     * ★ 与 v1.16.333 的取舍差异：那一版是「搜索框内闪一下文字、自动收起」，
+     *   宝宝看过之后明确要**弹窗**，所以这里回到浮层形态，但**不自动消失**——
+     *   用户必须点一下「知道了」或遮罩才关（点哪儿都有响应，符合「禁止点击无响应」）。
+     *
+     * @param {string} msg 主文案
+     * @param {string} sub 副文案（引导语，可省略）
+     */
+    _showVoiceTip(msg, sub) {
+      if (this.isDestroyed) return
+      if (this.voiceTipTimer) { clearTimeout(this.voiceTipTimer); this.voiceTipTimer = null }
+      this.voiceTipMsg = msg || ''
+      this.voiceTipSub = sub || ''
+      this.voiceTipShow = true
+    },
+
+    /** 关闭提示弹窗（按钮与遮罩共用；清 timer 防复用残留） */
+    closeVoiceTip() {
+      if (this.voiceTipTimer) { clearTimeout(this.voiceTipTimer); this.voiceTipTimer = null }
+      if (this.isDestroyed) return
+      this.voiceTipShow = false
+    },
+
+    /**
+     * 网关校验通过后真正进入聆听态。
+     *
+     * ★★★ v1.16.325 顺序修正（真机反馈「断开时点麦克风也不提示未连接」）：
+     *   旧顺序是「先进聆听态 → 再异步 checkBluetooth」，于是用户会先看到 3 秒空白波形，
+     *   期间识别请求也已经发出去了。改为**先 ping 确认对端在，再进聆听**——
+     *   手环没有录音能力，链路不通就根本不可能识别，早失败比假等待好。
+     */
+    _startVoiceAskNow() {
+      var self = this
+      if (this.voiceActive) return
+      var asst = global.getAssistant()
+      // ★★★ v1.16.333：**已知连通时立刻进聆听态，不再先 ping 一次**。
+      //   旧实现无条件 `_ping` 后才进聆听，而 ping 超时是 3s —— 链路其实好着、
+      //   只是这一帧 pong 还没回来时，用户看到的就是「点了麦克风，三秒没反应」。
+      //   现在乐观进入：心跳每 5s 都在探活，`_alive` 足够可信；
+      //   万一此刻真的断了，`recognize()` 内部还有一次 ping，会回调失败原因，
+      //   由下面的失败分支弹「蓝牙未连接」并自动退出。
+      if (asst._alive === true) {
+        this._enterVoiceUI()
+        return
+      }
+      asst._ping(function (alive) {
+        if (self.isDestroyed || self.voiceActive) return
+        self.bluetoothConnected = alive
+        if (!alive) {
+          self.log('[HOME-SEARCH] 语音入口拦截：蓝牙未连接', 'warn')
+          self._showVoiceTip('蓝牙未连接', '请先在手机 App 内连接手环')
+          return
+        }
+        self._enterVoiceUI()
+      })
+    },
+
+    /** 确实已连通后才进聆听界面并发出识别请求 */
+    _enterVoiceUI() {
+      var self = this
+      if (this.isDestroyed || this.voiceActive) return
       this.voiceActive = true
+      this.voicePartialText = ''   // v1.16.446：新一轮开始，清掉上一轮的字幕
       this.startWave()   // v1.16.140：进入聆听即播放声波
       this.log('[HOME-SEARCH] 语音搜索：进入聆听状态')
-      this.checkBluetooth()
-      var self = this
+      // ★★★ v1.16.378：订阅语音阶段，把「听→上传→识别」实时显示出来。
+      //   原来这十几秒界面只有一句静止文案，用户不知道是在录、传、还是卡住了。
+      try {
+        global.getAssistant().onVoicePhase = function (phase, text) {
+          if (self.isDestroyed) return
+          if (phase === 'partial') {
+            // ★ v1.16.446：流式字幕 —— 单独一个字段，不要覆盖状态提示，
+            //   否则「正在上传录音…」会被半句话顶掉，用户反而不知道在干什么。
+            self.voicePartialText = text || ''
+            return
+          }
+          self.voiceRecordHint = text
+        }
+      } catch (e) {}
       // v1.16.57 清理：删除「随机波形动画」演示代码（无真实音量数据源，凑数渲染）
       // 超时兜底（审查修复）：真链路手机不回包时，聆听态会无限卡死——12s 自动退出
       // v1.16.124 审查建议#3：存句柄并在 exitVoiceSearch 清除 —— 原匿名定时器在「退出后
       // 12s 内重进聆听」时，到期会把新一轮聆听误杀（dataset.ux 早已是正确写法）
       if (this._voiceTimer) { clearTimeout(this._voiceTimer); this._voiceTimer = null }
+      // ★★★ v1.16.372：12s → 35s。
+      //   真机实测：S5 的 record.stop() 是**同步阻塞**调用，要等 PCM 全部刷到磁盘
+      //   才返回，实测阻塞约 12 秒（11:53:09 调用 → 11:53:21 才回调 success）。
+      //   这个期间 JS 单线程被占住，所有定时器停摆。
+      //   旧值 12000 会在 stop() 刚返回的那一刻到期 → 页面先 exitVoiceSearch()
+      //   → global.getAssistant().cancel() 把 _voiceCb 置空 → AssistantEngine 的 done
+      //   回调第一行 `if (!self._voiceCb) return` 直接返回 → **audio_end 永不发出**
+      //   → 手机侧 AudioAssembler 收满 32 个分片却永远等不到结束帧，识别从不启动。
+      //   时间预算（实测）：录音 3s + stop 阻塞 12s + 上传 27 帧 × 15ms ≈ 0.4s
+      //   + 手机识别 ≈ 1s ≈ 17s，留一倍余量取 35s。
       this._voiceTimer = setTimeout(function () {
         if (self && !self.isDestroyed && self.voiceActive) {
           self.log('[HOME-SEARCH] 语音识别超时，自动退出聆听', 'warn')
           self.exitVoiceSearch()
         }
-      }, 12000)
-      getAssistant().recognize(function (r) {
+      }, 35000)
+      global.getAssistant().recognize(function (r) {
         if (self.isDestroyed || !self.voiceActive) return
         if (!r || !r.ok || !r.text) {
-          self.log('[HOME-SEARCH] 语音识别失败' + (r && r.reason ? '（' + r.reason + '）' : ''), 'warn')
+          var why = (r && r.reason) ? r.reason : '未识别到内容'
+          self.log('[HOME-SEARCH] 语音识别失败（' + why + '）', 'warn')
           self.exitVoiceSearch()
+          // ★★★ v1.16.329：失败必须让用户看见 —— 旧实现只写日志，界面静默退出，
+          //   用户以为「点了没反应」。区分两种情况给不同提示：
+          //   链路问题 → 引导去连手机；手机听到了但没识别出 → 提示再说一次。
+          // ★ v1.16.336：提示改弹窗后，主文案与引导语拆成两级（卡片里分两行显示更清楚）
+          var isLink = (why.indexOf('蓝牙') >= 0 || why.indexOf('发送失败') >= 0)
+          // ★★★ v1.16.378：失败原因分得更细，让提示能直接告诉用户该怎么做。
+          //   旧实现只有「没听清 / 请再说一次」两种，于是「离得太远」「环境太吵」
+          //   「压根没说话」全被说成同一句，用户不知道该改什么。
+          var tip = '没听清'
+          var tipSub = '请再说一次'
+          if (isLink) {
+            tip = '蓝牙未连接'
+            tipSub = '请先在手机 App 内连接手环'
+          } else if (why.indexOf('没有听到声音') >= 0) {
+            tip = '没有听到声音'
+            tipSub = '点麦克风后请对着手表说话'
+          } else if (why.indexOf('声音太小') >= 0) {
+            tip = '声音太小'
+            tipSub = '请靠近手表、大声一点'
+          } else if (why.indexOf('没有录到任何音频') >= 0) {
+            tip = '麦克风被占用'
+            tipSub = '请关闭其他录音应用后重试'
+          } else if (why.indexOf('超时') >= 0 || why.indexOf('没有响应') >= 0) {
+            tip = '手机没有响应'
+            tipSub = '请确认手机 App 在前台后重试'
+          }
+          // ★★★ v1.16.331：只有**链路问题**才把状态置为未连接。
+          //   旧实现无条件 `bluetoothConnected = false` —— 于是「手机听清了但没识别出
+          //   内容」这种纯识别失败也会把界面改成「蓝牙未连接」，用户会以为要去重连，
+          //   而其实链路好得很。状态显示必须由链活心跳决定，不能被一次业务失败改写。
+          if (isLink) {
+            self.bluetoothConnected = false
+          }
+          self._showVoiceTip(tip, tipSub)
           return
         }
         if (r && r.ok && r.text) {
@@ -1119,6 +2211,9 @@
           global.searchQuery = r.text
           self.enterSearch(true)   // v1.16.98：语音填词后不唤醒键盘（主人定案）
           self.resetAndSearch()
+          // v1.16.297 合并入口第二路：本地检索已在跑，此处并行问 AI；
+          // 答案回来插进结果区顶部卡片（不跳页 → 用户先看到本地结果，再看到 AI 答案）
+          self.aiInlineAsk(r.text)
         }
       })
     },
@@ -1129,7 +2224,11 @@
       this.stopWave()    // v1.16.140：退出聆听即停声波（防定时器泄漏）
       // v1.16.124 审查建议#3：清掉 12s 超时定时器，否则退出后重进会被旧定时器误杀
       if (this._voiceTimer) { clearTimeout(this._voiceTimer); this._voiceTimer = null }
-      getAssistant().cancel()
+      // ★ v1.16.378：解绑阶段回调 + 清空实时文案，避免下一轮进来还是上一轮的残留提示
+      this.voiceRecordHint = ''
+      this.voicePartialText = ''
+      try { global.getAssistant().onVoicePhase = null } catch (e) {}
+      global.getAssistant().cancel()
       this.log('[HOME-SEARCH] 语音搜索结束')
     },
 
@@ -1143,60 +2242,99 @@
     startWave() {
       var self = this
       this.stopWave()
+      // ★ v1.16.352：每拍只换一根柱子的高度档，不再整体重建 5 个节点。
       var tick = function () {
         if (self.isDestroyed || !self.voiceActive) return
-        var bars = []
-        for (var i = 0; i < 5; i++) {
-          bars.push({ cls: 'wbar h' + (1 + Math.floor(Math.random() * 4)) })
-        }
-        self.waveBars = bars
+        var h = 'wbar h' + (1 + Math.floor(Math.random() * 4))
+        var k = self.waveTurn % 5
+        self.waveTurn = k + 1
+        // 显式分支赋值：Vela 对 `self['wbar' + n]` 这类动态键不一定触发刷新
+        if (k === 0) { self.wbar1 = h }
+        else if (k === 1) { self.wbar2 = h }
+        else if (k === 2) { self.wbar3 = h }
+        else if (k === 3) { self.wbar4 = h }
+        else { self.wbar5 = h }
       }
       tick()
-      this._waveTimer = setInterval(tick, 220)
+      this.waveTimer = setInterval(tick, 260)
     },
 
     stopWave() {
-      if (this._waveTimer) { clearInterval(this._waveTimer); this._waveTimer = null }
+      if (this.waveTimer) { clearInterval(this.waveTimer); this.waveTimer = null }
     },
 
-    toggleBtDemo() {
-      if (this.btTimer) { clearInterval(this.btTimer); this.btTimer = null }
-      this.btOn = !this.btOn
-      if (typeof global.addRuntimeLog === 'function') {
-        global.addRuntimeLog('[首页] 演示：蓝牙状态切换为 ' + (this.btOn ? '已连接' : '未连接'), 'info')
-      }
+    /* ★ v1.16.339（宝宝定案「清理蓝牙演示开关」）：原 `toggleBtDemo` 已删除。
+       它是个**演示用占位**，却带来三个真实缺陷：
+         ① `btOn = !btOn` 用假值直接覆盖首页角标的真实连接状态 —— 点一下图标，
+            明明连着也显示未连接（或反之），用户以为链路坏了；
+         ② `clearInterval(this.btTimer)` 把 `refreshBtStatus` 的 10s 真实探活**永久停掉**，
+            点过一次之后首页蓝牙状态就再也不更新了；
+         ③ `btOn` / `btTimer` 两个私有字段、两处 `@click` 绑定只服务这个假开关。
+       现改为：点角标 = **立即重新探活一次**（ping → pong），既给用户即时反馈，
+       又不会破坏 `refreshBtStatus` 的轮询链。真实状态只有 `checkBtStatus` 一个来源。
+       `btTimer` 保留（它是真实轮询的句柄，不要动）。 */
+    onBtIconTap() {
+      // ★ v1.16.457：演示模式图标已移除，此入口不再可达；探活也一并停掉。
+      return
+    },
+    _onBtIconTapDisabled() {
+      // v1.16.243：胶囊屏蓝牙图标在搜索框内，点击会冒泡到 search-box @click（toggleSearchBox），
+      // 记时间戳供 toggleSearchBox 识别吞掉（与 clearedAt 同模式）
+      this._btTappedAt = Date.now()
+      var self = this
+      global.getAssistant().checkBtStatus(function (on) {
+        if (self.isDestroyed) return
+        self.btOn = on
+        if (typeof global.addRuntimeLog === 'function') {
+          global.addRuntimeLog('[首页] 蓝牙探活：' + (on ? '已连接' : '未连接'), 'info')
+        }
+      })
     },
 
     // 检查蓝牙连接状态（未连接则提示并进入演示）
+    // ★ v1.16.296：手环 9 框架【未实现 getReadyState】（抛 "not a function"），旧实现必然落 catch
+    //   → bluetoothConnected 永远 false → 永远进演示。改为复用 AssistantEngine 的 checkBtStatus
+    //   （其判据 = interconnect 可实例化 且 send 未失败，见 v1.16.296 修复说明）。
     checkBluetooth() {
       var self = this
       try {
-        var interconnect = require('@system.interconnect')
-        var conn = interconnect.instance()
-        conn.getReadyState({
-          success: function(data) {
-            self.bluetoothConnected = data.status === 1
-            if (!self.bluetoothConnected) {
-              self.log('[HOME-SEARCH] 蓝牙未连接，进入演示', 'warn')
-            }
-          },
-          fail: function() {
-            self.bluetoothConnected = false
-            self.log('[HOME-SEARCH] 蓝牙状态查询失败，进入演示', 'warn')
+        global.getAssistant().checkBtStatus(function (on) {
+          self.bluetoothConnected = on
+          if (on) {
+            self.log('[HOME-SEARCH] 蓝牙已连通（ping/pong 往返成功）')
+            return
+          }
+          self.log('[HOME-SEARCH] 蓝牙未连接，退出聆听', 'warn')
+          // ★ v1.16.325：未连不再「进入演示」，而是如实退出并提示 ——
+          //   手环没有录音能力，链路不通就不可能识别，假装识别会误导用户。
+          if (self.voiceActive) {
+            self.exitVoiceSearch()
+            self._showVoiceTip('蓝牙未连接', '请先在手机 App 内连接手环')
           }
         })
       } catch (e) {
         self.bluetoothConnected = false
-        self.log('[HOME-SEARCH] interconnect 不可用，进入演示', 'warn')
+        self.log('[HOME-SEARCH] interconnect 不可用', 'warn')
       }
     },
 
     // 搜索框点击：键盘关着→进入搜索（弹键盘）；键盘开着→收起键盘（按键盘状态判断）；语音态不响应
     toggleSearchBox() {
+      if (this._btTappedAt && (Date.now() - this._btTappedAt) < 400) { this._btTappedAt = 0; return }
       if (this.voiceActive) return
       // v1.16.131：点 ✕ 清除内容时事件冒泡到搜索框 —— 原实现会因此误开（或误关）键盘，
       // 开键盘又带来一次卡顿（主人反馈）。400ms 内视为同一次点击，直接吞掉。
-      if (this._clearedAt && (Date.now() - this._clearedAt) < 400) { this._clearedAt = 0; return }
+      if (this.clearedAt && (Date.now() - this.clearedAt) < 400) { this.clearedAt = 0; return }
+      // v1.16.209（真机反馈「快速点搜索框卡顿、框卡到右上角」）：连点节流。
+      // 每次点击都会翻转搜索态 → screen1H + 多个条件节点同时重排；轻量运行时在慢 CPU 上
+      // 来不及完成上一轮重排就被打断 → 布局错乱（历史上 v1.16.40 同类塌陷）。350ms 内只认一次。
+      var now = Date.now()
+      // v1.16.226（方法 B·布局感知锁）：固定 350ms 挡不住真机连点（实测仍位移）。
+      // 双条件：距上次点击 <500ms，或**距上次布局翻转 <500ms**（_lastLayoutAt，
+      // v1.16.131 起 _applySearchLayout 每次翻转都会记）——锁窗与竞态窗口对齐。
+      if (this._toggledAt && (now - this._toggledAt) < 500) return
+      if (this._lastLayoutAt && (now - this._lastLayoutAt) < 500) return
+      this._toggledAt = now
       if (this.showKeyboard) {
         this.toggleKeyboard()
       } else {
@@ -1205,6 +2343,12 @@
     },
 
     goCategory(item) {
+      // ★ v1.16.372：收藏入口（visibleCats 末位注入的 isFav 项）→ 直接进收藏页。
+      //   放在最前面：它不带 isGroup/isDataset，落到下面的资料集分支会解构出 undefined。
+      if (item && item.isFav) {
+        this.goFavorites()
+        return
+      }
       // 大类入口(isGroup)：限定只搜该大类下所有集；资料集入口(isDataset)：只搜该集；
       // 普通分类：按分类名搜索（历史语义）。两条限定入口共用同一段进搜索层逻辑
       var isDs = !!(item && item.isDataset)
@@ -1296,6 +2440,25 @@
 
     // ===== 主页内嵌搜索层（逻辑照搬 result.ux，不跳转 result 页） =====
 
+    // v1.16.356 诊断：把最近 12 次耗时记录落到 storage，真机可回查
+    _perfSave(name, ms, extra) {
+      try {
+        const storage = require('@system.storage')
+        storage.get({
+          key: '_perf_log',
+          success: (data) => {
+            let arr = []
+            try { arr = data && data.data ? JSON.parse(data.data) : [] } catch (e) { arr = [] }
+            if (!Array.isArray(arr)) arr = []
+            arr.unshift({ t: Date.now(), name: name, ms: ms, n: extra })
+            if (arr.length > 12) arr = arr.slice(0, 12)
+            storage.set({ key: '_perf_log', value: JSON.stringify(arr) })
+          },
+          fail: () => {}
+        })
+      } catch (e) {}
+    },
+
     // 统一日志：console + runtime log（level 默认 info）
     log(msg, level) {
       console.log(msg)
@@ -1323,25 +2486,42 @@
     // 让结果区（pageScroll 直接子项）紧跟头部，随内容自然撑高、单层滚动。
     // 头部高与 CSS 联动（rect: statusbar 22 + searchbox 16+56；pill: statusbar 91+padding 41 + searchbox 20+92），
     // 改这两处 CSS 时必须同步这里；取保守上限（宁多勿少，多了只是搜索框下多几px空隙，少了会裁搜索框）
+    /* ★ v1.16.339：本函数**已不再参与布局**（保留作数值档案，供改 CSS 时对账）。
+       搜索态高度现在写在各形态 @media 块的 .screen1-search 里：
+         pill 241 = 状态栏 110 + 盒上距 32 + 盒高 92 + 7 余量
+         rect 96  = 状态栏 36 + 盒上距 14 + 盒高 50（原 25+14+50，v1.16.103 收窄后 96）
+         circle 96 = 状态栏 44 + 上距 2 + 框高 40 = 86 + 10 余量
+       ⚠️ 改这几个值时必须同时改 CSS 里的 .screen1-search，否则搜索框会被裁或留空。 */
     _searchHeaderH() {
       // v1.16.97：搜索结果区是 screen1 的兄弟节点——搜索态 screen1 的固定高度决定
-      // 搜索框与「共 N 条」的间距。胶囊屏原 260 按语音态盒子（130 高）定，
-      // 打字搜索态盒子仅 92 高 → 空留 57px（主人反馈间距过大，要求贴住）。
-      // 现按打字盒贴合：状态栏 91 + 盒上距 20 + 盒 92 = 203，+7 余量 = 210。
-      if (this.screentype === 'pill-shaped') return 210
-      if (this.screentype === 'circle') return 130
+      // 搜索框与「共 N 条」的间距。
+      // v1.16.208（真机实测修复，主人反馈「搜索框被遮挡」）：本值必须与胶囊屏 CSS 严格同步。
+      //   当前 pill 实际构成：状态栏 110 + 盒上距 32 + 盒高 92 = 234，+7 余量 = 241。
+      //   （此前停在旧值 210 = 91+20+92+7；我改 CSS 时漏改这里 → 头部矮 24 单位
+      //     → 结果计数行压住搜索框底部约 9~24 单位，截图逐像素量出后确认）
+      if (this.screentype === 'pill-shaped') return 241
+      // v1.16.319：圆屏实际构成 = 状态栏 44 + 搜索框上距 2 + 框高 40 = 86，
+      // 原值 130 多出 44 逻辑（物理 69）→ 搜索框与「共 N 条」之间空一大段。
+      // 取 96 = 86 + 10 余量（宁多勿少略多：少了会裁搜索框）。
+      if (this.screentype === 'circle') return 96
       // v1.16.103：随搜索盒缩小 56→50 → 104→96（25+14+50+7）
       return 96
     },
+    /* ★ v1.16.339 重写：只记录时间戳，**不再写任何高度值**。
+       旧实现 `this.screen1H = h` 就是标题为「搜索完塌到左上角」的根因——它驱动的是
+       模板里的 `style="height: {{screen1H}}px"`（动态 style 绑定，手环 9 固件崩机级，
+       AI_CONTEXT #69），搜索那一瞬间把整屏高压成 241，运行时来不及原子重排就塌了。
+       现在高度由 CSS 类（.screen1 / .screen1-search，各 @media 固化）表达，
+       本函数只剩两个职责：① 记 _lastLayoutAt 供连点/布局感知锁使用；
+                             ② 同步 _fullScreenH 供滚动吸附（onPageScroll/snapPageScroll）取值。
+       入参 searching 保留是为了调用点零改动，值已不参与布局计算。 */
     _applySearchLayout(searching) {
       // 翻转即记录时间：节流窗口覆盖全部布局变更源（含 clearSearch/onDelete 等未接 guard 的入口）
       this._lastLayoutAt = Date.now()
-      var full = this._fullScreenH || 429
-      var h = searching ? this._searchHeaderH() : full
-      // v1.16.130（性能审查 T1④）：同值短路 —— 打字时每字符都会调到这里，而值通常不变；
-      // 每次都赋 screen1H 会触发一次布局重算（真机上可观）
-      if (this.screen1H === h) return
-      this.screen1H = h
+      // 整屏高只用于滚动吸附步长，与搜索态高度无关；取形态实测值，缺省方屏 429
+      if (!this._fullScreenH) this._fullScreenH = this.screen1H || 429
+      // screen1H 保留为「整屏高」的只读镜像（滚动吸附仍读它），绝不再被搜索态改写
+      if (this.screen1H !== this._fullScreenH) this.screen1H = this._fullScreenH
     },
 
     // 进入搜索：搜索框/搜索按钮只弹键盘（分类行保留、被键盘盖住，无内容替换切换感）；
@@ -1364,21 +2544,33 @@
       this.searchActive = !!(this.searchQuery && this.searchQuery.trim())
       this._applySearchLayout(this.searchActive)
       this.log('[HOME-SEARCH] 进入搜索层 词=' + this.searchQuery)
-      // 回滚到顶部
-      var pageScrollEl = this.$element('pageScroll')
-      if (pageScrollEl) {
-        pageScrollEl.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
-      }
       // 进入搜索态统一弹键盘（无词引导输入；有词可继续编辑）——语音入口 skipKeyboard 跳过
-      if (skipKeyboard) return
+      if (skipKeyboard) {
+        // 语音入口不弹键盘：立即回滚到顶部（原行为）
+        var elSkip = this.$element('pageScroll')
+        if (elSkip) elSkip.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
+        return
+      }
       if (this.screenAdjusted && this.screentype) {
         this.openKeyboardDelayed()
       } else {
         this.shouldOpenKeyboard = true
       }
+      // v1.16.236（性能优化）：回滚顶部的 smooth 滚动推迟到键盘显示之后——
+      // smooth 滚动会持续多帧，与键盘挂载争抢渲染；先弹键盘手感更快。
+      // 无词进入搜索态时页面本就在顶部，视觉无差异。
+      var selfSc = this
+      setTimeout(function() {
+        if (selfSc.isDestroyed) return
+        var pageScrollEl = selfSc.$element('pageScroll')
+        if (pageScrollEl) pageScrollEl.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
+      }, 400)
     },
 
-    // 延迟 150ms 弹键盘：先让 input-method 组件完成 mount（构建 DOM + 加载键盘图）再显示
+    // v1.16.236（性能优化）：去掉 100ms 人为延迟——`if` 写法下 setState 本身就触发组件创建，
+    // 旧注释「先让组件完成 mount 再显示」是 v1.16.79 show 时代的遗留条件，现已无意义。
+    // 保留 0ms setTimeout（不直接同步调用）：让 setState 在本帧 JS 栈清空后执行，
+    // 不与 enterSearch 内的滚动等前序操作挤同一帧。
     openKeyboardDelayed() {
       var self = this
       setTimeout(function() {
@@ -1386,7 +2578,7 @@
           self.showKeyboard = true
           self.log('[HOME-SEARCH] 键盘开')
         }
-      }, 100)
+      }, 0)
     },
 
     // 退出搜索：清空搜索状态回主页（下次点击重新开始）；回滚到顶部。
@@ -1405,6 +2597,7 @@
       this.aiMode = false
       this.aiThinking = false
       this.aiAnswer = ''
+      this._clearInlineAi()   // v1.16.297：内嵌 AI 卡片/在途请求一并作废
       this.searchSeq++
       this.loading = false
       this.searchError = false
@@ -1438,54 +2631,15 @@
       this.showKeyboard = false
       this.log('[HOME-SEARCH] 键盘关')
       // v1.16.91 AI 面板模式：收键盘只收键盘，绝不触发主界面搜索（aiMode 语义已由
-      // v1.16.33 内嵌 AI 搜索改为 AI 助手面板；内嵌 runAiSearch 链路保留休眠不删）
+      // v1.16.33 内嵌 AI 搜索改为 AI 助手面板；v1.16.310 已删除休眠的 runAiSearch 死代码）
       if (this.aiMode) return
-      this.resetAndSearch()
-    },
-
-    // AI 搜索执行：问题交给 AssistantEngine（真链路=手机云端应答；模拟=本地理解+检索+摘要）
-    runAiSearch() {
-      var self = this
-      var q = (this.searchQuery || '').trim()
-      if (!q) { this.aiMode = false; this.resetAndSearch(); return }
-      this.aiThinking = true
-      this.aiAnswer = ''
-      this.log('[HOME-SEARCH] AI 搜索：' + q + '（链路=' + getAssistant().getMode() + '）')
-      var searchFn = function (kw) {
-        // 复用既有搜索通道（走 global.searchHistory → searchAllAsync → 六集引擎）
-        return Promise.resolve().then(function () {
-          return global.searchHistory(kw, { page: 1, pageSize: 5, category: 'all', region: 'all' })
-        })
+      // v1.16.228（方法 A'）：结果区插入与头部 429→241 的大翻转在此一次性完成
+      //（打字期间已零结构翻转，见模板合并节点与 onInput 注释）
+      if (this.searchQuery.trim()) {
+        this.searchActive = true
+        this._applySearchLayout(true)
       }
-      getAssistant().answer(q, searchFn, function (r) {
-        if (self.isDestroyed) return
-        self.aiThinking = false
-        if (r && r.ok) {
-          self.aiAnswer = r.answer
-          // AI 回答附带的来源条目直接进入结果列表（点击可看详情，与普通结果一致）
-          var items = r.results || []
-          var formatted = items.map(function (item) {
-            return {
-              id: item.id || item._id,
-              yearDisplay: item.yearDisplay || (r.keyword || ''),
-              title: (item.title || '').split(/[，,]/)[0],
-              region: item.region || 'AI 来源',
-              yearClass: item.yearClass || 'result-year',
-              titleClass: item.titleClass || 'result-title',
-              catClass: item.catClass || 'result-region'
-            }
-          })
-          self.displayList = formatted
-          self.visibleCount = 5
-          self.totalCount = r.total || formatted.length
-          self.searched = true
-          self.allLoaded = true
-          self.log('[HOME-SEARCH] AI 回答就绪：' + r.answer)
-        } else {
-          self.aiAnswer = 'AI 搜索暂不可用，请稍后再试。'
-          self.searched = true
-        }
-      })
+      this.resetAndSearch()
     },
 
 
@@ -1495,7 +2649,7 @@
     clearSearch() {
       // v1.16.131（主人反馈）：✕ 的点击会冒泡到 .search-box 的 @click（= toggleSearchBox，会开键盘），
       // 这里打时间戳供 toggleSearchBox 识别「同一次点击」，从而吞掉冒泡。
-      this._clearedAt = Date.now()
+      this.clearedAt = Date.now()
       this.isClearing = true
       this.searchQuery = ''
       global.searchQuery = ''
@@ -1538,12 +2692,13 @@
         this.aiQuestion += content
         return
       }
+      // v1.16.228（方法 A'·回显优化，主人反馈 Method A 无回显像坏掉）：
+      // searchQuery 恢复**响应式**（打字实时回显到搜索框），但**不再触发**
+      // searchActive/_applySearchLayout——结果区插入与头部 429→241 的大翻转
+      // 推迟到收键盘（finishInput）一次性完成。配合模板「占位符+输入合并为单文本节点」，
+      // 打字期间节点结构零变化，只有文本内容变。
       this.searchQuery += content
       global.searchQuery = this.searchQuery
-      if (this.searchQuery.trim()) {
-        this.searchActive = true
-        this._applySearchLayout(true)
-      }
     },
 
     // @delete：键盘内部缓冲已空时，删除页面关键词末字符；删空【保持搜索态】
@@ -1607,6 +2762,8 @@
       this.searchActive = true
       this._applySearchLayout(true)
       this.searchError = false
+      // v1.16.297：换新词即丢掉上一轮的 AI 卡与在途请求（否则旧答案挂在新结果上方）
+      if (this.aiInlineMode || this.aiThinking || this.aiAnswer) this._clearInlineAi()
       this.loadPage(1, true)
     },
 
@@ -1625,6 +2782,10 @@
         // #18/#84 记载的 jsc 模式雷）。任一集的读文件卡住 → searchAllAsync 的 Promise.all
         // 永久挂起 → 此 await 永不返回 → this.loading 恒为 true，页面表现为「一直搜索中、
         // 连『无结果』提示都不出现」。这里 10s 兜底，超时按空结果处理并给出提示。
+        // ★ v1.16.387：超时定时器必须随搜索结束清掉。
+        //   原先这个 setTimeout 从不 clear：搜索正常返回时它也照样在 10s 后触发一次
+        //   空 resolve —— 每次搜索/翻页都留一个悬空定时器，用户连续搜几次就累积一串。
+        var _stTimer = null
         var result = await Promise.race([
           global.searchHistory(this.searchQuery, {
             category: this.activeCategory,
@@ -1635,9 +2796,10 @@
             groupId: this.activeGroupId
           }),
           new Promise(function(resolve) {
-            setTimeout(function() { resolve({ results: [], total: 0, timedOut: true }) }, 10000)
+            _stTimer = setTimeout(function() { resolve({ results: [], total: 0, timedOut: true }) }, 10000)
           })
         ])
+        if (_stTimer) { clearTimeout(_stTimer); _stTimer = null }
         if (seq !== this.searchSeq) return // 已被更新的搜索取代，丢弃过期结果
         // 超时兜底提示（审查修复）：区分「真没搜到」与「卡死兜底」
         if (result && result.timedOut) {
@@ -1690,8 +2852,6 @@
         // 每批 5 条、列表上限 10 条 → 可见数即列表长度（无需再单独维护）
         this.visibleCount = this.displayList.length
         this.totalCount = result.total || 0
-        // v1.16.178：记录本次检索真实耗时（模拟器/真机实测，界面显示）
-        this.lastElapsedMs = result.elapsedMs || 0
         this.currentPage = page
         this.loading = false
         // v1.16.60 渐进式加载：翻页到底 = 全部命中 map 已加载完（引擎权威值）。
@@ -1702,6 +2862,8 @@
         var elapsed = Date.now() - startTime
         if (page === 1) {
           this.log('[HOME-SEARCH] 搜索词=' + this.searchQuery + ' 结果数=' + this.totalCount + ' 耗时=' + elapsed + 'ms')
+          this.perfText = '耗时 ' + elapsed + 'ms · ' + this.totalCount + ' 条'
+          this._perfSave('首搜', elapsed, this.totalCount)
         } else {
           this.log('[HOME-SEARCH] 加载第' + page + '页 新增' + formatted.length + '条 当前总数' + this.totalCount)
         }
@@ -1716,12 +2878,25 @@
 
     // 显示更多（v1.16.26）：每次追加 5 条；若本地已显示完但仍未加载完全部结果，
     // 顺带拉下一页（这样「更多」既能展开本地已取到的，也能继续向后取）
+    // v1.16.277（主人定案 · 方案 B）：**「显示更多」不再在主页内翻页，改为进入独立结果页**。
+    // 起因：主页内翻页是"滚动窗口"（displayList 硬封顶 6 条 + slice(-6)）→ 主人反馈
+    //   「内容并没有增多」；且每次点击都**完整重跑跨集搜索**并加载更多 map 分片 →
+    //   「有的时候会变卡」。现主页只留首批结果，点此进入 /pages/results 看完整列表。
+    // 搜索上下文经 **global** 传递（跨页共享只在 global —— 页面各自有模块实例，
+    // 直接 import 会拿到另一个实例，这是项目铁律）。
     showMore() {
-      // v1.16.138（主人定案）：避免无意义的多搜索 —— **搜够/搜完就停**。
-      // 每批 5 条；列表最多停留 10 条，点「更多」出下一批（前面的自动刷新掉，见 loadPage）。
-      // 已搜完全部资料集（allLoaded）或正在搜索（loading）时直接返回，不再发起调用。
-      if (this.allLoaded || this.loading) return
-      this.loadPage(this.currentPage + 1)
+      if (this.loading) return
+      try {
+        global.searchResultsCtx = {
+          query: this.searchQuery,
+          category: this.activeCategory,
+          region: this.activeRegion,
+          datasetId: this.activeDatasetId,
+          groupId: this.activeGroupId
+        }
+      } catch (e) {}
+      if (this.$app.$def.isNavigating) return
+      router.push({ uri: '/pages/results' })
     },
 
     // 搜索态滚到底：自动加载下一页（键盘弹出时不触发；非搜索态双屏滚动不翻页）
@@ -1745,7 +2920,17 @@
     },
 
     // 右滑：语音态退出聆听，键盘开着先收起，再退出搜索态回主页（非搜索态主页右滑不处理）
-    onSwipe(eve) {
+    // ⚠️ 临时诊断（本轮触摸死区排查用，验完即删）
+  onDbgTouch(ev) {
+    try {
+      var t = (ev && ev.touches && ev.touches[0]) ? ev.touches[0] : ev;
+      var x = t ? (t.clientX !== undefined ? t.clientX : t.x) : -1;
+      var y = t ? (t.clientY !== undefined ? t.clientY : t.y) : -1;
+      console.log('[DBG-TOUCH] x=' + x + ' y=' + y);
+      if (global.addRuntimeLog) global.addRuntimeLog('[DBG-TOUCH] x=' + x + ' y=' + y);
+    } catch (e) {}
+  },
+  onSwipe(eve) {
       // v1.16.91 AI 面板打开时：主界面翻页/退搜索手势一律不响应（面板自身 onAiSwipe 处理。
       // 面板全屏遮罩后事件理论上到不了这里，守卫是防穿透的逻辑保险）
       if (this.aiMode) return
@@ -1759,10 +2944,14 @@
         this.exitSearch()
         return
       }
-      if (eve.direction !== 'right') return
       if (this.voiceActive) {
         this.exitVoiceSearch()
         return
+      }
+      // v1.16.195（主人要求）：主界面左右滑直接退出应用（回表盘）。
+      // 栈里只有入口页（loading 用 replace 回来），router.back() 即退出应用。
+      if (eve.direction === 'left' || eve.direction === 'right') {
+        router.back()
       }
     }
   }

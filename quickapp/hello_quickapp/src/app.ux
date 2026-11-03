@@ -2,10 +2,15 @@
   // ========== 搜索引擎（全局引擎初始化，从原 splash.ux 提取到 app 生命周期）==========
   import { getSearchEngine } from './SearchEngine/SearchEngine.js'
   // 应用版本（与 src/manifest.json 的 versionName 保持同步——改版本时两处一起改）
-  const APP_VERSION = '1.16.163'  // ⚠️ 必须与 manifest.json versionName 同步（审查第二次发现脱节：1.16.71 落后 46 版）
+  const APP_VERSION = '1.16.454'  // ⚠️ 必须与 manifest.json versionName 同步（审查第二次发现脱节：1.16.71 落后 46 版）
   // 发版检查项：改 manifest.json 的 versionName 时，同一提交内必须改这里（APP_VERSION 用于设置页「关于」展示）
-  import { searchAllAsync, getItemByGlobalId, getDatasetEntries, getGroupEntries, getDatasetInfo, warmupAllCaches } from './SearchEngine/DatasetManager.js'
-  import { initBtReceiver } from './SearchEngine/BtTransfer.js'
+  import { searchAllAsync, getItemByGlobalId, getDatasetEntries, getGroupEntries, getDatasetInfo, isCacheBuilt, clearAllCaches, registerDynamicDataset, warmupAllCaches, warmupSingle } from './SearchEngine/DatasetManager.js'
+  import { initBtReceiver, getTransferState } from './SearchEngine/BtTransfer.js'
+  // ★ v1.16.396：详情取数的叶子能力（detail.ux 专用）。app.ux 本就带着完整引擎，
+  //   这里多引一个 6KB 的 DatasetDetail 几乎零成本；而 detail.ux 为它背了整条
+  //   DatasetDetail→DatasetManager→SearchEngine 闭包（46KB 产物），纯属重复。
+  import { getDetailByGlobalId, clearDetailCache } from './SearchEngine/DatasetDetail.js'
+import { getAssistant } from './SearchEngine/AssistantEngine.js'
 
   // ========== 日志系统（直接操作 storage）==========
   var LOG_KEY = 'app_runtime_logs'
@@ -107,18 +112,16 @@
   // 页面（loading）在 init 成功 / 懒初始化完成后调用它。
   global.refreshEngineGlobals = function() { mountToGlobal() }
 
-  // v1.16.85 后台预热（首页启动后触发一次）：keepAlive 保留各集引擎实例（内存池不释放），
-  // 首次总搜索直接命中内存，不再冷读块文件（此前每次启动后首搜都「像重建一次」）。
-  // ⚠️ 必须挂在这里（app 作用域）：暖的引擎池必须与 global.searchHistory 用的同一批实例；
-  // 页面作用域各自有模块实例，在页面里调用会暖错对象。幂等，可安全重跑。
-  global.warmupBackground = function() {
-    try {
-      warmupAllCaches(null, true)
-      console.log('[APP] 后台预热已启动（keepAlive）')
-    } catch (e) {
-      console.log('[APP] 后台预热异常: ' + e.message)
-    }
-  }
+  // v1.16.276（主人定案）：**删除 `global.warmupBackground`（后台预热）**。
+  // 判定依据（两条独立证据）：
+  // ① 真机教训（见 index.ux onShow 的 v1.16.196 注释）：已建缓存时做后台预热会在真机上
+  //    「几十秒冻结」——因此首页早已**不再调用**它，此函数长期是死代码；
+  // ② 内存红线：手环端留给快应用的内存极端情况仅 ~1.6MB，而**内存峰值过大极易直接触发重启**。
+  //    用内存峰值换一个「首搜提速」的收益本就不成立（实测冷启后等 45s 再搜仍 954ms，
+  //    预热并未生效），纯亏。
+  // 现行策略（保留）：首次进入由 loading 页建缓存（keepAlive=false 流式，峰值受控）；
+  //    之后每次启动的首搜**直读 storage 缓存**（真机实测 400~800ms，达标）。
+  // ⚠️ 不要恢复后台预热。若要恢复，必须先证明：① 真机不再冻结 ② 内存峰值不越线。
 
   function mountToGlobal() {
     var engine = engineInstance
@@ -159,7 +162,10 @@
           pageSize: pageSize,
           datasetId: (options.datasetId !== undefined) ? options.datasetId : null,
           // 大类入口搜索：只在 GROUP_MAP 该组的 datasets 范围内聚合（null = 不限）
-          groupId: (options.groupId !== undefined) ? options.groupId : null
+          groupId: (options.groupId !== undefined) ? options.groupId : null,
+          // ★ v1.16.374：透传 cumulative —— 结果页用「累积前缀 + 整体替换」，
+          //   避开双重切片导致的「点更多没反应」；资料页不传→保持按页追加。
+          cumulative: !!options.cumulative
         })
 
         // 防御性检查
@@ -196,8 +202,6 @@
           initFailed: result.initFailed || false,
           // v1.16.80 透传渐进式加载完成标记：页面用它判定「已显示全部」与是否继续翻页
           allLoaded: result.allLoaded !== undefined ? result.allLoaded : true,
-          // v1.16.179 透传真实检索耗时（页面上显示「· 检索 XXms」，作为性能声明的可核对佐证）
-          elapsedMs: result.elapsedMs || 0
         }
       } catch(e) {
         console.error('[searchHistory] 错误:', e)
@@ -294,16 +298,72 @@
       }
       // 资料详情视图数据源（index 页不直接 import 库模块——webpack 双路径双实例坑）
       global.getDatasetInfo = getDatasetInfo
+      // ★★★ v1.16.388（宝宝定案）：把 isCacheBuilt / clearAllCaches 也挂到 global。
+      //
+      // 背景（包内实证）：这个构建器**不做 tree-shaking**，页面里 `import { 某个函数 }`
+      // 会把整条依赖链内联进该页面的 .jsc，包内没有任何独立模块文件
+      //（11 个 .jsc 全是页面级，SearchEngine.js 64KB / DatasetManager.js 34KB 被逐页复制）。
+      // 实测代价：index.jsc 163,757B 里，首页其实只调用 isCacheBuilt 6 次，
+      // 却把 267,466B 的 DatasetManager→SearchEngine 闭包整体打包；settings.jsc 同理，
+      // 只为 clearAllCaches 一个函数背了 41,472B。
+      //
+      // 而 app.ux 本来就 import 了完整引擎（app.jsc 62KB 已含全部符号），
+      // 且 onCreate 先于任何页面执行 → 把它挂到 global，页面改用 global.* 即可
+      // 删掉自己那份内联副本，功能零变化（同一个函数、同一份模块实例）。
+      global.isCacheBuilt = isCacheBuilt
+      global.clearAllCaches = clearAllCaches
+      // ★ v1.16.388：registerDynamicDataset 也挂 global —— 它是 BtTransfer.js 通往
+      //   DatasetManager 的**唯一**入口（原 BtTransfer.js:184 `require('./DatasetManager.js')`）。
+      //   打包器把 require 当静态依赖处理，于是「index → AssistantEngine → BtTransfer →
+      //   DatasetManager → SearchEngine」整条链被内联进首页。改成走 global 后
+      //   BtTransfer 不再有指向引擎的静态引用，首页那份重复副本才能真正消失。
+      global.registerDynamicDataset = registerDynamicDataset
+      // ★ v1.16.396：详情取数挂 global。注意与 global.getItemById 不是一回事：
+      //   getItemById 走 map 拿「概要」，getDetailByGlobalId 还要读 detail 分片拿长文正文
+      //   （dataset.ux 的详情卡片两者都用）。两个都留着，别互相替代。
+      global.getDetailByGlobalId = getDetailByGlobalId
+      global.clearDetailCache = clearDetailCache
       // 蓝牙资料接收器（v1.16.46 应用级全局监听）：手机端经 interconnect 分片传输资料集，
       // ds-end 收齐后自动注册并唤醒 loading 页只对该集建缓存。模拟器/无蓝牙环境静默。
       try { initBtReceiver() } catch (e) { console.log('[APP-DS] 蓝牙接收器启动失败: ' + e.message) }
+      // ★★★ v1.16.325 链活心跳（应用级，先于任何页面）：
+      //   手环 9 框架未实现 getReadyState/diagnosis/getApkStatus，而 interconnect.instance()
+      //   在对端断开后**照样返回对象** → 靠实例化判活永远判不出「断开」。
+      //   唯一可信信号是真实往返（ping → 手机回 pong）。心跳必须常驻：
+      //   放在页面里会因为页面销毁而停，用户回到首页就再也拿不到状态。
+      // ★ v1.16.396：把 getAssistant 挂到 global —— 这是消除两个大页面重复内联的关键。
+      //   构建器不做 tree-shaking：index.ux 与 dataset.ux 各自 `import { getAssistant }`
+      //   都会把整个 AssistantEngine(55KB) + AudioUp(19KB) + BtTransfer(18KB) 内联一份，
+      //   index.jsc 142KB / dataset.jsc 123KB 里各有一份完整副本，互不共享。
+      //   而 app.ux 本来就 import 它来起心跳 —— 挂 global 后页面改调 global.getAssistant()，
+      //   两处副本直接消失，且运行时用的仍是同一个单例（getAssistant 内部 `if (!_instance)`）。
+      global.getAssistant = getAssistant
+      // ★★★ v1.16.412：同一条思路收尾 —— loading 页与 btransfer 页是最后两个仍在自己的
+      //   .jsc 里背整份引擎副本的页面。实测（1.16.411 包）：loading.jsc 36,479B 里
+      //   SearchEngine.js(64KB) + DatasetManager.js(34KB) 的源码闭包占大头，
+      //   而它只用到 warmupAllCaches / warmupSingle / isCacheBuilt / getSearchEngine 四个函数；
+      //   btransfer.jsc 14,213B 里 BtTransfer.js(29KB 源码) 也一样，只用到 getTransferState。
+      //   app.ux 本来就 import 了这两条链（起心跳与蓝牙接收器），挂 global 后
+      //   loading/btransfer 的重复副本消失，运行时仍是同一个模块实例、状态完全共享
+      //  （BtTransfer 是模块级单例状态，走 global 反而比各自 import 更安全：
+      //    原先两页各持一份内部状态只在同路径下才共享）。
+      global.getSearchEngine = getSearchEngine
+      global.warmupAllCaches = warmupAllCaches
+      global.warmupSingle = warmupSingle
+      global.getTransferState = getTransferState
+      try {
+        var asst = getAssistant()
+        asst.startHeartbeat()
+        console.log('[APP-DS] 链活心跳已启动（5s/次，ping→pong）')
+      } catch (e) {
+        console.log('[APP-DS] 链活心跳启动失败: ' + e.message)
+      }
       try {
         global.groupEntries = getGroupEntries()
       } catch (e) {
         console.log('[APP-DS] groupEntries 异常: ' + e.message)
         global.groupEntries = []
       }
-      console.log('[APP-DS] entries=' + (global.datasetEntries ? global.datasetEntries.length : 'null'))
       global.addRuntimeLog('app.ux onCreate 应用创建', 'info')
 
       // 1. 立即创建引擎并挂载全局接口

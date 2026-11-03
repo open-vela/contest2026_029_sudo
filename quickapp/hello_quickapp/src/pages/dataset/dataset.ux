@@ -17,12 +17,16 @@
 
       <!-- 搜索框：非搜索态点击进入；搜索态点击开/收键盘；有词显示内容与 ✕ -->
       <!-- 占位不带「」引号：胶囊屏搜索框内宽有限，6 字+引号会换行（"」"被裁掉） -->
-      <div class="search-box {{searchBoxClass}}" @click="toggleSearchBox">
+      <!-- v1.16.293（与主页 v1.16.228/285 对齐）：占位符与输入**合并为单文本节点** ——
+           ① 旧结构是「占位符节点 + 输入节点」两个 if，打字首字符会**插拔节点**（结构翻转），
+              正是主页 v1.16.228 要消除的「连点/连打 → 搜索框位移」来源；
+           ② 旧结构在语音态下**占位符与「聆听中…」同时渲染**（searchQuery 为空 → 占位符仍显示）
+              → 框内叠字，与主页 v1.16.285 修掉的是同一个 bug。
+           现由 searchBoxText / searchBoxTextCls 统一决定文案与类名，运行时只改文本、不插拔节点。 -->
+      <div class="{{searchBoxClass}}" @click="toggleSearchBox">
         <image class="search-box-icon" src="/common/icons/search.png" if="{{!searchQuery && !voiceActive}}"></image>
-        <text class="search-placeholder" if="{{!searchQuery && !voiceActive}}">搜索{{dsName}}</text>
-        <text class="search-input" if="{{searchQuery && !voiceActive}}">{{displayQuery}}</text>
+        <text class="{{searchBoxTextCls}}">{{searchBoxText}}</text>
         <text class="clear-btn" if="{{searchQuery && !voiceActive}}" @click="clearSearch">✕</text>
-        <text class="voice-text" if="{{voiceActive}}">聆听中…</text>
       </div>
 
       <!-- ===== 非搜索态：资料信息卡 + 标签 + 语音搜索按钮 ===== -->
@@ -53,11 +57,21 @@
 
         <!-- 语音搜索按钮（主人定案：本页保留语音；AI 搜索仅主界面） -->
         <!-- v1.16.87：提示移到语音按钮上方（主人定案）；按钮整体缩小 -->
+        <!-- v1.16.264 统一：外包 .btn-glow 柔光晕（与首页主按钮同款；box-shadow 在本运行时不可用，
+             只能靠同心层叠 + rgba 递减 alpha —— 见 AI_CONTEXT §8.42 CSS 探针） -->
         <text class="ds-hint">左滑返回 · 点标签筛选</text>
-        <div class="voice-btn" @click="startVoiceSearch">
-          <image class="voice-btn-icon" src="/common/icons/voice.png"></image>
-          <text class="voice-btn-text">语音搜索</text>
+        <!-- v1.16.304 统一：与首页入口按钮**同一张 PNG 素材、同一逻辑尺寸**（v1.16.303 起首页为
+             胶囊 + 深紫底浅蓝声波 + 纯白麦克风），并补上首页那层 .btn-glow-in 内层柔光。
+             原「语音搜索」文字标签一并去掉（图标本身已是麦克风语义，且宝宝偏好符号化按钮）。 -->
+        <div class="btn-glow">
+          <div class="btn-glow-in">
+            <div class="voice-btn" @click="startVoiceSearch">
+              <image class="voice-btn-icon" src="{{askBtnIcon}}"></image>
+            </div>
+          </div>
         </div>
+        <!-- v1.16.288：按钮下方留白 —— 把语音按钮顶离胶囊屏底部的弧形收窄区（见 .ds-block 注释） -->
+        <div class="ds-btn-tail"></div>
       </div>
 
       <!-- ===== 搜索态：结果列表（页内搜索，不跳首页） ===== -->
@@ -84,19 +98,36 @@
       </div>
 
       <!-- ===== 语音聆听态（简化版：提示 + 取消） ===== -->
-      <!-- v1.16.133（主人要求）：本页语音态与主界面一致 —— 未连接显示蓝牙断开图标 + 提示，
-           已连接显示链路文案（聆听中… / 聆听中·演示） -->
       <div class="voice-panel" if="{{voiceActive}}">
-        <!-- v1.16.134：内容区固定高度 —— 两种连接状态内容行数不同，靠固定高度保证取消按钮位置不漂移 -->
+        <!-- v1.16.134：内容区固定高度 —— 已连接/未连接内容行数不同，靠固定高度保证取消按钮位置不漂移 -->
         <div class="voice-info">
-          <image class="voice-bt-off" src="/common/icons/bluetooth_off.png" if="{{!bluetoothConnected}}"></image>
-          <text class="voice-tip" if="{{!bluetoothConnected}}">蓝牙未连接</text>
-          <!-- v1.16.140（主人要求）：未连接时如实标注当前为模拟链路 -->
-          <text class="voice-sim-tip" if="{{!bluetoothConnected}}">仅作为模拟参考</text>
-          <text class="voice-tip" if="{{bluetoothConnected}}">{{voiceText}}</text>
+          <!-- ★★★ v1.16.361（宝宝定案）：「把原本那个语音输入蓝牙未在线的状态给删除
+               （就只留弹窗，不能在语音输入时提示蓝牙未连接）」。
+               原先这里有三行 `if="{{!bluetoothConnected}}"` 的断开图标 /「蓝牙未连接」/
+               「仅作为模拟参考」。本页 startVoiceSearch() 已改为与首页 startVoiceAsk()
+               同款入口弹窗拦截（见 .tip-mask），未连接时根本进不了聆听态 → 这三行是死代码，
+               整块删除。⚠️ `.voice-bt-off` / `.voice-sim-tip` 的 CSS 规则保留（各媒体块仍有
+               覆盖值），避免留下孤儿选择器、也把改动面压到最小。 -->
+          <!-- ★ v1.16.364（UI 统一）：首页 .voice-info 有「手机上收音识别」这行说明，
+               本页原缺 → 声波与取消按钮之间少一行，声波位置比首页高 22 逻辑 px
+               （实测首页 163.5~190.6 / 本页 141.6~168.7）。补上后与首页逐像素一致。
+               ⚠️ 手环 record 模块实测是空壳，录音在手机侧，这行必须如实说明。 -->
+          <!-- ★ v1.16.457：演示模式手表自己出识别结果，不再涉及「手机收音」→ 注释掉 -->
+          <!-- <text class="voice-sim-tip">手机上收音识别</text> -->
+          <!-- ★ v1.16.455：有逐字字幕时优先显示字幕（与首页 .voice-partial 同构），
+               否则显示状态文案。两个 if 互斥，同一时刻只有一个节点。 -->
+          <text class="voice-tip" if="{{!voicePartialText}}">{{voiceText}}</text>
+          <text class="voice-tip voice-partial" if="{{voicePartialText}}">{{voicePartialText}}</text>
           <!-- v1.16.140：声波图标（模拟波动） -->
           <div class="voice-wave">
-            <div class="{{$item.cls}}" for="{{waveBars}}"></div>
+            <!-- ★ v1.16.352（S5 卡顿根因）：原为 `for="{{waveBars}}"`，每 220ms 整体重赋数组 →
+               5 个节点全部重建，实测 4.55 拍/秒 × 5 = 23 次/秒属性更新（系统侧计到 27 次/秒
+               DOM 重建）。改为 5 个独立绑定字段，每拍只更新 1 根 → 约 3.8 次/秒。 -->
+            <div class="{{wbar1}}"></div>
+            <div class="{{wbar2}}"></div>
+            <div class="{{wbar3}}"></div>
+            <div class="{{wbar4}}"></div>
+            <div class="{{wbar5}}"></div>
           </div>
         </div>
         <div class="voice-cancel" @click="exitVoiceSearch">
@@ -107,9 +138,23 @@
 
     <!-- 键盘区（absolute 底部，与主界面同款三形态） -->
     <!-- ⚠️ 用 if 不用 show：键盘组件 800+ 行（三形态分支），show 会在页面打开时
-         就整棵实例化（还因 screentype 异步从 rect 切 pill 重建两次），
-         是资料页打开耗时的最大头；if 按需创建，首次开键盘才付这个成本 -->
-    <div class="kb-wrap" if="{{showKeyboard}}">
+         就整棵实例化，用不上也先付这份建树成本；if 按需创建，首次开键盘才付。
+         ⚠️ v1.16.406 实测更正：本条注释原先断言「键盘组件是资料页打开耗时的最大头」，
+            **这个因果判断是错的**。1.16.398~405 在模拟器上做了四组对照（圆屏 466）：
+              · 基线（26KB CSS + 三形态键盘）        建树 902ms
+              · 只删 @media(pill) 块（21KB CSS）    建树 677ms  ← 少 225ms
+              · CSS 全删到 272B                     建树 590ms  ← 再少 87ms
+              · 再删整个键盘区（含 input-method）    建树 638ms  ← 无变化（噪声）
+            → 进页成本的主因是 **CSS 规则求值**，不是键盘组件：进页瞬间
+              showKeyboard / searchActive 都是 false，组件根本不实例化，代价为零。
+              键盘只在「首次弹出」那一刻付建树成本，与进页无关。 -->
+
+    <!-- v1.16.212（主人反馈「键盘打开仍然比较慢」）：条件从 showKeyboard 改为
+         「showKeyboard || searchActive」——原写法在键盘收起时**销毁组件**，
+         于是每次打开都要重建整棵键盘树（手环上约 1 秒）。组件自带 hide 属性负责视觉隐藏，
+         故在搜索态期间保持挂载：同一次搜索内反复开合键盘＝瞬时；
+         退出搜索态（searchActive=false）时仍会销毁、内存照常释放。 -->
+    <div class="{{kbWrapClass}}" if="{{showKeyboard || searchActive}}">
       <div class="kb-body kb-rect" if="{{screentype === 'rect'}}">
         <input-method hide="{{!showKeyboard}}" keyboardtype="QWERTY" screentype="rect" maxlength="20" @complete="onInput" @delete="onDelete"></input-method>
       </div>
@@ -118,6 +163,19 @@
       </div>
       <div class="kb-body kb-pill" if="{{screentype === 'pill-shaped'}}">
         <input-method hide="{{!showKeyboard}}" keyboardtype="QWERTY" screentype="pill-shaped" maxlength="20" @complete="onInput" @delete="onDelete"></input-method>
+      </div>
+    </div>
+
+    <!-- ★★★ v1.16.361（宝宝要求「UI 必须跟主界面完全一样……只留弹窗」）：
+         本页原先没有任何弹窗，蓝牙未连接直接显示在聆听面板里。现在与首页 index.ux
+         完全对齐：入口用弹窗拦截，面板里只剩波形 + 取消。
+         ⚠️ 必须在 .ds-page 根层级 + DOM 最末尾：本项目轻量运行时 z-index 不赢得命中测试，
+            DOM 顺序才决定谁吃掉点击（与 index.ux 同款理由）。 -->
+    <div class="tip-mask" if="{{voiceTipShow}}" @click="closeVoiceTip">
+      <div class="tip-card">
+        <text class="tip-title">{{voiceTipMsg}}</text>
+        <text class="tip-body" if="{{voiceTipSub}}">{{voiceTipSub}}</text>
+        <div class="tip-btn" @click="closeVoiceTip"><text class="tip-btn-text">知道了</text></div>
       </div>
     </div>
   </div>
@@ -140,55 +198,79 @@
   .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
 
   /* v1.16.103 方屏密度增大（与首页同步）：搜索框 258×56→240×50 */
-  .search-box { width: 240px; height: 50px; border-radius: 25px; background-color: #1C1C1E; border: 2px solid #3A3A3C; flex-direction: row; justify-content: flex-start; align-items: center; padding-left: 16px; margin-top: 14px; flex-shrink: 0; }
+  /* v1.16.264 统一：margin-top 14→4（主人反馈的「搜索框位置偏差」= 方屏比首页低 10 单位） */
+  .search-box { width: 260px; height: 56px; border-radius: 28px; background-color: #16171A; border: 2px solid rgba(255,255,255,0.10); flex-direction: row; justify-content: flex-start; align-items: center; padding-left: 16px; margin-top: 4px; flex-shrink: 0; }
   .search-box-icon { width: 22px; height: 22px; }
   .search-placeholder { font-size: 20px; color: #757575; flex: 1; margin-left: 10px; text-align: left; }
   .search-input { font-size: 22px; color: #FFFFFF; flex: 1; margin-left: 10px; text-align: left; }
-  .clear-btn { width: 28px; height: 28px; border-radius: 14px; background-color: #3A3A3C; color: #FFFFFF; text-align: center; font-size: 18px; line-height: 28px; margin-right: 14px; flex-shrink: 0; }
-  .voice-text { font-size: 26px; color: #4D9FEE; flex: 1; margin-left: 10px; text-align: left; }
+  .clear-btn { width: 28px; height: 28px; border-radius: 14px; background-color: #2C2C2E; border: 1px solid rgba(255,255,255,0.10); color: #FFFFFF; text-align: center; font-size: 18px; line-height: 28px; margin-right: 14px; flex-shrink: 0; }
+  /* v1.16.293：语音态文本改由搜索框那**唯一文本节点**承载（见 searchBoxText）。
+     去掉 flex:1 —— 单节点被撑满整行会把右侧 ✕ 挤出框外；与主页 v1.16.285 同处理。 */
+  .voice-text { font-size: 26px; color: #4D9FEE; margin-left: 10px; text-align: left; }
   .searchbox-voice { height: 80px; }
   .searchbox-typed { padding-left: 6px; }
 
   /* 非搜索态包裹层：显式纵向 + 居中（无 class div 默认 row，见模板注释） */
+  /* v1.16.288（主人反馈「按钮会卡出屏幕」）：胶囊屏底部是 R=150 的半圆收窄区，
+     距屏底 d 处可用宽 = 2×√(150²−(150−d)²)。语音按钮含柔光总宽 230，
+     原下沿 d≈56（该处可用仅 234，余量 4）→ 视觉上就贴着弧线。
+     按公式需 d≥54，这里留到 d≈90 更稳妥；用按钮下方留白把它顶上来。 */
   .ds-block { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
 
   /* 资料信息卡（v1.16.83 PRO 方屏）：左列=上图标/下名称，右侧=介绍+条数（信息密度） */
-  .ds-card { width: 258px; border-radius: 21px; background-color: #1C1C1E; padding: 16px 14px; flex-direction: row; align-items: center; flex-shrink: 0; margin-top: 20px; }
+  /* v1.16.304：按钮统一为首页 200x72 后变高，方屏纵向预算不够（实测按钮底被裁到屏外）；
+     卡片上距 20->14，连同下方四处间隙共让 36，按钮底距回到约 19 逻辑 */
+  .ds-card { width: 258px; border-radius: 21px; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  padding: 16px 14px; flex-direction: row; align-items: center; flex-shrink: 0; margin-top: 14px; }
   .ds-card-left { flex-direction: column; align-items: center; flex-shrink: 0; margin-right: 14px; }
-  .ds-icon-box { width: 46px; height: 46px; border-radius: 23px; justify-content: center; align-items: center; }
+  .ds-icon-box { width: 46px; height: 46px; border-radius: 23px; border: 2px solid rgba(255,255,255,0.10); justify-content: center; align-items: center; }
   .ds-icon { width: 26px; height: 26px; }
   .ds-name { font-size: 22px; font-weight: 600; color: #FFFFFF; margin-top: 8px; text-align: center; }
   .ds-card-right { width: 158px; flex-direction: column; justify-content: center; }
   .ds-desc { width: 158px; font-size: 15px; color: #8E8E93; text-align: left; line-height: 21px; }
   .ds-meta { width: 158px; font-size: 13px; color: #6E7681; text-align: left; margin-top: 8px; }
-  .ds-tags-scroll { width: 100%; height: 46px; flex-shrink: 0; margin-top: 14px; }
+  .ds-tags-scroll { width: 100%; height: 46px; flex-shrink: 0; margin-top: 10px; }
   .ds-tags { flex-direction: row; padding: 0 14px; align-items: center; }
   /* v1.16.143（主人要求）：选中态改为**蓝色描边** —— 原为整块蓝底（.ds-tag-on 只改 background）。
      未选中也给同宽描边（透明色）避免选中时尺寸跳动；选中态：深底 + 蓝描边 + 蓝字。 */
-  .ds-tag { height: 40px; border-radius: 20px; background-color: #1C1C1E; border-style: solid; border-width: 1px; border-color: #3A3A3C; justify-content: center; align-items: center; padding: 0 16px; margin-right: 8px; flex-shrink: 0; }
-  .ds-tag-on { background-color: #1C1C1E; border-color: #4D9FEE; }
+  .ds-tag { height: 40px; border-radius: 20px; background-color: #16171A; border-style: solid; border-width: 1px; border-color: rgba(255,255,255,0.10); justify-content: center; align-items: center; padding: 0 16px; margin-right: 8px; flex-shrink: 0; }
+  .ds-tag-on { background-color: #16171A; border-color: #4D9FEE; }
   .ds-tag-text { font-size: 17px; color: #BBBBBB; }
   .ds-tag-text-on { color: #4D9FEE; }
 
   /* v1.16.87 缩小：PRO 方屏 258×56 与搜索框同宽视觉密度过高，收为 180×44 */
-  .voice-btn { width: 180px; height: 44px; border-radius: 22px; background-color: #24C1E0; margin-top: 12px; justify-content: center; align-items: center; flex-direction: row; flex-shrink: 0; }
-  .voice-btn-icon { width: 20px; height: 20px; margin-right: 6px; }
-  .voice-btn-text { font-size: 17px; color: #FFFFFF; font-weight: 500; }
+  /* v1.16.264 统一：与首页方屏主按钮 .search-btn 同尺寸同色（136×66 圆角 33） */
+  /* v1.16.304 统一：素材与逻辑尺寸完全对齐首页 .search-btn（方屏 200x72 圆角 36，满胶囊）；
+     底色 transparent —— 颜色/渐变/声波/图标全部烘在 PNG 里（本运行时 CSS 不支持渐变，见 v1.16.300） */
+  .voice-btn { width: 200px; height: 72px; border-radius: 36px; background-color: transparent; justify-content: center; align-items: center; flex-shrink: 0; }
+  .voice-btn-icon { width: 200px; height: 72px; }
 
-  .ds-hint { font-size: 14px; color: #5b6472; margin-top: 14px; margin-bottom: 10px; }
+  /* v1.16.264 统一：主页面签名柔光晕（同心层叠 rgba；box-shadow/gradient/filter 运行时全不支持） */
+  /* v1.16.267 修复「按钮重影」：margin-top 必须挂在**柔光容器**上，不能留在按钮上 ——
+     按钮带 margin 会让容器内部凭空多出一段同色半透明底（实测容器上缘比按钮高 24 逻辑 px：
+     20(margin)+4(padding)），渲染出来就是按钮上方浮着一块「幽灵」方块。
+     同 index.ux v1.16.257 的修法（那里已把间距移到 .btn-glow-a/.btn-glow-b）。 */
+  .btn-glow { border-radius: 43px; padding: 6px; background-color: rgba(46,107,240,0.16); margin-top: 6px; flex-shrink: 0; }
+  /* v1.16.304：内层柔光（与首页 .btn-glow-in 同参数），补上原先缺的这一层 */
+  .btn-glow-in { border-radius: 39px; padding: 3px; background-color: rgba(77,159,238,0.09); }
+  /* v1.16.288：语音按钮下方留白（方屏不需要，胶囊屏在 media 里给足 —— 避开弧线区） */
+  .ds-btn-tail { width: 100%; height: 0px; flex-shrink: 0; }
+
+  .ds-hint { font-size: 14px; color: #6E6E73; margin-top: 8px; margin-bottom: 4px; }
 
   .ds-result { width: 100%; flex-direction: column; align-items: center; }
   .result-count { width: 100%; text-align: center; font-size: 16px; color: #757575; margin-top: 10px; flex-shrink: 0; }
   /* v1.16.103：一屏 4 条（与首页同步） */
-  .result-item { width: 94%; margin-left: 3%; border-radius: 12px; background-color: #1C1C1E; padding: 5px 11px; margin-bottom: 3px; flex-direction: column; flex-shrink: 0; }
+  /* v1.16.275（主人要求「卡片出个小描边」）：1px 极淡描边，与首页 result-item / ai-card 同手法 */
+  .result-item { width: 94%; margin-left: 3%; border-radius: 12px; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08); padding: 5px 11px; margin-bottom: 3px; flex-direction: column; flex-shrink: 0; }
   .result-year { font-size: 16px; font-weight: bold; color: #4D9FEE; margin-bottom: 1px; }
   .result-title { font-size: 17px; color: #FFFFFF; margin-bottom: 1px; }
   .result-region { font-size: 13px; color: #757575; }
   .empty-tip { width: 100%; text-align: center; font-size: 18px; color: #757575; margin-top: 40px; }
   /* 「已显示全部」尾标：紧贴列表的小间距（勿复用 empty-tip 的大边距） */
-  .ds-end { width: 100%; text-align: center; font-size: 18px; color: #5b6472; margin-top: 14px; flex-shrink: 0; }
+  .ds-end { width: 100%; text-align: center; font-size: 18px; color: #6E6E73; margin-top: 14px; flex-shrink: 0; }
   .ds-tail-space { width: 100%; height: 24px; flex-shrink: 0; }
-  .more-btn { width: 94%; margin-left: 3%; height: 64px; border-radius: 14px; background-color: #2C2C2E; justify-content: center; align-items: center; margin-top: 4px; margin-bottom: 8px; flex-shrink: 0; }
+  /* v1.16.275：底色改与 .result-item 同款（原 #2C2C2E 中性灰与卡片深色玻璃不是一套） */
+  .more-btn { width: 94%; margin-left: 3%; height: 64px; border-radius: 14px; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08); justify-content: center; align-items: center; margin-top: 4px; margin-bottom: 8px; flex-shrink: 0; }
   .more-text { font-size: 22px; color: #4D9FEE; }
 
   /* v1.16.134（主人要求）：与主界面一致 —— 面板撑满剩余高度，取消按钮 margin-top:auto 贴底 */
@@ -197,7 +279,9 @@
   /* v1.16.134：space-between —— 内容贴顶、取消按钮贴底（不用 flex:1 / auto margin，本运行时实测无效） */
   .voice-panel { width: 100%; height: 326px; flex-direction: column; justify-content: space-between; align-items: center; padding-top: 30px; padding-bottom: 24px; flex-shrink: 0; }
   .voice-info { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
-  .voice-tip { font-size: 26px; color: #4D9FEE; margin-bottom: 20px; }
+  .voice-tip { font-size: 24px; color: #FFFFFF; margin-bottom: 12px; }
+  /* ★ v1.16.455：演示语音逐字字幕（同尺寸、换色区分「这是识别到的字」） */
+  .voice-partial { font-size: 24px; color: #5AB0FF; margin-bottom: 12px; text-align: center; }
   /* v1.16.133：蓝牙未连接图标（尺寸对齐主界面 .voice-bt-off） */
   .voice-bt-off { width: 50px; height: 50px; margin-bottom: 12px; }
   /* v1.16.140：模拟提示字 + 声波图标 */
@@ -208,52 +292,83 @@
   .h2 { height: 16px; }
   .h3 { height: 24px; }
   .h4 { height: 34px; }
-  .voice-cancel { width: 200px; height: 64px; border-radius: 32px; background-color: #2C2C2E; justify-content: center; align-items: center; flex-shrink: 0; }
-  .voice-cancel-text { font-size: 22px; color: #FFFFFF; }
+  /* v1.16.285（主人反馈「取消按钮感觉有点丑」）：与 index.ux 同步改**次要按钮语言**
+     —— 深蓝底 #10224E + 蓝描边，取代原来的中性灰 #2C2C2E（全应用最后一处灰块遗留）。 */
+  .voice-cancel { width: 136px; height: 66px; border-radius: 33px; background-color: #10224E; border: 3px solid rgba(77,159,238,0.45); justify-content: center; align-items: center; flex-shrink: 0; }
+  .voice-cancel-text { font-size: 24px; color: #FFFFFF; }
+
+  /* ★★★ v1.16.361（宝宝要求「UI 必须跟主界面完全一样」）：入口提示弹窗。
+     与 index.ux:504-509 逐值一致，三形态覆盖见各 @media 块。
+     absolute 铺满 + flex 居中，不依赖 flex:1（项目铁律 #2）。 */
+  .tip-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 30; justify-content: center; align-items: center; }
+  .tip-card { width: 240px; border-radius: 18px; background-color: #16171A; border: 2px solid rgba(255,255,255,0.10); padding: 16px; flex-direction: column; align-items: center; }
+  .tip-title { font-size: 20px; color: #FFFFFF; font-weight: 500; text-align: center; }
+  .tip-body { font-size: 16px; color: #757575; margin-top: 8px; line-height: 24px; text-align: center; }
+  .tip-btn { width: 160px; height: 56px; border-radius: 28px; background-color: #10224E; border: 3px solid rgba(77,159,238,0.45); justify-content: center; align-items: center; margin-top: 16px; }
+  .tip-btn-text { font-size: 20px; color: #FFFFFF; font-weight: 500; }
 
   /* 键盘区（同主界面：absolute 底部，不占布局流）。
      ⚠️ 高度/z-index 必须显式——曾漏写导致容器高度塌 0：键盘渲染了也不可见（胶囊屏实测复现）。
      样式与 index.ux 已验证版本逐字对齐（含 circle 缩放画布） */
   .kb-wrap { position: absolute; left: 0; bottom: 0; width: 100%; overflow: visible; z-index: 20; }
+  /* v1.16.215：键盘收起时移出屏幕（保持挂载=免重建，同时不拦下方触摸） */
+  .kb-off { bottom: -999px; }
   .kb-rect { position: relative; width: 100%; height: 255px; }
   .kb-circle { position: relative; left: -90px; width: 480px; height: 321px; transform: scale(0.625); transform-origin: 240px 321px; }
   .kb-pill { position: relative; width: 100%; height: 477px; }
 
-  .ci-ds { background-color: #8B5CF6; }
-  .ci-blue { background-color: #4285F4; }
-  .ci-green { background-color: #34A853; }
-  .ci-cyan { background-color: #24C1E0; }
-  .ci-yellow { background-color: #FBBC05; }
+  .ci-ds { background-color: #16171A; }
+  .ci-blue { background-color: #16171A; }
+  .ci-green { background-color: #16171A; }
+  .ci-cyan { background-color: #16171A; }
+  .ci-yellow { background-color: #16171A; }
 
   @media (shape: pill-shaped) {
     .voice-bt-off { width: 80px; height: 80px; margin-bottom: 20px; }   /* v1.16.133 对齐主界面胶囊值 */
-    .statusbar { height: 91px; padding-top: 41px; justify-content: center; padding-left: 0; padding-right: 0; }
+    .statusbar { height: 110px; padding-top: 34px; justify-content: center; padding-left: 0; padding-right: 0; }
     .sb-block { align-items: center; }
-    .time { font-size: 21px; }
-    .app-title { font-size: 22px; }
-    .search-box { width: 246px; height: 88px; border-radius: 44px; margin-top: 14px; border: 3px solid #3A3A3C; padding-left: 30px; }
+    .time { font-size: 26px; }
+    .app-title { font-size: 28px; }
+    .search-box { width: 246px; height: 92px; border-radius: 46px; margin-top: 32px; border: 3px solid rgba(255,255,255,0.12); padding-left: 18px; }
     .search-box-icon { width: 40px; height: 40px; }
     .search-placeholder { font-size: 30px; margin-left: 16px; }
     .search-input { font-size: 34px; margin-left: 16px; }
-    .clear-btn { width: 46px; height: 46px; border-radius: 23px; font-size: 28px; line-height: 46px; margin-right: 22px; }
+    .clear-btn { width: 46px; height: 46px; border-radius: 23px; font-size: 28px; line-height: 46px; margin-right: 22px; border-width: 2px; }
     .voice-text { font-size: 36px; margin-left: 16px; }
     .searchbox-voice { height: 130px; }
     /* 胶囊屏维持居中布局：卡片回纵向、左列回横向（与 v1.16.80 观感一致） */
     /* v1.16.173（主人实测：语音搜索按钮仍卡出屏）压缩垂直预算 ~44 单位 */
-    .ds-card { flex-direction: column; align-items: center; width: 246px; border-radius: 30px; padding: 22px 22px 18px; margin-top: 8px; }
+    /* v1.16.285（主人反馈两点）：①「语音搜索按钮会卡出显示区域」②「中间介绍卡离上方搜索框
+       和下方筛选卡片都偏远，希望贴紧些」——两者是同一处病根：margin-top 过大。
+       改前垂直预算（胶囊逻辑高 766）：状态栏 110 + 搜索框(32+92)=124 + 介绍卡(56+~200)=256
+       + 标签(62+70)=132 + 提示 44 + 按钮区(20+10+106)=136 = 802 → **溢出 36**，按钮被挤出屏。
+       现把介绍卡上距 56→24、标签行上距 62→28（共省 66），总额降到 736，留 30 余量。 */
+    .ds-card { flex-direction: column; align-items: center; width: 246px; border-radius: 30px; padding: 18px 20px 16px; margin-top: 24px; }
     .ds-card-left { flex-direction: row; align-items: center; margin-right: 0; }
     .ds-card-right { width: 100%; align-items: center; margin-top: 0; }
-    .ds-icon-box { width: 70px; height: 70px; border-radius: 35px; }
-    .ds-icon { width: 42px; height: 42px; }
+    .ds-icon-box { width: 60px; height: 60px; border-radius: 30px; border: 3px solid rgba(255,255,255,0.12); }
+    .ds-icon { width: 38px; height: 38px; }
     .ds-name { font-size: 36px; margin-top: 0; margin-left: 10px; }
-    .ds-desc { width: 92%; font-size: 24px; line-height: 34px; text-align: center; }
-    .ds-tags-scroll { height: 76px; margin-top: 12px; }
-    .ds-tag { height: 64px; border-radius: 32px; padding: 0 26px; margin-right: 12px; }
+    .ds-desc { width: 92%; font-size: 22px; line-height: 32px; text-align: center; }
+    /* v1.16.288（主人反馈「按钮会卡出屏幕」）：胶囊屏底部是 R=150 半圆收窄区，
+       距屏底 d 处可用宽 = 2×√(150²−(150−d)²)。语音按钮含柔光总宽 230，
+       原下沿 d≈56（该处可用仅 234，余量 4）→ 看着就贴着弧线。
+       **不加底部留白**（内容已 726/766，再加会溢出），改为**压缩上方间距**让整块上移：
+       标签行上距 28→14（省 14）、提示 8/6→4/2（省 8）、glow 上距 14→8（省 6），
+       共省 28 逻辑 → 按钮下沿 d 由 56 提到约 84（该处可用宽 ≈269，余量 39 ✓）。
+       注：流式布局里减小上方间距会让按钮**上移**，正是我们要的方向。 */
+    .ds-tags-scroll { height: 70px; margin-top: 14px; }
+    .ds-tag { height: 58px; border-radius: 29px; padding: 0 24px; margin-right: 12px; }
     .ds-tag-text { font-size: 28px; }
-    .voice-btn { width: 246px; height: 84px; border-radius: 42px; margin-top: 0; }
-    .voice-btn-icon { width: 40px; height: 40px; margin-right: 12px; }
-    .voice-btn-text { font-size: 34px; }
-    .ds-hint { font-size: 22px; margin-top: 14px; margin-bottom: 10px; }
+    /* v1.16.205（主人要求）：语音按钮下推贴近屏底，与上方卡片拉开距离，页面更简洁 */
+    /* v1.16.264 统一：与首页胶囊主按钮 .search-btn 同尺寸（220×106 圆角 53） */
+    /* v1.16.304 统一：胶囊屏对齐首页 .search-btn（184x130 圆角 65） */
+    .voice-btn { width: 184px; height: 130px; border-radius: 65px; }
+    .voice-btn-icon { width: 184px; height: 130px; }
+    .btn-glow { border-radius: 72px; padding: 7px; margin-top: 14px; }
+    .btn-glow-in { border-radius: 69px; padding: 4px; }
+    .ds-hint { font-size: 22px; margin-top: 4px; margin-bottom: 2px; }
+    /* v1.16.288：胶囊屏语音按钮下方留 40 逻辑，把按钮顶到 d≈96（可用宽 ≈278，按钮 230，余量 48 ✓） */
     .result-item { border-radius: 20px; padding: 14px 18px; margin-bottom: 10px; }
     .result-year { font-size: 26px; }
     .result-title { font-size: 30px; }
@@ -261,26 +376,173 @@
     .result-count { font-size: 24px; margin-top: 16px; }
     .empty-tip { font-size: 28px; margin-top: 60px; }
     .ds-end { font-size: 24px; margin-top: 18px; }
-    .ds-tail-space { height: 36px; }
+    .ds-tail-space { height: 12px; }
     .more-btn { height: 96px; border-radius: 30px; }
     .more-text { font-size: 34px; }
-    .voice-tip { font-size: 34px; margin-bottom: 30px; }
+    .voice-tip { font-size: 36px; margin-bottom: 20px; }
+    .voice-partial { font-size: 36px; color: #5AB0FF; margin-bottom: 20px; text-align: center; }
     .voice-panel { height: 470px; padding-top: 40px; padding-bottom: 40px; }
-    .voice-cancel { width: 260px; height: 92px; border-radius: 46px; }
-    .voice-cancel-text { font-size: 32px; }
-    .kb-pill { width: 100%; }
+    .voice-cancel { width: 220px; height: 106px; border-radius: 53px; border-width: 3px; }
+    .voice-cancel-text { font-size: 36px; }
+    /* ★ v1.16.361：入口弹窗胶囊形态覆盖（逐值对齐 index.ux） */
+    .tip-card { width: 300px; border-radius: 32px; border: 3px solid rgba(255,255,255,0.12); padding: 24px; }
+    .tip-title { font-size: 30px; }
+    .tip-body { font-size: 24px; line-height: 34px; margin-top: 12px; }
+    .tip-btn { width: 220px; height: 106px; border-radius: 53px; margin-top: 24px; }
+    .tip-btn-text { font-size: 34px; }
   }
+  /* ================= v1.16.317 圆屏 466x466（Vela_Virtual_Device5） =================
+     逻辑画布 300x300（466x300/466），可见区 = 内切圆（圆心 150,150，R=150），四角完全不可见。
+     距顶/底 d 处可用全宽 = 2*sqrt(R^2-(R-d)^2)：d=20->150 | 30->180 | 40->204 | 50->224
+     | 60->240 | 70->254 | 80->265 | 150->300。
+     原则：不是等比缩小，而是把整块内容收进直径 300 的内切圆 —— 卡片宽度不超过 220，
+     顶部让出圆弧（y=0 处可用宽为 0），底部同理。
+     ⚠️ 圆屏 .statusbar 高度必须定值（本运行时 height:auto 在 flex 列里不可靠）。 */
+  @media (shape: circle) {
+    /* 状态栏：时间+集名上下堆叠、水平居中；方屏是 flex-end 靠右，圆屏必须居中 */
+    .statusbar { height: 44px; padding-top: 8px; padding-left: 0; padding-right: 0; justify-content: center; }
+    .sb-block { align-items: center; }
+    .time { font-size: 13px; }
+    .app-title { font-size: 15px; margin-top: 1px; }
+    .rect-title { font-size: 15px; }
+
+    /* 搜索框：240x50 -> 200x40；与首页圆屏同值 */
+    .search-box { width: 200px; height: 40px; border-radius: 20px; margin-top: 2px; padding-left: 12px; border: 1px solid rgba(255,255,255,0.10); }
+    .search-box-icon { width: 18px; height: 18px; }
+    .search-placeholder { font-size: 15px; margin-left: 6px; }
+    .search-input { font-size: 16px; margin-left: 6px; }
+    .voice-text { font-size: 15px; margin-left: 6px; }
+    .clear-btn { width: 26px; height: 26px; border-radius: 13px; font-size: 15px; line-height: 26px; margin-right: 8px; border-width: 1px; }
+    /* ★ v1.16.454（与首页 index.ux 逐值对齐）：圆屏语音态搜索框 40 → **46**。
+       普通态 40，语音态只高 6（+15%）——「比普通高一点点，不要大太多」。
+       上限受纵向预算约束：状态栏 44 + 本框上距 2 + 框高 H + 语音面板 168 必须留在圆内，
+       取 46 与首页完全一致（两页语音态必须像素级对齐，见 v1.16.364 的既有要求）。 */
+    .searchbox-voice { height: 46px; }
+    .searchbox-typed { padding-left: 4px; }
+
+    /* 资料信息卡：258 -> 220（y 中部可用宽 300，留足余量）；左列图标与字号同比收 */
+    /* 圆屏纵向预算只有 300：卡片必须压成一行高（图标+集名+条数横排），
+       否则连同搜索框/标签行/提示/按钮累计 318 > 300，语音按钮会被顶出圆底。 */
+    .ds-card { width: 220px; border-radius: 16px; padding: 8px 12px; margin-top: 6px; }
+    .ds-card-left { flex-direction: row; align-items: center; margin-right: 0; }
+    .ds-icon-box { width: 32px; height: 32px; border-radius: 16px; border-width: 1px; }
+    .ds-icon { width: 18px; height: 18px; }
+    .ds-name { font-size: 16px; margin-top: 0; margin-left: 8px; }
+    .ds-card-right { width: auto; align-items: flex-start; margin-left: 12px; }
+    /* 圆屏信息优先级：集名 + 收录条数 > 数据集说明。说明按字数换行会让卡高不可控（2~3 行），
+       定高又会在长文案上溢出，故圆屏整体隐藏；方屏/胶囊屏不受影响。 */
+    .ds-desc { display: none; }
+    .ds-meta { width: auto; font-size: 12px; margin-top: 0; }
+
+    /* 标签横滑行：与首页图标行同一处理 —— padding-right 必须留 0，否则内容宽超 300 可横拖 */
+    /* width 必须收窄（不能 100%）：横滑容器的滚动条画在容器最右缘，width:100% 会顶到画布边（越界 15px）。
+       ★ v1.16.344（圆屏适配）：250 → 280，并把标签自身收小 —— 旧值下历史库 6 个标签
+       （亚洲/欧洲/非洲/其他/南美洲/北美洲）总宽 ~332，第 5 个「南美洲」被视窗切成半格，
+       看上去像坏字。新几何：字号 12 + 内边距 0 6 + 间隔 3，6 个标签 = 4×(24+12) + 2×(36+12) + 5×3 = 255，
+       加左右 padding 16 = 271 ≤ 280 ✓；视窗 280 逻辑在标签行所在高度（y≈163）弦宽 299 内，不越弧。
+       标签更多的库（诗词 9 个 / 生活 13 个）仍靠横滑浏览。 */
+    .ds-tags-scroll { width: 280px; height: 30px; margin-top: 4px; }
+    .ds-tags { padding: 0 8px; }
+    .ds-tag { height: 28px; border-radius: 14px; padding: 0 6px; margin-right: 3px; }
+    .ds-tag-text { font-size: 12px; }
+
+    /* 语音按钮：200x72 -> 156x42（与首页圆屏主按钮同值，宽高比 3.71 不变） */
+    .ds-hint { font-size: 12px; margin-top: 2px; margin-bottom: 0; }
+    .voice-btn { width: 156px; height: 42px; border-radius: 21px; }
+    .voice-btn-icon { width: 156px; height: 42px; }
+    /* ★ ★ v1.16.364（宝宝要求「搜索按钮位置必须跟主界面完全一样」）：
+       实测（圆屏模拟器 466px，逻辑比 1.5533）：
+         首页按钮顶部 358 phys = 230.5 逻辑；本页原本 312 phys = 200.9 逻辑 → 差 29.6。
+       把 margin-top 2 → 32 补上这 30px，按钮落到 230.5，与首页逐像素同高。 */
+    .btn-glow { border-radius: 24px; padding: 3px; margin-top: 32px; }
+    .btn-glow-in { border-radius: 23px; padding: 2px; }
+
+    /* 页内搜索结果：94% -> 220 定宽（百分比在 300 画布上是 282，会顶到圆弧） */
+    .result-count { font-size: 13px; margin-top: 4px; }
+    .result-item { width: 220px; margin-left: 0; border-radius: 14px; padding: 6px 10px; margin-bottom: 4px; }
+    .result-year { font-size: 14px; }
+    .result-title { font-size: 16px; }
+    .result-region { font-size: 12px; }
+    .empty-tip { font-size: 15px; margin-top: 24px; }
+    .ds-end { font-size: 14px; margin-top: 8px; }
+    .ds-tail-space { height: 16px; }
+    .more-btn { width: 220px; margin-left: 0; height: 40px; border-radius: 20px; margin-top: 4px; margin-bottom: 4px; }
+    .more-text { font-size: 15px; }
+
+    /* 语音聆听态：面板收进圆内 */
+    /* ★ v1.16.364（同上）：首页 .screen1 定高 96（statusbar 44 + 搜索框 42 = 86，
+       余 10px 底部留白），本页搜索区只有 86 → 语音面板起点比首页高 10px，
+       取消按钮也跟着高 10（实测首页 212~256 逻辑 / 本页 202~246）。补 margin-top 10 对齐。 */
+    .voice-panel { height: 168px; margin-top: 10px; padding-top: 14px; padding-bottom: 8px; }
+    .voice-info { width: 220px; }
+    .voice-tip { font-size: 18px; margin-bottom: 6px; }
+    .voice-partial { font-size: 18px; color: #5AB0FF; margin-bottom: 6px; text-align: center; }
+    .voice-bt-off { width: 44px; height: 44px; margin-bottom: 8px; }
+    .voice-sim-tip { font-size: 12px; margin-bottom: 8px; }
+    .voice-wave { height: 28px; margin-top: 2px; }
+    /* ★ v1.16.361（UI 统一）：原先本页圆屏把 .wbar/.h1-4 压到 4px/6-26，
+       首页圆屏（index.ux）并不覆盖、直接继承基础值 6px/8/16/24/34。
+       要让两页「完全一样」就删掉这段覆盖，回到与首页一致的继承值。 */
+    .voice-cancel { width: 132px; height: 44px; border-radius: 22px; border-width: 2px; }
+    .voice-cancel-text { font-size: 20px; }
+    /* ★ v1.16.361：入口弹窗圆屏形态覆盖（逐值对齐 index.ux） */
+    .tip-card { width: 224px; border-radius: 24px; border: 2px solid rgba(255,255,255,0.10); padding: 12px; }
+    .tip-body { font-size: 15px; line-height: 20px; margin-top: 6px; }
+    .tip-btn { width: 156px; height: 52px; border-radius: 26px; margin-top: 10px; }
+
+    /* 键盘：.kb-circle 的 480x321 画布已由 scale(0.625) 处理，此处不叠加缩放。
+       ⚠️ 同理，.kb-wrap 需自身撑到 480 并左移 -90，否则裁剪框按父容器 300 宽算，
+       画布只露前 300 → 键盘右侧整列被切（index.ux 同款修法）。 */
+    /* ★ v1.16.347（与 index.ux 同款修复）：.kb-wrap 原本只设 width，高度由子元素
+       .kb-circle（321）撑开 → 盒子从 y=-21 铺到 y=300，整屏被盖住，搜索框的点击被吞
+       → 键盘收不起来。此处同样压到可见高度 200 并裁剪，键盘本体贴底定位。 */
+    .kb-wrap { left: -90px; width: 480px; height: 200px; overflow: hidden; }
+    .kb-circle { position: absolute; bottom: 0; left: 0; }
+    /* ★★★ v1.16.361（与 index.ux 同款修复）：
+       `.kb-wrap { left:-90px; width:480px }` 让整页产生 90px 横向溢出（480−90=390 > 300）。
+       本页有 @swipe="onSwipe" 处理左滑返回，溢出不至于把整页拖出黑边，但横滑残留会导致
+       左滑手势先被滚动消耗、返回偶发失效；键盘收起后把盒子收回 100% 宽即可消除。
+       此时它已在 bottom:-999px，宽度对视觉零影响；展开时仍 480 宽，不切右侧 Q~P 列。 */
+    .kb-off { left: 0; width: 100%; }
+  }
+
 </style>
 
 <script>
+// ══════════════════════════════════════════════════════════════════════════
+// 语音搜索演示模式（v1.16.459 · 2026-11-04 宝宝定案）
+//
+//   为什么走硬编码：S5 的 @system.record 引擎帧率被钉死在 ~2900 采样/秒
+//   （声明 16000），采集率只有 18~22%，长句必然残缺；且同一轮结束后引擎释放
+//   不及时，第二轮 3 秒就报「没听到声音」。语音真链路短期无解 → 现场演示用本地识别。
+//
+//   两个常量必须在**模块作用域**：写成页面对象属性时实例上读不到
+//   （页面实例只承诺 private 里的字段），入口分支会静默落回真链路。
+//   2026-11-04 真机踩过这个坑：装了演示版仍然提示「没听清」。
+//
+//   三个词都经实际检索验证能命中真实条目：
+//     「焦虑」→ health 30 条 + life 2 条；「咏鹅」→ poems 1 条；「深蹲」→ health 3 条。
+//   刻意不用「你好」这类无语料寒暄词 —— 它会走空结果，演示最忌。
+// ══════════════════════════════════════════════════════════════════════════
+var DEMO_QUERIES = ['焦虑', '咏鹅', '深蹲']
+/** 演示开关。答辩现场保持 true；改 false 即回真链路（手表录音 + 手机 ASR）。 */
+var DEMO_ENABLED = true
+
+
   import router from '@system.router'
   import device from '@system.device'
-  import { getAssistant } from '../../SearchEngine/AssistantEngine.js'
+  // ★ v1.16.396：删掉 AssistantEngine 的 import，改用 app.ux 挂的 global.getAssistant。
+  //   构建器不做 tree-shaking，这里 import 一次就会把 AssistantEngine(55KB) +
+  //   AudioUp(19KB) + BtTransfer(18KB) 整份内联进本页 .jsc（且与别的页面互不共享）。
+  //   app.ux 早已 import 它起心跳，挂 global 后运行时仍是同一个单例，功能零变化。
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n }
 
   export default {
     private: {
+      // ★ v1.16.459：演示语音的步进计数（0→1→2 循环三个演示词）。
+      //   必须声明在 private 里 —— 页面实例只保证 private 声明的字段可读写。
+      _demoStep: 0,
       time: '00:00',
       dsId: 0,
       dsName: '',
@@ -311,28 +573,60 @@
       searchSeq: 0,
       // 语音态
       voiceActive: false,
-      // v1.16.133：语音态蓝牙连接状态（未连接时显示断开图标 + 提示，对齐主界面）
+      // v1.16.133：语音态蓝牙连接状态（保留字段：入口探测与失败回写仍用它）
       bluetoothConnected: false,
+      // ★★★ v1.16.361（与 index.ux:1058-1060 逐项对齐）：入口提示弹窗
+      voiceTipShow: false,        // 弹窗显隐
+      voiceTipMsg: '',            // 主文案（如「蓝牙未连接」）
+      voiceTipSub: '',            // 副文案（引导语，可为空）
       // v1.16.133：✕ 清空时间戳（吞掉冒泡）+ 空词自动退定时器
-      _clearedAt: 0,
-      _emptyExitTimer: null,
+      clearedAt: 0,
+      emptyExitTimer: null,
       // v1.16.140：声波图标（5 根竖条，类名 JS 预拼）
-      waveBars: [{ cls: 'wbar h2' }, { cls: 'wbar h3' }, { cls: 'wbar h4' }, { cls: 'wbar h3' }, { cls: 'wbar h2' }],
-      _waveTimer: null,
+      wbar1: 'wbar h2', wbar2: 'wbar h3', wbar3: 'wbar h4', wbar4: 'wbar h3', wbar5: 'wbar h2',
+      waveTurn: 0,
+      waveTimer: null,
       voiceText: '聆听中…',
+      // ★ v1.16.455：演示语音的逐字字幕（与 index.ux 的 voicePartialText 同义）
+      voicePartialText: '',
       voiceTimer: null,
       timeTimer: null,
       isDestroyed: false
     },
 
     computed: {
+      // v1.16.304：与首页 askBtnIcon 同一套素材。
+      // v1.16.415：两张图按「各形态真实物理像素」重采样过（方屏/圆屏共用 260x94，胶囊 130x92），
+      //   原图 400x144 / 368x260 解码分别占 225KB / 373KB 堆，缩小后为 95KB / 46KB。
+      //   显示尺寸由 CSS .voice-btn-icon 强制（200x72 / 184x130 / 156x42），与原图一样靠拉伸适配，观感一致。
+      askBtnIcon() {
+        return this.screentype === 'pill-shaped' ? '/common/icons/ask-btn-184x130.png' : '/common/icons/ask-btn-200x72.png'
+      },
       displayQuery() {
         return this.searchQuery
       },
+      // v1.16.293（对齐主页 v1.16.228/285）：搜索框**唯一文本节点**的文案。
+      // 语音态由它自己显示「聆听中…」，避免与占位符叠字；打字时返回实时输入内容（回显）。
+      searchBoxText() {
+        if (this.voiceActive) return '聆听中…'
+        if (this.searchQuery) return this.displayQuery
+        return '搜索' + (this.dsName || '')
+      },
+      // 与文案配套的类名（模板只做纯变量插值，禁拼接/三元）
+      searchBoxTextCls() {
+        if (this.voiceActive) return 'voice-text'
+        if (this.searchQuery) return 'search-input'
+        return 'search-placeholder'
+      },
+      // v1.16.215：键盘收起时挂 kb-off 移出屏幕（保持挂载=免重建，且不拦下方触摸）
+      kbWrapClass() {
+        return this.showKeyboard ? 'kb-wrap' : 'kb-wrap kb-off'
+      },
       searchBoxClass() {
-        // 审查低#10：模板已写固定基类 search-box，这里只返回修饰类
-        var c = ''
-        if (this.voiceActive) c = 'searchbox-voice'
+        // ★ v1.16.354（交接单 §3.4）：改为返回**完整类名**（含 search-box 基类），模板纯变量插值。
+        // 原实现模板写 `class="search-box {{searchBoxClass}}"` = 拼接表达式，已消除。
+        var c = 'search-box'
+        if (this.voiceActive) c = 'search-box searchbox-voice'
         if (this.searchQuery) c += ' searchbox-typed'
         return c
       },
@@ -424,7 +718,7 @@
     toggleSearchBox() {
       if (this.voiceActive) return
       // v1.16.133：同 index.ux —— 点 ✕ 清空的事件冒泡到这里，不应改变键盘状态
-      if (this._clearedAt && (Date.now() - this._clearedAt) < 400) { this._clearedAt = 0; return }
+      if (this.clearedAt && (Date.now() - this.clearedAt) < 400) { this.clearedAt = 0; return }
       if (this.showKeyboard) {
         this.showKeyboard = false
         this.finishInput()
@@ -448,17 +742,26 @@
     onInput(evt) {
       var content = evt.detail.content
       if (content === undefined || content === null) return
+      // v1.16.290（主人反馈「打字输入框里不会显示字，只有点击搜索时才突然出现」）：
+      // **本页漏掉了主页 v1.16.228 的「方法 A'·回显优化」，还在用被否决的方法 A** ——
+      // 方法 A 把内容写进**非响应式** this._pendingQuery（打字零翻转），代价就是
+      // 模板里 `if="{{searchQuery}}"` 的显示节点**打字期间恒不成立** → 字不显示；
+      // 直到收键盘 finishInput 才 `searchQuery = _pendingQuery` → 「点了才突然出现」。
+      // 现与主页对齐：searchQuery 恢复**响应式**（实时回显），但**不触发** searchActive/
+      // 结果区插入等大翻转（那部分仍推迟到 finishInput），故打字仍是零结构翻转。
       this.searchQuery += content
+      try { global.searchQuery = this.searchQuery } catch (e) {}
     },
 
     onDelete() {
-      this.searchQuery = this.searchQuery.slice(0, -1)
+      this.searchQuery = (this.searchQuery || '').slice(0, -1)
+      try { global.searchQuery = this.searchQuery } catch (e) {}
     },
 
     clearSearch() {
       // v1.16.133（对齐 index.ux 同款修复）：✕ 的点击会冒泡到 .search-box 的 @click
       // （= toggleSearchBox → openKeyboard），原本会误开键盘并带来一次卡顿
-      this._clearedAt = Date.now()
+      this.clearedAt = Date.now()
       this.searchQuery = ''
       this.searchSeq++
       this.displayList = []
@@ -467,9 +770,9 @@
       // 清空后自动退回资料信息态（主人「搜索栏为空自动回」的同款语义；本页的「回」
       // 是回资料信息态而非主界面 —— 复用 finishInput 空词分支的既有语义）
       var self = this
-      if (this._emptyExitTimer) clearTimeout(this._emptyExitTimer)
-      this._emptyExitTimer = setTimeout(function() {
-        self._emptyExitTimer = null
+      if (this.emptyExitTimer) clearTimeout(this.emptyExitTimer)
+      this.emptyExitTimer = setTimeout(function() {
+        self.emptyExitTimer = null
         if (self.isDestroyed) return
         if (!self.searchActive) return
         if (self.searchQuery && self.searchQuery.trim()) return   // 期间又输入了
@@ -481,6 +784,8 @@
     // 收键盘 → 搜索（页内限定该集 + 标签）
     finishInput() {
       this.showKeyboard = false
+      // v1.16.290：searchQuery 现在打字期间就是**实时**的（见 onInput），此处不再从
+      // _pendingQuery 回填（那会覆盖掉刚输入的内容）。仅保留空词分支——空词收键盘回资料信息态。
       if (!this.searchQuery || !this.searchQuery.trim()) {
         // 空词收键盘：回资料信息态
         this.searchActive = false
@@ -575,38 +880,104 @@
     startWave() {
       var self = this
       this.stopWave()
+      // ★ v1.16.352：每拍只换一根柱子的高度档，不再整体重建 5 个节点。
       var tick = function () {
         if (self.isDestroyed || !self.voiceActive) return
-        var bars = []
-        for (var i = 0; i < 5; i++) {
-          bars.push({ cls: 'wbar h' + (1 + Math.floor(Math.random() * 4)) })
-        }
-        self.waveBars = bars
+        var h = 'wbar h' + (1 + Math.floor(Math.random() * 4))
+        var k = self.waveTurn % 5
+        self.waveTurn = k + 1
+        // 显式分支赋值：Vela 对 `self['wbar' + n]` 这类动态键不一定触发刷新
+        if (k === 0) { self.wbar1 = h }
+        else if (k === 1) { self.wbar2 = h }
+        else if (k === 2) { self.wbar3 = h }
+        else if (k === 3) { self.wbar4 = h }
+        else { self.wbar5 = h }
       }
       tick()
-      this._waveTimer = setInterval(tick, 220)
+      this.waveTimer = setInterval(tick, 260)
     },
 
     stopWave() {
-      if (this._waveTimer) { clearInterval(this._waveTimer); this._waveTimer = null }
+      if (this.waveTimer) { clearInterval(this.waveTimer); this.waveTimer = null }
     },
+
+    // ★★★ v1.16.361（宝宝要求「UI 必须跟主界面完全一样……只留弹窗」）：
+    //   本页入口逻辑重写为**逐行对齐 index.ux 的 startVoiceAsk()**（三态拦截）：
+    //     ① 已明确断开（_alive === false）→ 点击同一帧直接弹窗，不等超时；
+    //     ② 从未探活过 → 先弹「正在连接…」（点击必须有即时反馈），异步 probe 后继续；
+    //     ③ 链路正常 → 进聆听态。
+    //   改动前这里是「无条件进聆听态 + 面板里显示蓝牙未连接」，与首页行为分叉。
+    _showVoiceTip(msg, sub) {
+      if (this.isDestroyed) return
+      this.voiceTipMsg = msg || ''
+      this.voiceTipSub = sub || ''
+      this.voiceTipShow = true
+    },
+
+    closeVoiceTip() {
+      if (this.isDestroyed) return
+      this.voiceTipShow = false
+    },
+
+    // ★★★ v1.16.455（2026-11-04 宝宝定案）：本页语音同样走**本地硬编码演示**，
+    //   与 index.ux 的 DEMO_QUERIES / _demoVoiceStart 逐行同构（两页体验必须一致）。
+    //   真链路（手表录音 + 手机 ASR）已证明采集率只有 18~22%，长句必残，短期无解。
+    // ★ 三个词都经过实际检索验证能命中真实条目（2026-11-04 实测）：
+    //   「焦虑」→ health 30 条 + life 2 条；「咏鹅」→ poems 1 条；「深蹲」→ health 3 条。
+    //   刻意**不用**「你好」这类无语料的寒暄词 —— 它会走空结果，演示时最忌讳。
 
     startVoiceSearch() {
       if (this.voiceActive) return
+      // ★ 硬编码演示分支（放在所有链路判定之前，链路好坏都不影响演示）
+      if (DEMO_ENABLED) {
+        this._demoVoiceStart()
+        return
+      }
+      var self0 = this
+      var asst = global.getAssistant()
+      if (asst._probeDone && asst.conn && asst._alive === false) {
+        this._showVoiceTip('蓝牙未连接', '请先在手机 App 内连接手环')
+        return
+      }
+      if (!asst._probeDone || !asst.conn) {
+        // 首次点击：必须先 probe 才能拿到 conn（否则 ping 无从发）。
+        this._showVoiceTip('正在连接…', '请稍候')
+        asst.probe(function () { self0._startVoiceSearchNow() })
+        return
+      }
+      this._startVoiceSearchNow()
+    },
+
+    _startVoiceSearchNow() {
+      if (this.isDestroyed) return
+      var self = this
+      var asst = global.getAssistant()
+      var go = function () {
+        if (self.isDestroyed) return
+        if (self.voiceActive) return
+        self._enterVoiceUI()
+      }
+      if (asst._alive === true) { go(); return }
+      asst._ping(function (alive) {
+        if (self.isDestroyed) return
+        self.bluetoothConnected = alive
+        if (!alive) {
+          self._showVoiceTip('蓝牙未连接', '请先在手机 App 内连接手环')
+          return
+        }
+        go()
+      })
+    },
+
+    _enterVoiceUI() {
       this.voiceActive = true
       this.startWave()
-      // v1.16.133（主人要求）：语音态的蓝牙表现与主界面一致 —— 进入聆听先查连接态，
-      // 未连接时显示 bluetooth_off 图标 + 「蓝牙未连接」（主界面同款；本页原缺此项）。
-      // 用 AssistantEngine.checkBtStatus（实时 getReadyState，与主界面左上角标同源）。
-      var selfBt = this
-      try {
-        getAssistant().checkBtStatus(function (on) {
-          if (!selfBt.isDestroyed) selfBt.bluetoothConnected = on
-        })
-      } catch (e) { this.bluetoothConnected = false }
       // 聆听文案区分真链路 / 模拟链路（对齐主界面 voiceStatusText）
       try {
-        this.voiceText = getAssistant().getMode() === 'real' ? '聆听中…' : '聆听中·演示'
+        // ★ v1.16.364（UI 统一）：首页 voiceStatusText 恒为「请对着手机说话」
+        //（v1.16.330 已删「聆听中·演示」中间态）；手环 record 是空壳、录音在手机侧，
+        // 必须如实告诉用户对着手机说，否则他会对着手表说话、永远识别不到。
+        this.voiceText = '请对着手机说话'
       } catch (e2) { this.voiceText = '聆听中…' }
       var self = this
       // 超时兜底：12s 未识别自动退出（审查低#11：补 cancel + 提示文案）
@@ -616,14 +987,14 @@
         if (self && !self.isDestroyed && self.voiceActive) {
           self.voiceText = '识别超时，请重试'
           self.stopWave()
-          getAssistant().cancel()
+          global.getAssistant().cancel()
           if (self._voiceExitTimer) clearTimeout(self._voiceExitTimer)
           self._voiceExitTimer = setTimeout(function() {
             if (self && !self.isDestroyed) self.exitVoiceSearch()
           }, 1500)
         }
       }, 12000)
-      getAssistant().recognize(function(r) {
+      global.getAssistant().recognize(function(r) {
         if (self.isDestroyed || !self.voiceActive) return
         if (self.voiceTimer) { clearTimeout(self.voiceTimer); self.voiceTimer = null }
         self.stopWave()   // v1.16.140：识别结束（正常路径不走 exitVoiceSearch）
@@ -643,12 +1014,64 @@
       })
     },
 
+    /**
+     * 演示开关。答辩/Demo 现场保持 true；
+     * 想回到真链路（手表录音 + 手机 ASR）把它改成 false 即可。
+     */
+
+    /**
+     * 硬编码演示语音（与 index.ux 的 _demoVoiceStart 同构）。
+     * 点麦克风 → 进聆听态 → 模拟「正在听」1.2s → 逐字出字幕 → 自动进搜索态并出结果。
+     */
+    _demoVoiceStart() {
+      var self = this
+      if (this.isDestroyed || this.voiceActive) return
+      var idx = (this._demoStep || 0) % DEMO_QUERIES.length
+      var text = DEMO_QUERIES[idx]
+      this._demoStep = idx + 1
+
+      this.voiceActive = true
+      this.voiceText = '正在聆听…'
+      this.voicePartialText = ''
+      this.startWave()
+      this.log('[DS-PAGE] 语音搜索（演示模式）：第 ' + (idx + 1) + ' 档 → 「' + text + '」')
+      if (this.voiceTimer) { clearTimeout(this.voiceTimer); this.voiceTimer = null }
+      if (this._demoTimer) { clearTimeout(this._demoTimer); this._demoTimer = null }
+
+      this._demoTimer = setTimeout(function () {
+        if (self.isDestroyed || !self.voiceActive) return
+        self.voiceText = '正在识别…'
+        var n = 0
+        var tick = function () {
+          if (self.isDestroyed || !self.voiceActive) return
+          n++
+          self.voicePartialText = text.substring(0, n)
+          if (n < text.length) {
+            self._demoTimer = setTimeout(tick, 90)
+            return
+          }
+          self._demoTimer = setTimeout(function () {
+            if (self.isDestroyed || !self.voiceActive) return
+            self.voiceActive = false
+            self.stopWave()
+            self.searchQuery = text
+            self.searchActive = true
+            self.resetAndSearch()
+            self.log('[DS-PAGE] 语音识别（演示）：' + text)
+          }, 300)
+        }
+        self._demoTimer = setTimeout(tick, 60)
+      }, 1200)
+    },
+
     exitVoiceSearch() {
       if (this._voiceExitTimer) { clearTimeout(this._voiceExitTimer); this._voiceExitTimer = null }
       this.voiceActive = false
       this.stopWave()    // v1.16.140：退出聆听即停声波（防定时器泄漏）
       if (this.voiceTimer) { clearTimeout(this.voiceTimer); this.voiceTimer = null }
-      getAssistant().cancel()
+      this.voicePartialText = ''
+      if (this._demoTimer) { clearTimeout(this._demoTimer); this._demoTimer = null }
+      global.getAssistant().cancel()
     },
 
     // 左右滑：搜索/语音态先退出，然后在资料信息态返回上一页

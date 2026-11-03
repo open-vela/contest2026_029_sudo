@@ -2,8 +2,12 @@
   <div class="page-container">
     <div class="page" @swipe="onSwipe">
       <scroll class="scroll-list" scroll-y="true">
-        <div class="top-spacer"></div>
-        <div class="header"><text class="header-title">设置</text></div>
+        <div class="statusbar">
+          <div class="sb-block">
+            <text class="time">{{time}}</text>
+            <text class="app-title">设置</text>
+          </div>
+        </div>
 
         <!-- 蓝牙接收 -->
         <div class="setting-card" @click="goBluetooth">
@@ -33,38 +37,67 @@
   .page-container { width: 100%; height: 100%; background-color: #000000; }
   .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
   .scroll-list { width: 100%; height: 100%; flex-direction: column; align-items: center; }
-  .top-spacer { width: 100%; height: 24px; flex-shrink: 0; }
   .bottom-spacer { width: 100%; height: 60px; flex-shrink: 0; }
-  .header { width: 90%; height: 70px; justify-content: center; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
-  .header-title { font-size: 28px; font-weight: bold; color: #FFFFFF; text-align: center; }
-  .setting-card { width: 86%; background-color: #1C1C1E; border-radius: 18px; padding: 14px 22px; margin-bottom: 12px; flex-shrink: 0; flex-direction: column; }
+  .statusbar { width: 100%; height: 36px; padding-top: 10px; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
+  .sb-block { flex-direction: column; align-items: center; }
+  .time { font-size: 16px; color: #757575; font-weight: 400; }
+  .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
+  
+  .setting-card { width: 86%; background-color: #16171A; border-radius: 18px; padding: 14px 22px; margin-bottom: 12px; flex-shrink: 0; flex-direction: column; }
   .setting-card-row { flex-direction: row; justify-content: space-between; align-items: center; height: 72px; padding: 0 22px; }
   .card-title { font-size: 24px; color: #FFFFFF; font-weight: 600; }
   .card-status { font-size: 16px; color: #757575; margin-top: 4px; }
   .card-version { font-size: 16px; color: #757575; }
 
     @media (shape: pill-shaped) {
-    .top-spacer { height: 30px; }
-    .header { height: 100px; margin-bottom: 20px; }
-    .header-title { font-size: 42px; }
+    .statusbar { height: 110px; padding-top: 34px; }
+    .time { font-size: 26px; }
+    .app-title { font-size: 28px; }
+    
     .setting-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
     .setting-card-row { height: 160px; padding: 0 28px; }
     .card-title { font-size: 36px; }
     .card-status { font-size: 28px; }
     .card-version { font-size: 28px; }
   }
+  /* ================= v1.16.317 圆屏 466x466（Vela_Virtual_Device5） =================
+     逻辑画布 300x300（466x300/466），可见区 = 内切圆（圆心 150,150，R=150），四角完全不可见。
+     距顶/底 d 处可用全宽 = 2*sqrt(R^2-(R-d)^2)：d=20->150 | 30->180 | 40->204 | 50->224
+     | 60->240 | 70->254 | 80->265 | 150->300。
+     原则：不是等比缩小，而是把整块内容收进直径 300 的内切圆 —— 卡片宽度不超过 220，
+     顶部让出圆弧（y=0 处可用宽为 0），底部同理。
+     ⚠️ 圆屏 .statusbar 高度必须定值（本运行时 height:auto 在 flex 列里不可靠）。 */
+  @media (shape: circle) {
+    /* 页头：36 -> 44（时间+标题堆叠在圆顶要更多高度） */
+    .statusbar { height: 44px; padding-top: 8px; }
+    .time { font-size: 13px; }
+    .app-title { font-size: 15px; margin-top: 1px; }
+
+    /* 设置卡：86% (=258) 会顶到圆弧，改定宽 220 居中 */
+    .setting-card { width: 220px; border-radius: 14px; padding: 8px 14px; margin-bottom: 8px; }
+    .setting-card-row { height: 44px; padding: 0 14px; justify-content: space-between; }
+    .card-title { font-size: 16px; }
+    .card-status { font-size: 12px; margin-top: 2px; }
+    .card-version { font-size: 12px; }
+    .bottom-spacer { height: 64px; }
+  }
+
 </style>
 
 <script>
   import router from '@system.router'
   import storage from '@system.storage'
   import prompt from '@system.prompt'
-  import { clearAllCaches } from '../../SearchEngine/DatasetManager.js'
+  // ★ v1.16.388：改用 app.ux 挂的 global.clearAllCaches。
+  //   本页只为这一个函数，原先却把 DatasetManager→SearchEngine 整条闭包
+  //   内联进 settings.jsc（实测 41,472B 闭包 / 35,560B 产物）。
 
   export default {
     private: {
       bluetoothText: '已关闭',
-      appVersionText: 'v1.0.0'
+      appVersionText: 'v1.0.0',
+      // v1.16.264 统一：页头改为主页面同款状态栏（时间 + 页名）
+      time: '00:00'
     },
 
     onInit() {
@@ -72,7 +105,13 @@
       this.refreshBluetooth()
     },
 
+    updateTime() {
+      var n = new Date(); var h = n.getHours(); var m = n.getMinutes()
+      this.time = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m
+    },
+
     onShow() {
+      this.updateTime()
       this.refreshBluetooth()
     },
 
@@ -115,7 +154,7 @@
     async doClearCache() {
       prompt.showToast({ message: '正在清除缓存…', duration: 1000 })
       try {
-        var r = await clearAllCaches()
+        var r = await global.clearAllCaches()
         prompt.showToast({ message: '缓存已清除（' + r.cleared + '/' + r.datasets + ' 个集，' + r.keys + ' 个键位）', duration: 2800 })
       } catch (e) {
         prompt.showToast({ message: '清除失败：' + (e && e.message ? e.message : e), duration: 2500 })
