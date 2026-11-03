@@ -5,7 +5,6 @@
 import { SearchEngine, CACHE_VERSION } from './SearchEngine.js'
 
 // 资料集注册清单（内置集；蓝牙动态集由手机端下发清单后追加到 DYNAMIC_DATASETS）
-console.log('[DM] module evaluating')
 // 6 标签 = 6 数据集（主人定的精简架构：集数=标签数，搜索只需遍历 6 个集，
 // 不再是原先 24 集跨集聚合——那套导致搜索慢、缓存大、清缓存耗时、命中率低）
 var DATASETS = [
@@ -14,7 +13,7 @@ var DATASETS = [
     tags: [ { label: '亚洲', value: 'asia' }, { label: '欧洲', value: 'europe' },
             { label: '非洲', value: 'africa' }, { label: '其他', value: 'other' },
             { label: '南美洲', value: 'south_america' }, { label: '北美洲', value: 'north_america' } ] },
-  { id: 1, folder: 'datasets/poems/', name: '诗词', tag: '诗词', count: 550, icon: '/common/datasets/poems/icon.png',
+  { id: 1, folder: 'datasets/poems/', name: '诗词', tag: '诗词', count: 721, icon: '/common/datasets/poems/icon.png',
     desc: '中国古诗词名篇，含朝代、作者与全文',
     tags: [ { label: '诗', value: '诗' }, { label: '词', value: '词' }, { label: '先秦', value: '先秦' },
             { label: '魏晋', value: '魏晋' }, { label: '唐朝', value: '唐朝' }, { label: '五代', value: '五代' },
@@ -83,6 +82,10 @@ function ensureEngine(ds) {
     // ⚠️ 关键：深拷贝 config——所有实例共享模块常量 C，直接改会互相污染；
     // 且缓存 key 必须按集隔离（keyPrefix 加 ds 后缀），否则各集块缓存同名互相覆盖串数据
     var cloned = JSON.parse(JSON.stringify(e.config))
+    // ⚠️ v1.16.254 修复：JSON 深拷贝会把 RegExp 序列化成 {} —— tokenizer.delimiters 失效后
+    // 含中文标点的多词查询（"睡眠，运动"）整串当一个词，与索引侧分词规则失配 → 恒 0 结果。
+    // 克隆后必须还原正则对象（手写浅合并的替代方案成本高，这里单点还原即可）。
+    cloned.tokenizer.delimiters = e.config.tokenizer.delimiters
     cloned.blockBinary.enabled = false
     cloned.cache.keyPrefix = cloned.cache.keyPrefix + '_ds' + ds.id
     cloned.mapCache.keyPrefix = cloned.mapCache.keyPrefix + '_ds' + ds.id
@@ -112,7 +115,7 @@ function registerDynamicDataset(opt) {
     baseUri: 'internal://files/datasets/' + opt.dirName + '/',
     name: opt.name || opt.dirName,
     tag: opt.name || opt.dirName,
-    icon: '/common/datasets/bt/icon.png',
+    icon: opt.icon || '/common/datasets/bt/icon.png',
     desc: '蓝牙传输资料集',
     tags: []
   }
@@ -120,6 +123,30 @@ function registerDynamicDataset(opt) {
   console.log('[DM] 动态资料集已注册: id=' + ds.id + ' ' + ds.name + ' baseUri=' + ds.baseUri)
   // 刷新首页入口清单（审查修复）：global 清单只在 app onCreate 生成一次，
   // 不刷新则传输完成后首页分类行看不到新集入口（index onInit 会重读 global）
+  //
+  // ★★★ v1.16.454 真根因（2026-11-04 宝宝报「传不了图标，主页形成不了入口，
+  //   里面原本可以用于筛选的字段都没用，也无法测试」）：
+  //   首页图标行读的是 `getGroupEntries()`，而它**只遍历静态常量 GROUP_MAP**。
+  //   动态注册的资料集只 push 进了 DATASETS，**从没进过 GROUP_MAP**
+  //   → 无论传输成功多少次，首页永远不出现它的入口，也就点不进去、测不了。
+  //   （之前只刷新 global 清单是没用的 —— 清单源头本身就不含它。）
+  //
+  //   修法：给动态集建一个独立大类（groupId 从 100 起，不与 0~5 的静态组冲突），
+  //   datasets 里放它自己的 id；并复用它的图标（若有 icon.txt 则用它）。
+  try {
+    var dynGroupId = 100 + (ds.id - DYN_ID_BASE)
+    if (!GROUP_MAP[dynGroupId]) {
+      GROUP_MAP[dynGroupId] = {
+        name: ds.name,
+        icon: opt.icon || '/common/datasets/bt/icon.png',
+        colorClass: 'ci-ds',
+        datasets: [ds.id],
+      }
+      console.log('[DM] 动态大类已建: groupId=' + dynGroupId + ' name=' + ds.name)
+    }
+  } catch (e) {
+    console.log('[DM] 建动态大类失败: ' + ((e && e.message) ? e.message : String(e)))
+  }
   try {
     if (typeof global !== 'undefined') {
       global.datasetEntries = getDatasetEntries()
@@ -131,7 +158,6 @@ function registerDynamicDataset(opt) {
 
 // 首页资料入口动态清单：已注册的资料集 = 真实存在的资料（图标/名称/集ID）
 function getDatasetEntries() {
-  console.log('[DM] getDatasetEntries called, DATASETS=' + (typeof DATASETS !== 'undefined' ? DATASETS.length : 'UNDEFINED'))
   var entries = []
   for (var i = 0; i < DATASETS.length; i++) {
     var ds = DATASETS[i]
@@ -168,6 +194,10 @@ async function searchAllAsync(query, options) {
   // 分类/地区筛选透传（历史集 v4 语义：引擎内按 categoryList/regionList 匹配）
   var category = (options.category !== undefined && options.category !== null) ? options.category : 'all'
   var region = (options.region !== undefined && options.region !== null) ? options.region : 'all'
+  // ★ v1.16.375：累积前缀模式（结果页「加载更多」用）。
+  //   true → 返回「第 0 条到 page*pageSize」的完整前缀，页面整表替换；
+  //   false（默认）→ 按页码切片，页面追加（资料页路径保持原样）。
+  var cumulative = !!options.cumulative
   var merged = []
   var total = 0
   var initFailed = false
@@ -217,10 +247,22 @@ async function searchAllAsync(query, options) {
       var eng = ensureEngine(ds)
       // ⚠️ 每集独立超时（v1.16.23）：readText 回调可能丢失（#18/#84），单集卡住会让整轮挂起。
       // 串行后这个保护更重要 —— 没有它，一个卡住的集会让后续所有集都轮不到。
+      // v1.16.254 修复（审查 P1）：page 曾写死 1 → 引擎 need 恒 6，首次物化行池小，
+      // 高命中查询（"清"/"战"）「显示更多」最多翻出首池行、按钮永不到头。
+      // 透传聚合页码：引擎 need=page*pageSize=target 逐步加载更多 map，各集贡献自己的第 N 批。
+      // ★ v1.16.387：超时定时器必须随本集搜索结束清掉。
+      //   原先这里是纯 setTimeout 且从不 clear —— 本函数对**每个资料集**都跑一次，
+      //   一次跨六库搜索就留下 6 个 8s 悬空定时器（翻页再来 6 个）。
+      var _eachTimer = null
       var r = await Promise.race([
-        eng.search(query, { page: 1, pageSize: target, category: category, region: region }),
-        new Promise(function(resolve) { setTimeout(function() { resolve(null) }, 8000) })
+        // ★ v1.16.374：cumulative=true → 引擎返回「第 0 条到 page*pageSize」的累积前缀，
+        //   由本函数在末尾做**唯一一次**全局切片（避开双重切片）。
+        //   若不传，引擎按本集页码只给第 N 个窗口，合并后再按全局页码切会越切越少，
+        //   页码超过集数后直接空数组 → 「点更多没反应」。
+        eng.search(query, { page: page, pageSize: pageSize, category: category, region: region, cumulative: !!options.cumulative }),
+        new Promise(function(resolve) { _eachTimer = setTimeout(function() { resolve(null) }, 8000) })
       ])
+      if (_eachTimer) { clearTimeout(_eachTimer); _eachTimer = null }
       if (!r) { eachAllLoaded = false; continue }        // 该集超时：按「无结果」处理，继续下一个集
       if (r.initFailed) initFailed = true
       if (!r.allLoaded) eachAllLoaded = false
@@ -275,9 +317,42 @@ async function searchAllAsync(query, options) {
     if (la !== lb) return la - lb
     return a._dsOrder - b._dsOrder
   })
-  var start = (page - 1) * pageSize
-  return { results: merged.slice(start, start + pageSize), total: total, initFailed: initFailed,
-           allLoaded: allLoaded, elapsedMs: Date.now() - _t0 }
+
+  // v1.16.275（主人定案）：**标题命中优先 + 两类「均匀」交替**。
+  // 判据：标题里直接含查询词（不区分大小写）→ 「标题命中」；标题不含却仍被搜出 → 归「关键字/正文命中」
+  //      （索引里标题与关键字字段都入了桶，所以"标题不含"就等于"来自关键字字段"，无需改数据即可判定）。
+  // 排列：标题命中[0] → 其它[0] → 标题命中[1] → 其它[1] … 交替 ——
+  //      既让标题直接命中的"稍微往前靠"，又不会让它们把关键字命中的结果整段挤到后面（"均匀"）。
+  // 两组各自保持上面刚排好的顺序，所以「短标题优先 + 集序稳定」这两个既有取舍都不丢。
+  // 注意：排序在 slice 之前做、且每次调用都从头重排，「显示更多」的新批次会与旧批次一起参与，
+  //      不会出现"下一页又冒回前面"的局部乱序。
+  var _q = String(query || '').trim().toLowerCase()
+  if (_q) {
+    var _hit = []
+    var _miss = []
+    for (var _mi = 0; _mi < merged.length; _mi++) {
+      var _tt = String(merged[_mi].title || '').toLowerCase()
+      if (_tt.indexOf(_q) >= 0) _hit.push(merged[_mi])
+      else _miss.push(merged[_mi])
+    }
+    if (_hit.length && _miss.length) {
+      var _out = []
+      var _n = Math.max(_hit.length, _miss.length)
+      for (var _k = 0; _k < _n; _k++) {
+        if (_k < _hit.length) _out.push(_hit[_k])
+        if (_k < _miss.length) _out.push(_miss[_k])
+      }
+      merged = _out
+    }
+  }
+  // ★ v1.16.375：累积前缀模式下，**聚合层也不能按页码切**。
+  //   引擎已从 0 取到 page*pageSize，若这里再取 [(page-1)*ps, page*ps]，
+  //   就变成「每次换 6 条新卡」：列表长度恒为 6、计数不涨、
+  //   但内容变了（看起来像刷新了又像没刷新）。累积模式必须返回完整前缀。
+  var start = cumulative ? 0 : (page - 1) * pageSize
+  var end = Math.min(page * pageSize, merged.length)
+  return { results: merged.slice(start, end), total: total, initFailed: initFailed,
+           allLoaded: allLoaded }
 }
 
 // 全局 ID 取详情（跨集路由）
@@ -379,13 +454,21 @@ async function warmupAllCaches(onProgress, keepAlive) {
   for (var i = 0; i < DATASETS.length; i++) {
     var ds = DATASETS[i]
     var okThis = false
+    // ★ v1.16.417：每集 20s 兜底定时器必须随决议清掉。
+    //   旧写法 `new Promise(function(r){ setTimeout(r, 20000) })` 不存句柄也从不 clear，
+    //   6 个集走完就是 6 个悬空定时器（v1.16.387 修了 searchAllAsync:230 的同类问题，
+    //   唯独漏了这一处）。虽然 20s 到点本身无副作用，但预热期间它会让引擎的事件队列
+    //   在「已经建完缓存」之后仍被唤醒 6 次，属纯浪费。
+    var _eachTimer = null
     try {
       await Promise.race([
         (async function() { await warmupOne(ds, null, keepAlive); okThis = true })(),
-        new Promise(function(r) { setTimeout(r, 20000) })
+        new Promise(function(r) { _eachTimer = setTimeout(function() { r() }, 20000) })
       ])
+      if (_eachTimer) { clearTimeout(_eachTimer); _eachTimer = null }
       if (okThis) okCount++
     } catch (e) {
+      if (_eachTimer) { clearTimeout(_eachTimer); _eachTimer = null }
       console.log('[DM] 预热跳过 ds=' + ds.id + ': ' + (e && e.message ? e.message : '未知'))
     }
     done++
@@ -410,16 +493,69 @@ async function warmupAllCaches(onProgress, keepAlive) {
 
 
 // 缓存是否已建（首次加载判断，v1.16.66 主人定案）：标记值==当前数据版本
+// v1.16.202：标记可能陈旧（手环卸载重装不清 storage）→ 标记命中后再探真实缓存键。
+// v1.16.214（真机实测修复）：**上一版探错了键** ✗ —— ensureEngine 会给缓存键加数据集后缀
+//   （`cloned.mapCache.keyPrefix += '_ds' + ds.id`，见本文件 ensureEngine），
+//   故历史集（数据集 0）的真实键是 `search_engine_map__ds0v2_0`（注意 map 后是**双下划线**：
+//   原前缀 `search_engine_map_` 再拼 `_ds0`），而旧代码探的是 `search_engine_map_v2_0` →
+//   永远探不到 → 每次都判「未建」→ **每次进入都重建缓存**（主人实测：第一次建好了，
+//   第二次进入又进加载页）。现改为正确键，并加 chunk 键兜底（warmupOne 两者都会写）。
+//
+// ⚠️⚠️ v1.16.291 真机首装「从不建缓存」修复（主人 2026-10-17 真机反馈）：
+//   **本函数此前完全依赖 storage.get 的 success/fail 回调来 resolve，而真机这两个回调
+//   都可能丢失**（项目多处实测，见 loading.ux v1.16.207「手环 storage 回调慢/偶发丢失」）。
+//   回调一旦丢失 → 本 Promise **永不 settle** → 调用方的 .then 永不执行
+//   → **首页既不跳加载页、也不报错，安静停在主界面，缓存一个字节都不建**。
+//   后果链：首搜时引擎临时建索引（数十秒）→ 卡死/点不动；建索引内存峰值飙升 →
+//   手环内存紧张 → **直接重启**；即便返回也「什么都搜不到」。
+//   **修法：在函数内部把「决议」与「回调」解耦** —— 用一个 _settled 标志保证只决议一次，
+//   并挂一条**不依赖任何回调**的硬超时（HW 表默认 6s）兜底；超时仍未拿到明确结论时，
+//   **保守返回 false**（= 未建）。保守判 false 的代价可控：loading 页会先快速复探，
+//   缓存确实已建时「命中缓存，快速加载」秒过；而首装/缓存失效时正是我们要的建缓存。
+//   ⚠️ 注意：不采用 storage.get 的 complete 回调 —— 全工程从未用过，属未验证 API。
 function isCacheBuilt() {
+  var HW_TIMEOUT = 6000          // 硬超时：不依赖任何 storage 回调
   return new Promise(function(resolve) {
+    var settled = false
+    var hwTimer = null
+    // ★ v1.16.385：正常路径必须清掉硬超时定时器。
+    //   原先无论 storage 回调成功与否，那个 6s setTimeout 都会一直挂到超时才触发一个
+    //   已 settled 的空回调 —— 加载页会调两次、首页兜底还会调一次，累计多个悬空定时器，
+    //   在只有几百 KB 可用堆的手环上是不必要的常驻负担。
+    var done = function(v) {
+      if (settled) return
+      settled = true
+      if (hwTimer) { clearTimeout(hwTimer); hwTimer = null }
+      resolve(v)
+    }
+    // 硬超时兜底（唯一不依赖回调的路径）
+    hwTimer = setTimeout(function() {
+      hwTimer = null
+      if (!settled) { settled = true; resolve(false) }
+    }, HW_TIMEOUT)
     try {
       var cur = String(CACHE_VERSION || '')
-      require('@system.storage').get({
+      var storage = require('@system.storage')
+      var probe = function(keys, idx) {
+        if (idx >= keys.length) return done(false)
+        storage.get({
+          key: keys[idx],
+          success: function(v) { done(!!v) },
+          fail: function() { probe(keys, idx + 1) }
+        })
+      }
+      storage.get({
         key: 'cache_built',
-        success: function(data) { resolve(String(data) === cur && cur !== '') },
-        fail: function() { resolve(false) }
+        success: function(data) {
+          if (String(data) !== cur || cur === '') return done(false)
+          // 探测键必须与 ensureEngine 加后缀后的真实键一致；两者任一存在即视为已建
+          // v1.16.254 修复：chunk 探测键曾写死 v7，cache.version 已到 8 → 兜底探测永久失效
+          // （map 键仍用 mapCache.version=2 的 `v2`，chunk 键必须跟随 CACHE_VERSION 动态拼）
+          probe(['search_engine_map__ds0v2_0', 'search_engine__ds0v' + String(CACHE_VERSION) + '_chunk_0'], 0)
+        },
+        fail: function() { done(false) }
       })
-    } catch (e) { resolve(false) }
+    } catch (e) { done(false) }
   })
 }
 
@@ -438,4 +574,16 @@ function getDatasetInfo(dsId) {  for (var i = 0; i < DATASETS.length; i++) {
   return null
 }
 
-export { DATASETS, ensureEngine, searchAllAsync, getItemByGlobalId, encodeGlobalId, decodeGlobalId, getDatasetEntries, getGroupEntries, getDatasetIdsByGroup, clearAllCaches, getDatasetInfo, warmupAllCaches, registerDynamicDataset, warmupSingle, GROUP_MAP }
+export { DATASETS, ensureEngine, searchAllAsync, getItemByGlobalId, encodeGlobalId, decodeGlobalId, getDatasetEntries, getGroupEntries, getDatasetIdsByGroup, clearAllCaches, getDatasetInfo, warmupAllCaches, registerDynamicDataset, warmupSingle, isCacheBuilt, GROUP_MAP }
+// ⚠️⚠️ v1.16.291 修复真机首装「从不建缓存」的**真正根因**（务必引以为戒）：
+//   本文件第 468 行**定义了 isCacheBuilt**，但上面这行 export 语句里**漏掉了它**。
+//   ES 模块 `import { isCacheBuilt } from './DatasetManager.js'` 对不存在的导出
+//   **不报错**，只拿到 `undefined`（见 SKILL.md「export 残留未知符号 → 模块静默死亡」同源坑）。
+//   于是首页 `isCacheBuilt().then(...)` 一调用就抛 TypeError，又被外层 `try/catch` 吞掉
+//   → **.then 永不执行 → 首装永远不跳加载页 → 缓存一个字节都不建**。
+//   连锁后果：首次搜索时引擎临时建索引（数十秒）→ 卡死/点不动；建索引内存峰值飙升 →
+//   手环内存紧张 → **直接重启**；即便勉强返回也「什么都搜不到」（索引不全）。
+//   **为什么只在真机暴露**：模拟器上 storage 早已有缓存、且开发时反复重装不清 storage，
+//   所以「跳不跳加载页」看不出差别；真机首装无缓存时才会暴露。
+//   **教训**：本运行时 `import` 未知导出是**静默 undefined**，不报错、不构建失败 ——
+//   改动本文件的导出名单后，必须核对「被 import 的符号是否都在 export 列表里」。=

@@ -2,8 +2,12 @@
   <div class="page-container">
     <div class="page" @swipe="onSwipe">
       <scroll class="scroll-list" scroll-y="true">
-        <div class="top-spacer"></div>
-        <div class="header"><text class="header-title">蓝牙接收</text></div>
+        <div class="statusbar">
+          <div class="sb-block">
+            <text class="time">{{time}}</text>
+            <text class="app-title">蓝牙接收</text>
+          </div>
+        </div>
 
         <div class="info-card">
           <text class="info-text">通过蓝牙接收手机端推送的资料库数据，更新本地知识库内容。</text>
@@ -26,26 +30,55 @@
   .page-container { width: 100%; height: 100%; background-color: #000000; }
   .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
   .scroll-list { width: 100%; height: 100%; flex-direction: column; align-items: center; }
-  .top-spacer { width: 100%; height: 24px; flex-shrink: 0; }
   .bottom-spacer { width: 100%; height: 60px; flex-shrink: 0; }
-  .header { width: 90%; height: 70px; justify-content: center; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
-  .header-title { font-size: 28px; font-weight: bold; color: #FFFFFF; text-align: center; }
-  .info-card { width: 82%; border-radius: 18px; background-color: #1C1C1E; padding: 16px; margin-bottom: 18px; flex-shrink: 0; flex-direction: column; align-items: center; }
+  .statusbar { width: 100%; height: 36px; padding-top: 10px; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
+  .sb-block { flex-direction: column; align-items: center; }
+  .time { font-size: 16px; color: #757575; font-weight: 400; }
+  .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
+  
+  .info-card { width: 82%; border-radius: 18px; background-color: #16171A; padding: 16px; margin-bottom: 18px; flex-shrink: 0; flex-direction: column; align-items: center; }
   .info-text { width: 100%; font-size: 20px; color: #BBBBBB; line-height: 30px; text-align: center; }
-  .btn-primary { width: 70%; height: 67px; border-radius: 33px; background-color: #4D9FEE; justify-content: center; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
-  .btn-secondary { width: 70%; height: 67px; border-radius: 33px; background-color: #2C2C2E; justify-content: center; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
-  .btn-text { font-size: 24px; color: #FFFFFF; font-weight: bold; }
+  /* v1.16.264 统一：尺寸/圆角/配色对齐主页面主按钮（rect 136×66 r33） */
+  .btn-primary { width: 180px; height: 66px; border-radius: 33px; background-color: #2E6BF0; justify-content: center; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
+  .btn-secondary { width: 180px; height: 66px; border-radius: 33px; background-color: #10224E; border: 3px solid rgba(77,159,238,0.45); justify-content: center; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
+  .btn-text { font-size: 22px; color: #FFFFFF; font-weight: 500; }
 
     @media (shape: pill-shaped) {
-    .top-spacer { height: 30px; }
-    .header { height: 100px; margin-bottom: 20px; }
-    .header-title { font-size: 42px; }
+    .statusbar { height: 110px; padding-top: 34px; }
+    .time { font-size: 26px; }
+    .app-title { font-size: 28px; }
+    
     .info-card { width: 90%; border-radius: 32px; padding: 24px; margin-bottom: 20px; }
     .info-text { font-size: 28px; }
-    .btn-primary { width: 220px; height: 96px; border-radius: 48px; margin-bottom: 14px; }
-    .btn-secondary { width: 220px; height: 96px; border-radius: 48px; margin-bottom: 14px; }
-    .btn-text { font-size: 35px; }
+    /* v1.16.264 统一：与主页面胶囊主按钮同尺寸（220×106 圆角 53） */
+    .btn-primary { width: 220px; height: 106px; border-radius: 53px; margin-bottom: 14px; }
+    .btn-secondary { width: 220px; height: 106px; border-radius: 53px; margin-bottom: 14px; }
+    .btn-text { font-size: 36px; }
   }
+  /* ================= v1.16.317 圆屏 466x466（Vela_Virtual_Device5） =================
+     逻辑画布 300x300（466x300/466），可见区 = 内切圆（圆心 150,150，R=150），四角完全不可见。
+     距顶/底 d 处可用全宽 = 2*sqrt(R^2-(R-d)^2)：d=20->150 | 30->180 | 40->204 | 50->224
+     | 60->240 | 70->254 | 80->265 | 150->300。
+     原则：不是等比缩小，而是把整块内容收进直径 300 的内切圆 —— 卡片宽度不超过 220，
+     顶部让出圆弧（y=0 处可用宽为 0），底部同理。
+     ⚠️ 圆屏 .statusbar 高度必须定值（本运行时 height:auto 在 flex 列里不可靠）。 */
+  @media (shape: circle) {
+    /* 页头：36 -> 44 */
+    .statusbar { height: 44px; padding-top: 8px; }
+    .time { font-size: 13px; }
+    .app-title { font-size: 15px; margin-top: 1px; }
+
+    /* 信息卡：82% (=246) 会顶到圆弧，改定宽 220 居中 */
+    .info-card { width: 220px; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
+    .info-text { font-size: 14px; line-height: 21px; }
+
+    /* 两枚按钮上下排：180x66 -> 156x44（与首页圆屏主按钮同比） */
+    .btn-primary { width: 156px; height: 44px; border-radius: 22px; margin-bottom: 8px; }
+    .btn-secondary { width: 156px; height: 44px; border-radius: 22px; margin-bottom: 8px; border-width: 2px; }
+    .btn-text { font-size: 16px; }
+    .bottom-spacer { height: 40px; }
+  }
+
 </style>
 
 <script>
@@ -54,16 +87,26 @@
 
   export default {
     private: {
-      enabled: false
+      enabled: false,
+      // v1.16.264 统一：页头改为主页面同款状态栏（时间 + 页名）
+      time: '00:00'
     },
 
     onInit() {
+      this.updateTime()
       storage.get({
         key: 'bluetooth_receive',
         // v1.16.124 审查必修#2：同 settings.ux —— 无存储值即开启，避免首装 UI 与真实行为相反
         success: (d) => { this.enabled = d !== 'false' },
         fail: () => { this.enabled = true }
       })
+    },
+
+    onShow() { this.updateTime() },
+
+    updateTime() {
+      var n = new Date(); var h = n.getHours(); var m = n.getMinutes()
+      this.time = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m
     },
 
     enable() {

@@ -40,7 +40,9 @@ var C = {
     // ⚠️ 数据文件变更后必须递增：chunk 缓存持久化在 storage，version 不变则旧缓存继续命中
     //（v3→v4：21 个集重建；v4→v5：架构精简 24集→6集；v5→v6：按内容质量重采 + 历史集精简）
     // ⚠️ 每次重跑生成脚本、改数据集内容后，都必须递增此号，否则搜索会命中上一版数据的块
-    version: 7
+    // v7→v8（2026-09-25）：真机验证用 —— 手环卸载重装**不清 storage**，旧缓存一直命中，
+    //   导致「首次进入永远不进加载页」。递增此号可强制重建，用于验证新用户首装体验。
+    version: 8
   },
   
   search: {
@@ -74,15 +76,19 @@ var C = {
   // 超限即淘汰最久未用的——内存只保留"最近用到的"，其余放回 storage 缓存按需重载
   //（淘汰的只是内存副本，storage 持久缓存仍在，重载便宜）。
   // ⚠️ 必须 > 0：0 会让淘汰 while 变死循环（见 _ensureMap/_ensureChunk 内注释）
-  maxLoadedChunks: 2,
+  // ★ v1.16.384（宝宝指令）：Block 常驻从 2 收紧到 **1**。
+  // 配合 _searchKeyword 改为「按 chunkId 分组流式求交」，多块不再需要同时驻留。
+  maxLoadedChunks: 1,
   // v1.16.94 内存收紧（主人定案）：动态加载最多驻留 2 张 Map（原 4），
   // 防真机意外爆内存；被淘汰的 Map 其命中行早已提取进搜索态 rows，翻页正确性不受影响
-  maxLoadedMaps: 2,
+  // ★ v1.16.384（宝宝指令）：Map 常驻从 2 收紧到 **1**。
+  // 配合分页改为「按 mapId 分组流式构建结果」，一次只需一张 map 在内存。
+  maxLoadedMaps: 1,
   //调度策略：按需加载（默认）或预加载
   blockPreload: {
     enabled: true,      // 是否启用 Block 预加载
     // v1.16.61：与 LRU 上限对齐（预载超限只会立刻被淘汰，是无效 I/O）
-    maxBlocks: 2,        // 最多预加载几个 Block（0 = 全部）
+    maxBlocks: 1,        // ★ v1.16.384：与 LRU 上限（1）对齐，超限预载只会立刻被淘汰
     preloadOnInit: true  // 完整初始化时预加载（快速启动时强制跳过）
   },
   
@@ -92,7 +98,7 @@ var C = {
     // v1.16.94 从 4 收紧到 2，而这里仍是 4 且注释写「Map 最多留 4」（旧值）→
     // 预载 4 张 Map 会有 2 张立刻被 LRU 淘汰，等于白读白解析（blockPreload 的注释
     // 早就写明「预载超限只会立刻被淘汰，是无效 I/O」，Map 侧漏改了）。
-    maxMaps: 2,               // 最多预加载几个 Map（0 = 全部加载）
+    maxMaps: 1,               // ★ v1.16.384：与 LRU 上限（1）对齐，超限预载只会立刻被淘汰
     preloadOnInit: true      // 是否在完整初始化（非快速启动）时预加载
   },
   // ⚠️ 生产环境关闭：引擎内部每一步都会 _logInfo/_logSuccess，真机上日志写入本身
@@ -171,11 +177,11 @@ class SearchEngine {
     this.initFailed = false
     
     // LRU 缓存限制（Block）
-    this.maxLoadedChunks = C.maxLoadedChunks || 2
+    this.maxLoadedChunks = C.maxLoadedChunks || 1
     this.loadedChunksOrder = []
     
     // ========== 新增：Map LRU 缓存限制 ==========
-    this.maxLoadedMaps = C.maxLoadedMaps || 2
+    this.maxLoadedMaps = C.maxLoadedMaps || 1
     this.loadedMapsOrder = []
     
     _logInfo('引擎实例创建完成 (v3.4)')   // 审查报告小瑕疵：原字符串被截断，缺右括号
@@ -1204,77 +1210,60 @@ async _checkAllMapsCache() {
     var hashes = this._parseQuery(query)
     if (hashes.length === 0) return []
     _logInfo('关键词搜索: ' + query + ', 哈希数=' + hashes.length, 'search')
-    
-    var neededChunks = {}
+
+    // ★ v1.16.384（宝宝指令：Block 常驻只保留 1 个）：
+    // 旧实现先把【所有候选块】全部装进内存再逐个求交，所以必须临时把
+    // maxLoadedChunks 抬到块数（否则先载的块被挤掉 → 求交读到 undefined
+    // → 假「无结果」。现在改为【按 chunkId 分组流式求交】：
+    // 一次只装一个块、在该块内完成它负责的哈希求交，结果并入
+    // candidateSet 后即可丢弃该块 —— 常驻上限 1 就够。
+    //（交集满足交换律，改变处理顺序不影响结果；只影响提前短路跳过哪些块。）
+    var byChunk = {}
+    var chunkOrder = []
     for (var h = 0; h < hashes.length; h++) {
-      var hash = hashes[h]
-      var bucketIndex = hash % this.bucketSize
-      var chunkId = this._getChunkIdByBucketIndex(bucketIndex)
-      if (chunkId !== -1) neededChunks[chunkId] = true
+      var cid = this._getChunkIdByBucketIndex(hashes[h] % this.bucketSize)
+      // 桶不属任何块 = 该哈希永远无命中 → 整体必然为空
+      if (cid === -1) return []
+      if (!byChunk[cid]) { byChunk[cid] = []; chunkOrder.push(cid) }
+      byChunk[cid].push(hashes[h])
     }
-    
-    _logInfo('需要加载的块: ' + Object.keys(neededChunks).join(','), 'search')
-    
-    var chunkIds = Object.keys(neededChunks).map(Number)
-    // v1.16.120 修复「多块求交静默吞结果」（审查报告 #3）：候选块数可能超过 LRU 上限
-    // （maxLoadedChunks=2），先加载的块会被后加载的挤掉 → 下面求交读 this.loadedChunks[id]
-    // 得 undefined → candidateSet 被清空 = 假「无结果」。本次查询期间临时把上限抬到候选
-    // 块数（通常 2~4 块，短暂驻留），查完立即还原 —— 不改变常驻内存策略。
-    // v1.16.124 审查建议#2：并发搜索会互相覆盖 —— A 存2抬到4、B 存4抬到6、A 还原2、B 还原4
-    // → 常驻上限被永久改成 4。加所有权标记：仅当抬升后的值仍属本次调用时才还原。
-    var _savedMaxChunks = this.maxLoadedChunks
-    var _raisedTo = -1
-    if (chunkIds.length > _savedMaxChunks) { this.maxLoadedChunks = chunkIds.length; _raisedTo = chunkIds.length }
-    for (var c = 0; c < chunkIds.length; c++) {
-      var chunkData = await this._ensureChunk(chunkIds[c])
+
+    var candidateSet = null   // null = 还没有基准集（第一个块的结果直接作为基准）
+    for (var oi = 0; oi < chunkOrder.length; oi++) {
+      var chunkId = chunkOrder[oi]
+      // ★ 关键：读完本块立即用它做完求交，不依赖它在 loadedChunks 里继续存活
+      var chunkData = await this._ensureChunk(chunkId)
       if (!chunkData) {
-        delete neededChunks[chunkIds[c]]
-        _logWarn('块 ' + chunkIds[c] + ' 加载失败，从候选中移除', 'search')
+        _logWarn('块 ' + chunkId + ' 加载失败，候选置空', 'search')
+        return []
       }
-    }
-    
-    var candidateSet = new Set()
-    var firstHash = hashes[0]
-    var firstBucketIndex = firstHash % this.bucketSize
-    var firstChunkId = this._getChunkIdByBucketIndex(firstBucketIndex)
-    
-    if (firstChunkId !== -1 && neededChunks[firstChunkId] !== undefined) {
-      var firstChunk = this.loadedChunks[firstChunkId]
-      if (firstChunk) {
-        var firstIds = this._searchInChunk(firstChunk, firstHash)
-        for (var i = 0; i < firstIds.length; i++) {
-          candidateSet.add(firstIds[i])
+      var localSet = null
+      var hs = byChunk[chunkId]
+      for (var j = 0; j < hs.length; j++) {
+        var ids = this._searchInChunk(chunkData, hs[j])
+        if (localSet === null) {
+          localSet = new Set(ids)
+        } else {
+          var idSet = new Set(ids)
+          var inter = new Set()
+          for (var x of localSet) { if (idSet.has(x)) inter.add(x) }
+          localSet = inter
+          if (localSet.size === 0) break
         }
-        _logInfo('首轮候选数: ' + candidateSet.size, 'search')
       }
-    }
-    
-    for (var h = 1; h < hashes.length; h++) {
-      var hash = hashes[h]
-      var bucketIndex = hash % this.bucketSize
-      var chunkId = this._getChunkIdByBucketIndex(bucketIndex)
-      if (chunkId === -1 || neededChunks[chunkId] === undefined) {
-        candidateSet = new Set()
-        break
+      if (localSet === null) localSet = new Set()
+      if (candidateSet === null) {
+        candidateSet = localSet
+      } else {
+        var mergedSet = new Set()
+        for (var y of candidateSet) { if (localSet.has(y)) mergedSet.add(y) }
+        candidateSet = mergedSet
       }
-      var chunk = this.loadedChunks[chunkId]
-      if (!chunk) {
-        candidateSet = new Set()
-        break
-      }
-      var ids = this._searchInChunk(chunk, hash)
-      var idSet = new Set(ids)
-      var newSet = new Set()
-      for (var id of candidateSet) {
-        if (idSet.has(id)) newSet.add(id)
-      }
-      candidateSet = newSet
       if (candidateSet.size === 0) break
     }
-    
+
+    if (candidateSet === null) candidateSet = new Set()
     _logInfo('最终候选数: ' + candidateSet.size, 'search')
-    // v1.16.124：仅当当前值仍等于本次抬升的值（期间无其他并发搜索改动过）才还原
-    if (_raisedTo > 0 && this.maxLoadedChunks === _raisedTo) this.maxLoadedChunks = _savedMaxChunks
     return Array.from(candidateSet)
   }
   
@@ -1303,6 +1292,13 @@ async _checkAllMapsCache() {
       var region = options.region !== undefined ? options.region : 'all'
       var page = options.page || 1
       var pageSize = options.pageSize || this.config.search.pageSize
+      // ★ v1.16.374（修「点更多没反应」）：cumulative = 返回「从第 0 条到 page*pageSize」的**累积前缀**，
+      //   而不是只返回本页窗口。
+      //   起因：DatasetManager.searchAllAsync 把 page 透传给每个集的引擎后，又对合并结果按全局页码再切一次
+      //   （merged.slice((page-1)*pageSize, ...)）—— 双重切片：各集只给自己的第 N 个窗口，合并后滑动偏移
+      //   又按全局页号增长，页码一旦超过集数，slice 就取到空区间 → 「点了没反应」。
+      //   改为累积前缀后，聚合层保留**唯一一次**全局切片，页码语义重新自洽。
+      var cumulative = !!options.cumulative
       
       var trimmed = query.trim()
       if (!trimmed) {
@@ -1418,46 +1414,63 @@ async _checkAllMapsCache() {
       // 切片：从已加载行按页取（map 排行序稳定，翻页只追加不重排）
       var t5 = Date.now()
       var total = filtering ? st.rows.length : st.candidateTotal
-      var start = (page - 1) * pageSize
-      var end = Math.min(start + pageSize, st.rows.length)
+      var start = cumulative ? 0 : (page - 1) * pageSize
+      var end = Math.min(page * pageSize, st.rows.length)
       var results = []
       // v1.16.130（性能审查 T0②）：先把本页涉及的所有 Map 一次性载齐，再走纯内存切片。
       // 原实现是循环内逐条 `if (!map) await this._ensureMap(r.mapId)` —— 候选分散在 >2 个 map
       // 且翻深页时会来回淘汰重载（载 map3 → 挤掉 map1 → 要用 map1 → 重载 map1 → 挤掉 map2…），
       // 一次翻页触发多次重复 I/O 与 JSON.parse，表现为翻页偶发长顿。
-      var _needMaps = {}
-      for (var i0 = start; i0 < end; i0++) _needMaps[st.rows[i0].mapId] = true
-      var _needIds = Object.keys(_needMaps)
-      var _savedMaxMaps = this.maxLoadedMaps
-      var _raisedMapsTo = -1
-      if (_needIds.length > _savedMaxMaps) { this.maxLoadedMaps = _needIds.length; _raisedMapsTo = _needIds.length }
-      for (var k0 = 0; k0 < _needIds.length; k0++) {
-        var mid = Number(_needIds[k0])
-        if (!this.mapData[mid]) await this._ensureMap(mid)
+      // ★ v1.16.384（宝宝指令：Map 常驻只保留 1 个）：
+      // 旧实现先把本页涉及的【所有 map】全部载入（并临时把 maxLoadedMaps 抬到
+      // map 数，否则先载的被挤掉 → 此处读 this.mapData[r.mapId] 得 undefined
+      // → 整批丢行）。现在改为【按 mapId 分组流式构建】：
+      // 一次只装一张 map，把它负责的那些行全部构建完再去装下一张。
+      // 结果随后统一按全局顺序重排，与处理顺序无关。
+      var _rowsByMap = {}
+      var _mapVisit = []
+      for (var i0 = start; i0 < end; i0++) {
+        var _mid = st.rows[i0].mapId
+        if (!_rowsByMap[_mid]) { _rowsByMap[_mid] = []; _mapVisit.push(_mid) }
+        _rowsByMap[_mid].push(st.rows[i0])
       }
-      for (var i = start; i < end; i++) {
-        var r = st.rows[i]
-        var map = this.mapData[r.mapId]
-        if (!map) continue
-        var index = map.idToIndex ? map.idToIndex[r.id] : -1
-        if (index === undefined || index === -1) continue
-        results.push({
-          _id: r.id,
-          id: r.id,
-          year: map.years[index],
-          yearDisplay: this._formatYearDisplay(map.years[index]),
-          regionId: map.regionIds[index],
-          region: this.regionList[map.regionIds[index]] || '未知',
-          categoryId: -1,
-          category: '未知',
-          title: map.titles[index],
-          keywords: null,
-          cause: null,
-          impact: null
-        })
+      var _built = {}
+      for (var k0 = 0; k0 < _mapVisit.length; k0++) {
+        var _mid2 = _mapVisit[k0]
+        var _map = await this._ensureMap(_mid2)
+        if (!_map) continue
+        var _list = _rowsByMap[_mid2]
+        var _mapRows = []
+        for (var i1 = 0; i1 < _list.length; i1++) {
+          var r = _list[i1]
+          var index = _map.idToIndex ? _map.idToIndex[r.id] : -1
+          if (index === undefined || index === -1) continue
+          _mapRows.push({
+            _id: r.id,
+            id: r.id,
+            year: _map.years[index],
+            yearDisplay: this._formatYearDisplay(_map.years[index]),
+            regionId: _map.regionIds[index],
+            region: this.regionList[_map.regionIds[index]] || '未知',
+            categoryId: -1,
+            category: '未知',
+            title: _map.titles[index],
+            keywords: null,
+            cause: null,
+            impact: null
+          })
+        }
+        _built[_mid2] = _mapRows
       }
-      // v1.16.130：还原 LRU 上限（所有权标记 —— 仅当值仍属本次抬升时才还原，防并发搜索互相覆盖）
-      if (_raisedMapsTo > 0 && this.maxLoadedMaps === _raisedMapsTo) this.maxLoadedMaps = _savedMaxMaps
+      // 按 st.rows 的原顺序重排（保证翻页顺序稳定）
+      for (var i2 = start; i2 < end; i2++) {
+        var _rr = st.rows[i2]
+        var _b = _built[_rr.mapId]
+        if (!_b) continue
+        for (var i3 = 0; i3 < _b.length; i3++) {
+          if (_b[i3].id === _rr.id) { results.push(_b[i3]); break }
+        }
+      }
       stepTimings['5_构建结果'] = Date.now() - t5
       var allLoaded = st.loadedCount >= st.mapRank.length
 

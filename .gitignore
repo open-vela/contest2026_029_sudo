@@ -19,3 +19,7 @@ Thumbs.db
 _vela_*.log
 _vela_*.err
 .cc_*.txt
+
+# 参赛 AI 日志：官方仅认 claude-code / AIoT-IDE / opencode / codex 四类（见 docs/ai_coding_log_guide.md）
+# zcode 等三方工具日志不被采集，且仓内已登记列表以 logs/soodok/manifest.json 为准
+logs/**/zcode__*.jsonl

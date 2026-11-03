@@ -14,19 +14,19 @@
           <img show="{{resultList.length > 0}}" style="position: absolute;top:43px;left:355px;" src="./assets/full/down.png" @click="onBtnClick('down')" />
           <!-- 带变量的相对路径在 aiot-tookit 2.0.4 中修复 -->
           <img src="./assets/full/{{lang}}.png" style="position: absolute;top:38px;left:7px;width:67px;height:52px;" @click="onBtnClick('lang')" show="{{downFlag==='' && !numFlag}}" />
-          <div style="position: absolute;top:-4px;left:78px;width:324px;" show="{{downFlag==='' && !numFlag && cval}}">
+          <div style="position: absolute;top:-4px;left:78px;width:324px;" show="{{downFlag==='' && !numFlag && cval.length > 0}}">
             <text class="caltext" style="width:296px;"> {{cval}}_ </text>
           </div>
           <div style="position: absolute;top:38px;left:80px;width:277px" show="{{lang === 'cn'&& !numFlag}}">
-            <div class="item column center" for="{{cvalList}}">
-              <input show='{{resultList.length > $idx}}' class="calbtn0" type="button" value="{{resultList[$idx]}}" @click="onRsSelect(resultList[$idx])" />
+            <div class="item column center" for="{{item in resultList}}">
+              <input class="calbtn0" type="button" value="{{item}}" @click="onRsSelect(item)" />
             </div>
           </div>
           <div style="position: absolute;top:38px;left:80px;width:320px;height:52px;align-content: center;align-items: center;justify-content: center" show="{{downFlag==='' && !numFlag && lang==='en'}}" @click="onBtnClick('switchNum')" >
             <img src="./assets/full/123_boardless.png" />
           </div>
           <!-- 这里使用show会导致每次输入都会加载全部候选列表，很卡 -->
-          <scroll class="list3" scroll-y="{{true}}" if="{{downFlag==='down'}}">
+          <scroll class="list3" scroll-y="true" if="{{downFlag==='down'}}">
               <div class="list3-grid">
                 <div class="item3 column center" for="{{item in resultList}}" @click="onRsSelect(item)">
                   <input class="calbtn0" type="button" value="{{item}}" @click="onRsSelect(item)" />
@@ -79,22 +79,22 @@
           <img show="{{resultList.length > 0}}" style="position: absolute;top:44px;left:338px;" src="./assets/full/down.png" @click="onBtnClick('down')" />
           <!-- 带变量的相对路径在 aiot-tookit 2.0.4 中修复 -->
           <img src="./assets/t9/{{lang}}.png" style="position: absolute;top:35px;left:31px;width: 60px;height: 60px;" @click="onBtnClick('lang')" show="{{downFlag==='' && !numFlag}}" />
-          <div style="position: absolute;top:-4px;left:95px;width:145px;height:40px;" show="{{downFlag==='' && !numFlag && cval}}">
+          <div style="position: absolute;top:-4px;left:95px;width:145px;height:40px;" show="{{downFlag==='' && !numFlag && cval.length > 0}}">
             <text class="caltext" style="width:145px;"> {{cval}}_ </text>
           </div>
           <div show="{{downFlag==='' && !numFlag}}" style="position: absolute;top:-4px;left:240px;width:145px;height:40px;justify-content:flex-end">
-            <text for="{{waitingList}}" class="waiting-keys" style="color:{{$idx===waitingIndex ? 'rgb(13,132,255)' : 'white'}};" @click="onSelectWaiting($idx)">{{waitingList[$idx]}}</text>
+            <text for="{{waitingItems}}" class="{{$item.cls}}" @click="onSelectWaiting($idx)">{{$item.t}}</text>
           </div>
           <div style="position: absolute;top:39px;left:105px;width:233px" show="{{lang === 'cn'&& !numFlag}}">
-            <div class="item column center" for="{{cvalList}}">
-              <input show='{{resultList.length > $idx}}' class="calbtn0" type="button" value="{{resultList[$idx]}}" @click="onRsSelect(resultList[$idx])" />
+            <div class="item column center" for="{{item in resultList}}">
+              <input class="calbtn0" type="button" value="{{item}}" @click="onRsSelect(item)" />
             </div>
           </div>
           <div style="position: absolute;top:35px;left:95px;width:290px;height:60px;align-content: center;align-items: center;justify-content: center" show="{{downFlag==='' && !numFlag && lang==='en'}}" @click="onBtnClick('switchNum')" >
             <img src="./assets/full/123_boardless.png" />
           </div>
           <!-- 这里使用show会导致每次输入都会加载全部候选列表，很卡 -->
-          <scroll class="list3" scroll-y="{{true}}" if="{{downFlag==='down'}}">
+          <scroll class="list3" scroll-y="true" if="{{downFlag==='down'}}">
               <div class="list3-grid">
                 <div class="item3 column center" for="{{item in resultList}}" @click="onRsSelect(item)">
                   <input class="calbtn0" type="button" value="{{item}}" @click="onRsSelect(item)" />
@@ -192,7 +192,7 @@
             <scroll id="cvalWaiting" scroll-x="{{true}}" style="position:absolute;width: 85%;height: 42px;">
               <div static style="position: absolute;left: 0px;height: 42px;padding-left:20px;padding-right:20px">
                 <text class="calbtn02" style="padding-right:10px" @click="pushCval">{{cval}}</text>
-                <text for="{{cvalList}}" show="{{resultList.length > $idx}}" class="calbtn02" style="padding-right:10px" @click="onRsSelect(resultList[$idx])">{{resultList[$idx]}}</text>
+                <text for="{{item in resultList}}" class="calbtn02" style="padding-right:10px" @click="onRsSelect(item)">{{item || ''}}</text>
               </div>
             </scroll>
             <img if="{{resultList.length > 0}}" style="position:absolute;right: 8px; width: 60px;height: 40px;" src="./assets/horizontal/down2.png" @click="onBtnClick('down')" />
@@ -228,7 +228,7 @@
       <!-- 胶囊屏66（velaPro designWidth 300：原 192 画布等比放大 300/192=1.5625，内宽 192→300 满宽） -->
       <div if="{{screentype==='pill-shaped'}}" style="width: 100%;height: 477px">
         <div static style="position:absolute;left:0px;top:53px;width:100%;height:431px;">
-          <progress percent="{{30+percent66}}" type="arc" style="start-angle:204deg;total-angle:-48deg;width:294px;height:294px;top:128px;left:3px;position:absolute;color:#ffffff;stroke-width:9px;layer-color:#262626;margin-left: 0px;"></progress>
+<!-- v1.16.233 实验A：删除 arc progress（弧形光栅化疑凶，验证后可换静态图恢复观感） -->
           <scroll id="keyboard66" scroll-x="{{true}}" onscroll="handelScroll" style="padding-left: 0px;padding-right: 0px;">
             <div if="{{!numFlag}}" style="left: 5px; flex-direction: column;">
               <div static style="margin-left: 0px;margin-top: 0px;height: 94px;">
@@ -260,7 +260,7 @@
           <scroll id="cvalWaiting" scroll-x="{{true}}" style="position: absolute;left: 23px;top: 88px;width: 225px;height: 66px;">
             <div style="position: absolute;left: 0px;top: 0px;height: 66px;padding-right:20px">
               <text class="calbtn02" style="padding-right:10px" @click="pushCval">{{cval}}</text>
-              <text for="{{cvalList}}" show="{{resultList.length > $idx}}" class="calbtn02" style="padding-right:10px" @click="onRsSelect(resultList[$idx])">{{resultList[$idx]}}</text>
+              <text for="{{item in resultList}}" class="calbtn02" style="padding-right:10px" @click="onRsSelect(item)">{{item || ''}}</text>
             </div>
           </scroll>
           <img show="{{resultList.length > 0}}" style="position: absolute;left: 188px;top: 89px;width: 94px;height: 63px;" src="./assets/arc/down2.png" @click="onBtnClick('down')" />
@@ -331,6 +331,7 @@ export default {
     resultList: [],
     resultList2: [],
     waitingList: [],
+    waitingItems: [],
     waitingIndex: -1,
     lastWaitingStr: "",
     downFlag: "",
@@ -341,7 +342,7 @@ export default {
     percent67: 52,
     percent66: 0,
     // v1.16.135：候选栏当前横向滚动位置（供 resetReslutList 判断是否已在顶部，避免无谓 scrollTo）
-    _cvalScrollX: 0,
+    cvalScrollX: 0,
     // 针对screenShape为rect的设备，会自动获取screenWidth并绑定到根div
     // 这样便能同时适配n67和o65甚至是后续设备，但实际效果可能受designWidth影响
     screenWidth: 336,
@@ -499,26 +500,43 @@ export default {
             this.waitingIndex = 0;
             this.waitingList = sign.split("");
           }
+          this._syncWaitingCls();
           this.resetReslutList();
         }
         break;
     }
   },
+  // ★ v1.16.348（S5 OOM 六步之②）：原 circle 分支 :86 在 for 内挂动态 style + 三元 color，
+  //   每按键全量重刷，且踩「动态 style 绑定」雷区（AI_CONTEXT #69：手环 9 崩机级）。
+  //   改为在数据层预算好每个候选的完整类名，模板只做纯变量插值（同 v1.16.48 范式）。
+  _syncWaitingCls() {
+    const items = [];
+    for (let i = 0; i < this.waitingList.length; i++) {
+      items.push({
+        t: this.waitingList[i],
+        cls: i === this.waitingIndex
+          ? "waiting-keys waiting-keys-on"
+          : "waiting-keys waiting-keys-off",
+      });
+    }
+    this.waitingItems = items;
+  },
   clearWaiting() {
     this.waitingList = [];
+    this.waitingItems = [];
     this.waitingIndex = -1;
     this.lastWaitingStr = "";
   },
   resetReslutList() {
     // v1.16.135（性能审查二轮）：原实现无条件 scrollTo —— 拼音每次键入都会调到本方法，
     // 而滚动位置通常已在顶部。加同值判断，仅在确实需要回顶时才执行滚动。
-    if (this.screentype != "circle" && this._cvalScrollX !== 0) {
+    if (this.screentype != "circle" && this.cvalScrollX !== 0) {
       this.$element("cvalWaiting").scrollTo({
         top: 0,
         left: 0,
         behavior: "smooth",
       });
-      this._cvalScrollX = 0;
+      this.cvalScrollX = 0;
     }
     let watingStr = "";
     if (this.lastWaitingStr && this.lastWaitingStr[this.waitingIndex]) {
@@ -616,7 +634,7 @@ export default {
     let percentTemp66 = parseInt((event.scrollX / 633) * 100);
     percentTemp66 = percentTemp66 <= 100 ? percentTemp66 : 100;
     if (this.percent66 !== percentTemp66) this.percent66 = percentTemp66;
-    this._cvalScrollX = event.scrollX || 0;   // 供 resetReslutList 判断是否已在顶部
+    this.cvalScrollX = event.scrollX || 0;   // 供 resetReslutList 判断是否已在顶部
   },
   pushCval() {
     this.onVibrate();
@@ -818,6 +836,12 @@ export default {
 	width:36px;
 	height:40px;
 	text-align: center;
+}
+.waiting-keys-off {
+	color: white;
+}
+.waiting-keys-on {
+	color: rgb(13,132,255);
 }
 
 .keyboard-rows-rect-t9 { 

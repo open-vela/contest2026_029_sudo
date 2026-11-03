@@ -5,11 +5,15 @@
        两者与右滑都经 global.aiReturnAction 桥接，由主界面 onShow 执行 -->
   <div class="page-container">
     <div class="page" @swipe="onSwipe">
+      <!-- v1.16.267 页头固定：原在 scroll 内部，回答一长「AI 回答」页名就被卡片顶掉；
+           现移出滚动容器做固定页头（滚动区高度 = 屏高 − 页头，显式高度而非 flex:1） -->
+      <div class="statusbar">
+        <div class="sb-block">
+          <text class="time">{{time}}</text>
+          <text class="app-title">AI 回答</text>
+        </div>
+      </div>
       <scroll class="answer-scroll" scroll-y="true">
-        <div class="top-spacer"></div>
-
-        <!-- 页头（对齐 detail.ux header 结构） -->
-        <div class="header"><text class="header-title">AI 回答</text></div>
 
         <!-- ===== 状态卡（单节点三态，v1.16.125）=====
              原实现用布尔字段作判据、初值 false → 错误卡（红字「回答丢失」）首帧即渲染，
@@ -57,12 +61,17 @@
              右「直接返回」→ 返回并关掉 AI 面板，真正回到主界面。
              两个动作经 global.aiReturnAction 桥接给主界面 onShow 执行（页面模块实例按页面作用域隔离，
              不能直接调主界面的方法） -->
+        <!-- v1.16.269 改纯图标按钮（主人要求「按钮以符号尽量代替文字提示」+ 官方小米手环9设计套件规范：
+             官方 8 个界面的底部动作钮全部为纯图标 —— 蓝胶囊+刷新↻ / 蓝胶囊+对勾✓ / 红胶囊+垃圾桶🗑，
+             无一带文字）。原「重新提问/直接返回」为 4 字 × 36px = 144px，而胶囊屏按钮仅 48%×90% ≈ 112px
+             → 文字折行顶出按钮（主人真机截图实锤）。现：重新提问=循环箭头（同官方 refresh 符号），
+             直接返回=房子（回主界面）。图标为 96px 透明底白描边，与既有 icons/*.png 同风格 -->
         <div class="btn-row">
           <div class="retry-btn" @click="goAskAgain">
-            <text class="retry-text">重新提问</text>
+            <image class="btn-icon" src="/common/icons/refresh.png"></image>
           </div>
           <div class="home-btn" @click="goHome">
-            <text class="home-text">直接返回</text>
+            <image class="btn-icon" src="/common/icons/home.png"></image>
           </div>
         </div>
 
@@ -76,29 +85,38 @@
   /* ===== 基础样式（矩形 rect，designWidth 300 基准；沿用 detail.ux header-card/section-card 视觉） ===== */
   .page-container { width: 100%; height: 100%; background-color: #000000; }
   .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
-  .answer-scroll { width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 0 20px; }
+  /* v1.16.267：滚动区高度 = 方屏 429 − 页头 58（页头已移出 scroll 固定） */
+  .answer-scroll { width: 100%; height: 371px; flex-direction: column; align-items: center; padding: 0 20px; }
 
   /* v1.16.107 方屏密度强化（主人定案：回答尽量一屏尽收） */
-  .top-spacer { width: 100%; height: 12px; flex-shrink: 0; }
   .bottom-spacer { width: 100%; height: 30px; flex-shrink: 0; }
 
-  .header { width: 90%; height: 40px; justify-content: center; align-items: center; margin-bottom: 8px; flex-shrink: 0; }
-  .header-title { font-size: 20px; font-weight: bold; color: #FFFFFF; text-align: center; }
+  /* v1.16.267 修复「卡片盖住页名」：本页页头只有 .sb-block（时间**堆叠在**标题上方），
+     两行需要约 38 逻辑 px，而原 height:36 − padding-top:10 只剩 26px 内容区 →
+     内容溢出被下方卡片覆盖（实测放大截图：「AI 回答」下半截被切）。
+     现提到 58px（内容区 48），两行完整可见；滚动区同步 429−58=371。
+     ⚠️ 主界面/资料页方屏用的是「标题居中 + 时间靠右」三栏结构（不需要这么高），
+        本页与详情/收藏页保持既有的堆叠式页头（与胶囊屏一致，胶囊 110px 同理）。 */
+  .statusbar { width: 100%; height: 58px; padding-top: 10px; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
+  .sb-block { flex-direction: column; align-items: center; }
+  .time { font-size: 16px; color: #757575; font-weight: 400; }
+  .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
+  
 
   /* 包裹层显式纵向（无 class div 默认横向排布——项目铁律 #2） */
   .src-block { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
 
   /* 问题回顾卡：小字灰色 */
-  .q-review { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 8px 16px; margin-bottom: 7px; flex-direction: column; flex-shrink: 0; }
+  .q-review { width: 100%; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  border-radius: 14px; padding: 8px 16px; margin-bottom: 7px; flex-direction: column; flex-shrink: 0; }
   .q-review-label { font-size: 13px; color: #757575; margin-bottom: 2px; }
   .q-review-text { font-size: 16px; color: #BBBBBB; line-height: 22px; }
 
   /* AI 回答卡：与 section-card 同视觉语言 */
-  .answer-card { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 10px 16px; margin-bottom: 7px; flex-direction: column; flex-shrink: 0; }
+  .answer-card { width: 100%; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  border-radius: 14px; padding: 10px 16px; margin-bottom: 7px; flex-direction: column; flex-shrink: 0; }
   .answer-label { font-size: 17px; font-weight: bold; color: #4D9FEE; margin-bottom: 5px; }
   .answer-text { font-size: 17px; line-height: 26px; color: #FFFFFF; }
   /* 结构化小节卡（v1.16.101，仿详情页分节视觉） */
-  .section-card { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 9px 16px; margin-bottom: 7px; flex-direction: column; flex-shrink: 0; }
+  .section-card { width: 100%; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  border-radius: 14px; padding: 9px 16px; margin-bottom: 7px; flex-direction: column; flex-shrink: 0; }
   .section-name { font-size: 16px; font-weight: bold; color: #4D9FEE; margin-bottom: 4px; }
   .section-body { font-size: 16px; line-height: 25px; color: #E5E5EA; }
   .card-note { width: 100%; font-size: 13px; line-height: 19px; color: #6E7681; text-align: center; margin-bottom: 7px; }
@@ -107,55 +125,116 @@
   .src-block-empty { height: 0; margin-bottom: 0; overflow: hidden; }
 
   .src-title { font-size: 22px; color: #757575; margin-bottom: 10px; }
-  .src-item { width: 100%; background-color: #1C1C1E; border-radius: 18px; padding: 14px 22px; margin-bottom: 10px; flex-direction: column; flex-shrink: 0; }
+  .src-item { width: 100%; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  border-radius: 18px; padding: 14px 22px; margin-bottom: 10px; flex-direction: column; flex-shrink: 0; }
   .src-item-title { font-size: 24px; color: #FFFFFF; }
   .src-item-tag { font-size: 18px; color: #757575; margin-top: 4px; }
 
   /* 状态卡三态（v1.16.125）：loading 灰字 / error 红字 / ok 高度归零不占位。
      注意本运行时 show=false 仍占位，故 ok 态用类把高度与内距一并归零，不依赖 show */
-  .state-card { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 10px 16px; margin-bottom: 7px; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .state-card { width: 100%; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  border-radius: 14px; padding: 10px 16px; margin-bottom: 7px; flex-direction: column; align-items: center; flex-shrink: 0; }
   .state-card-hidden { height: 0; padding: 0; margin-bottom: 0; overflow: hidden; background-color: transparent; }
   .state-text { font-size: 17px; color: #757575; text-align: center; }
   .state-text-error { font-size: 18px; font-weight: bold; color: #EA4335; text-align: center; }
 
   /* 底部双按钮（v1.16.155）：横向排一行，各占 48%（本运行时 flex:1 不可靠，用显式宽度）。
      重新提问 = 主操作蓝色描边式强调；直接返回 = 深灰次要色 */
-  .btn-row { width: 100%; flex-direction: row; justify-content: space-between; margin-top: 8px; flex-shrink: 0; }
-  .retry-btn { width: 48%; height: 44px; border-radius: 14px; background-color: #2C2C2E; justify-content: center; align-items: center; flex-shrink: 0; }
-  .retry-text { font-size: 18px; font-weight: bold; color: #4D9FEE; }
-  .home-btn { width: 48%; height: 44px; border-radius: 14px; background-color: #2C2C2E; justify-content: center; align-items: center; flex-shrink: 0; }
-  .home-text { font-size: 18px; font-weight: bold; color: #FFFFFF; }
+  .btn-row { width: 100%; flex-direction: row; justify-content: center; margin-top: 8px; flex-shrink: 0; }
+  /* v1.16.274：两钮**加大间距**（原来 48%+48% 紧贴、中间毫无空隙）+ **改善长宽比**
+     （原来 125×44 = 2.84，主人反馈「细长长的」）。现 46% 宽 + 12 间距 + 68 高 = 宽高比 1.81。
+     间距挂在左钮 margin-right 上（挂在按钮自身、且父级是普通流式行，不会产生幽灵底色）。 */
+  .retry-btn { width: 46%; height: 68px; border-radius: 34px; background-color: #2E6BF0; justify-content: center; align-items: center; flex-shrink: 0; margin-right: 12px; }
+  .home-btn { width: 46%; height: 68px; border-radius: 34px; background-color: #10224E; border: 2px solid rgba(77,159,238,0.45); justify-content: center; align-items: center; flex-shrink: 0; }
+  /* v1.16.269：按钮改纯图标（原 .retry-text/.home-text 文字规则已随之移除）。
+     ⚠️ 实测（v1.16.271 诊断实验）：本运行时对这两个 <image> **不应用类选择器的 width/height**
+     —— 加 100px + 红色底诊断样式后渲染完全不变；渲染尺寸恒等于 **PNG 自然尺寸 ÷ 2**。
+     另：把素材出到 144px 会导致设备端渲染**碎裂**（疑图像处理有上限），故素材固定 96px。
+     最终方案：**素材 96px + 收紧 SVG 视框令字形填满画布** → 显示 48 逻辑、字形 ≈48
+     （= 按钮高 106 的 45%，对齐官方套件实测的 42.7%）。CSS 同步写 24 作兜底。 */
+  .btn-icon { width: 24px; height: 24px; }
 
   /* ===== 胶囊 192x490：按比例放大（对齐 detail.ux 胶囊屏） ===== */
   @media (shape: pill-shaped) {
-    .top-spacer { height: 30px; }
-    .header { height: 100px; margin-bottom: 20px; }
-    .header-title { font-size: 42px; }
-    .q-review { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
-    .q-review-label { font-size: 26px; margin-bottom: 10px; }
-    .q-review-text { font-size: 28px; line-height: 40px; }
-    .answer-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
-    .answer-label { font-size: 34px; margin-bottom: 14px; }
-    .answer-text { font-size: 28px; line-height: 42px; }
-    .section-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
-    .section-name { font-size: 32px; margin-bottom: 12px; }
-    .section-body { font-size: 28px; line-height: 44px; }
-    .card-note { width: 90%; font-size: 22px; line-height: 32px; margin-bottom: 14px; }
+    .statusbar { height: 110px; padding-top: 34px; }
+    /* v1.16.267：滚动区高度 = 胶囊 766 − 页头 110 */
+    .answer-scroll { height: 656px; }
+    .time { font-size: 26px; }
+    .app-title { font-size: 28px; }
+    
+    /* v1.16.285（主人要求：「AI 搜索答案页字体相对减小，尽可能让一个屏幕显示更多内容」）：
+       与 detail.ux 同策略 —— 正文字号与行高下调约 12~15%、卡片内距收紧。
+       改前正文 28px/行高 42~44 → 一屏约 15 行；改后 24px/行高 34 → 约 19 行。 */
+    .q-review { width: 90%; border-radius: 32px; padding: 16px 24px; margin-bottom: 10px; }
+    .q-review-label { font-size: 22px; margin-bottom: 6px; }
+    .q-review-text { font-size: 24px; line-height: 34px; }
+    .answer-card { width: 90%; border-radius: 32px; padding: 16px 24px; margin-bottom: 10px; }
+    .answer-label { font-size: 28px; margin-bottom: 10px; }
+    .answer-text { font-size: 24px; line-height: 34px; }
+    .section-card { width: 90%; border-radius: 32px; padding: 16px 24px; margin-bottom: 10px; }
+    .section-name { font-size: 27px; margin-bottom: 8px; }
+    .section-body { font-size: 24px; line-height: 34px; }
+    .card-note { width: 90%; font-size: 20px; line-height: 28px; margin-bottom: 10px; }
     .card-note-empty { height: 0; font-size: 0; line-height: 0; margin-bottom: 0; }
     .src-block-empty { height: 0; margin-bottom: 0; }
-    .src-title { font-size: 30px; margin-bottom: 14px; }
-    .src-item { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
-    .src-item-title { font-size: 30px; }
-    .src-item-tag { font-size: 24px; margin-top: 8px; }
-    .state-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
+    .src-title { font-size: 26px; margin-bottom: 10px; }
+    .src-item { width: 90%; border-radius: 32px; padding: 16px 24px; margin-bottom: 10px; }
+    .src-item-title { font-size: 26px; }
+    .src-item-tag { font-size: 21px; margin-top: 6px; }
+    .state-card { width: 90%; border-radius: 32px; padding: 16px 24px; margin-bottom: 10px; }
     .state-text { font-size: 30px; }
     .state-text-error { font-size: 34px; }
     .btn-row { width: 90%; margin-top: 14px; }
-    .retry-btn { width: 48%; height: 112px; border-radius: 32px; }
-    .retry-text { font-size: 35px; }
-    .home-btn { width: 48%; height: 112px; border-radius: 32px; }
-    .home-text { font-size: 35px; }
+    /* v1.16.274：同方屏加间距 —— 原 48%+48% 在 90% 行宽里只余 4%≈9px，两钮观感相贴。
+       现 46% + 14px 间距（46+46 占 92%，余 8% 由间距与居中吃掉） */
+    .retry-btn { width: 46%; height: 106px; border-radius: 53px; margin-right: 14px; }
+    .home-btn { width: 46%; height: 106px; border-radius: 53px; border: 3px solid rgba(77,159,238,0.45); }
+    /* v1.16.269：纯图标（原 36px 文字在 48%≈112px 宽按钮内折行顶出，主人真机截图实锤）。
+       尺寸按官方套件实测比例定：官方底部动作钮 583x412px、其内 refresh 图标 176x176px
+       → 图标高占按钮高 42.7%。本页按钮高 106 → 目标字形约 45 逻辑；
+       图标 SVG 画布 256 中字形占约 160（填充率 62.5%）→ 需 CSS/素材尺寸 ≈ 72 */
+    .btn-icon { width: 48px; height: 48px; }
   }
+  /* ================= v1.16.317 圆屏 466x466（Vela_Virtual_Device5） =================
+     逻辑画布 300x300（466x300/466），可见区 = 内切圆（圆心 150,150，R=150），四角完全不可见。
+     距顶/底 d 处可用全宽 = 2*sqrt(R^2-(R-d)^2)：d=20->150 | 30->180 | 40->204 | 50->224
+     | 60->240 | 70->254 | 80->265 | 150->300。
+     原则：不是等比缩小，而是把整块内容收进直径 300 的内切圆 —— 卡片宽度不超过 220，
+     顶部让出圆弧（y=0 处可用宽为 0），底部同理。
+     ⚠️ 圆屏 .statusbar 高度必须定值（本运行时 height:auto 在 flex 列里不可靠）。 */
+  @media (shape: circle) {
+    /* 页头：58 -> 44；滚动区 = 300-44 = 256 */
+    .statusbar { height: 44px; padding-top: 8px; }
+    .time { font-size: 13px; }
+    .app-title { font-size: 15px; margin-top: 1px; }
+    .answer-scroll { height: 256px; padding: 0 22px; }
+
+    /* 卡片：90% (=270) 会顶到圆弧，改定宽 220 居中 */
+    .src-block { width: 220px; }
+    .q-review { width: 220px; border-radius: 14px; padding: 6px 12px; margin-bottom: 5px; }
+    .q-review-label { font-size: 11px; margin-bottom: 1px; }
+    .q-review-text { font-size: 13px; line-height: 18px; }
+    .answer-card { width: 220px; border-radius: 14px; padding: 8px 12px; margin-bottom: 5px; }
+    .answer-label { font-size: 14px; margin-bottom: 4px; }
+    .answer-text { font-size: 14px; line-height: 21px; }
+    .section-card { width: 220px; border-radius: 14px; padding: 7px 12px; margin-bottom: 5px; }
+    .section-name { font-size: 13px; margin-bottom: 3px; }
+    .section-body { font-size: 13px; line-height: 20px; }
+    .card-note { width: 220px; font-size: 11px; line-height: 16px; margin-bottom: 5px; }
+    .src-title { font-size: 15px; margin-bottom: 6px; }
+    .src-item { width: 220px; border-radius: 14px; padding: 8px 12px; margin-bottom: 6px; }
+    .src-item-title { font-size: 16px; }
+    .src-item-tag { font-size: 12px; margin-top: 3px; }
+    .state-card { width: 220px; border-radius: 14px; padding: 8px 12px; margin-bottom: 5px; }
+    .state-text { font-size: 14px; }
+    .state-text-error { font-size: 15px; }
+
+    /* 底部双按钮：46%+46%+12 在 300 画布上是 276+12，改定宽 96 一对 = 202 */
+    .btn-row { width: 220px; margin-top: 6px; }
+    .retry-btn { width: 96px; height: 44px; border-radius: 22px; margin-right: 10px; }
+    .home-btn { width: 96px; height: 44px; border-radius: 22px; border-width: 2px; }
+    .btn-icon { width: 24px; height: 24px; }
+    .bottom-spacer { height: 30px; }
+  }
+
 </style>
 
 <script>
@@ -187,7 +266,7 @@
       // v1.16.125 三态：loading（初值→显示「加载中…」）/ ok（有回答）/ error（红字提示）
       // 原布尔判据初值 false 会让错误卡首帧即渲染 = 主人看到的「先闪一下红色」
       phase: 'loading',
-      _errTimer: null,
+      errTimer: null,
       isDestroyed: false,
       question: '',
       answer: '',
@@ -195,31 +274,39 @@
       cardSections: [],
       cardNote: '',
       // 来源条目（渲染字段 JS 预拼：tagText 兜底，模板纯变量插值）
-      sourceList: []
+      sourceList: [],
+      // v1.16.264 统一：页头改为主页面同款状态栏（时间 + 页名）
+      time: '00:00'
+    },
+
+    updateTime() {
+      var n = new Date(); var h = n.getHours(); var m = n.getMinutes()
+      this.time = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m
     },
 
     // global.aiResult 由主界面 AI 面板写入（跨页数据经 global 桥接——页面作用域模块实例隔离）
     onShow() {
+      this.updateTime()
       // 正常流程：主界面 AI 面板是拿到结果才 push 进来的，此处数据必然已就绪 → 直接进 ok，零闪烁
       if (this._applyResult()) return
       // 异常路径（数据缺失/被清）：先留在 loading 显示「加载中…」，
       // 1.5s 内若数据仍未到才转 error 显红字（避免手机回调稍慢就报红）
       var self = this
-      if (this._errTimer) { clearTimeout(this._errTimer); this._errTimer = null }
-      this._errTimer = setTimeout(function () {
-        self._errTimer = null
+      if (this.errTimer) { clearTimeout(this.errTimer); this.errTimer = null }
+      this.errTimer = setTimeout(function () {
+        self.errTimer = null
         if (self.isDestroyed) return
         if (!self._applyResult()) self.phase = 'error'
       }, 1500)
     },
 
     onHide() {
-      if (this._errTimer) { clearTimeout(this._errTimer); this._errTimer = null }
+      if (this.errTimer) { clearTimeout(this.errTimer); this.errTimer = null }
     },
 
     onDestroy() {
       this.isDestroyed = true
-      if (this._errTimer) { clearTimeout(this._errTimer); this._errTimer = null }
+      if (this.errTimer) { clearTimeout(this.errTimer); this.errTimer = null }
     },
 
     // 读取 global.aiResult 落页面状态；有数据返回 true（并把 phase 置 ok）
