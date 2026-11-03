@@ -1,0 +1,332 @@
+<template>
+  <!-- v1.16.277（主人定案 · 方案 B）：**搜索结果独立页**。
+       起因：主页内点「显示更多」是**滚动窗口**（列表硬封顶 6 条、slice(-6)）→ 主人反馈
+       「内容并没有增多」；且每次点都完整重跑跨集搜索并加载更多 map 分片 → 「有时会变卡」。
+       现改为：主页只留首批结果，「显示更多」进入本页看完整列表。
+       本页照抄 dataset.ux 已验证的「**真追加 + 本地优先展开 + 按钮标剩余数**」模式：
+         · displayList 只增不减（真展开）
+         · 点「显示更多」先把**本地已取到的**多显示 5 条，本地展完才去拉下一页
+           —— 避免每次点击都重跑搜索，这是"卡"的主要来源
+         · 按钮与计数行都标出「还有 N 条 / 还有更多未加载」，不再让人误以为"就这么多" -->
+  <div class="page-container">
+    <div class="page" @swipe="onSwipe">
+      <!-- 固定页头（与 ai-answer / detail / favorites 同款：时间在上、标题在下的堆叠式） -->
+      <div class="statusbar">
+        <div class="sb-block">
+          <text class="time">{{time}}</text>
+          <text class="app-title">搜索结果</text>
+        </div>
+      </div>
+
+      <scroll class="result-scroll" scroll-y="true">
+        <!-- 搜索词 + 计数行（计数行明确告知"还有更多"） -->
+        <text class="query-line">「{{query}}」</text>
+        <text class="count-line">{{countText}}</text>
+
+        <text class="empty-tip" if="{{loading && displayList.length === 0}}">搜索中…</text>
+        <text class="empty-tip" if="{{searchError && !loading}}">搜索出错，请重试</text>
+        <text class="empty-tip" if="{{!loading && !searchError && searched && displayList.length === 0}}">无结果</text>
+
+        <!-- 结果卡：点击进详情；tid=id 保证列表项身份稳定（性能审查 T0①） -->
+        <div class="result-item" tid="id" for="{{visibleList}}" @click="gotoDetail($item.id)">
+          <text class="{{$item.yearClass}}">{{$item.yearDisplay}}</text>
+          <text class="{{$item.titleClass}}">{{$item.title}}</text>
+          <text class="{{$item.catClass}}">{{$item.region}}</text>
+        </div>
+
+        <!-- 「显示更多 / 加载更多」按钮 —— 放在 scroll 内部末尾。
+             设计取舍（v1.16.283）：**不贴屏幕底边**。手环是弧边屏，最底部区域本身难触达，
+             故用下方 .tail-space 留足留白，滚到底时按钮距屏底约 80 逻辑 px。
+             ⚠️ 排查记录（避免后人也走弯路）：v1.16.280 曾把它移出 scroll 做「常驻底部动作条」，
+             当时观察到"点不动"而怀疑被 scroll 吃掉。**该结论已被推翻** —— 后续 A/B 实测显示
+             同一屏里卡片与按钮会**同时**失去响应（背离"scroll 内可点/scroll 外不可点"的判断），
+             且更早的 DIAG 实验证明按钮在 scroll **外**时 handler 也**被正常调用过**
+             （点一次后查询词行白像素 30→293）。真因是**模拟器 gRPC 输入注入间歇性罢工**
+             （项目已知现象：「sendTouch 在部分实例上发送成功但输入层不响应」），与 DOM 位置无关。
+             结论：两种摆法都能收到点击；选"scroll 内 + 底部留白"是因为它同时避开弧边屏底缘。 -->
+        <div class="more-btn" if="{{canMore}}" @click="showMore">
+          <text class="more-text">{{moreText}}</text>
+        </div>
+        <text class="end-tip" if="{{allLoaded && displayList.length > 0}}">— 已显示全部 —</text>
+        <div class="tail-space"></div>
+      </scroll>
+    </div>
+  </div>
+</template>
+
+<style>
+  /* ===== 基础样式（矩形 rect，designWidth 300 基准） ===== */
+  .page-container { position: relative; width: 100%; height: 100%; background-color: #000000; }
+  .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
+
+  /* v1.16.267 起统一：本页页头与 ai-answer/detail/favorites 同款（时间与标题上下堆叠），
+     需 58px 才装得下两行（36px 会让标题下半截被内容盖住——实测教训） */
+  .statusbar { width: 100%; height: 58px; padding-top: 10px; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
+  .sb-block { flex-direction: column; align-items: center; }
+  .time { font-size: 16px; color: #757575; font-weight: 400; }
+  .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
+
+  /* 滚动区高度 = 方屏 429 − 页头 58（页头固定、不在滚动流内；按钮回到 scroll 内） */
+  .result-scroll { width: 100%; height: 371px; flex-direction: column; align-items: center; }
+
+  .query-line { width: 94%; text-align: center; font-size: 17px; color: #FFFFFF; margin-top: 6px; }
+  .count-line { width: 94%; text-align: center; font-size: 14px; color: #6E6E73; margin-top: 4px; margin-bottom: 8px; }
+
+  /* 结果卡：与首页/资料页结果卡**同款**（底色 #16171A + 1px 淡描边 rgba(255,255,255,0.08)） */
+  .result-item { width: 94%; margin-left: 3%; border-radius: 12px; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08); padding: 5px 11px; margin-bottom: 3px; flex-direction: column; flex-shrink: 0; }
+  .result-year { font-size: 16px; font-weight: bold; color: #4D9FEE; margin-bottom: 1px; }
+  .result-title { font-size: 17px; color: #FFFFFF; margin-bottom: 1px; }
+  .result-region { font-size: 13px; color: #757575; }
+
+  .empty-tip { width: 100%; text-align: center; font-size: 18px; color: #757575; margin-top: 40px; }
+
+  /* 「显示更多」：与结果卡同款（底色/描边/圆角一致），仅蓝字区分可点。
+     v1.16.283：回到 scroll 内（scroll 外的兄弟节点收不到点击）。
+     下方 .tail-space 留白保证它离屏幕底边有距离——贴底时触摸也难命中（手环弧边屏）。 */
+  .more-btn { width: 94%; margin-left: 3%; height: 48px; border-radius: 12px; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08); justify-content: center; align-items: center; margin-top: 6px; margin-bottom: 4px; flex-shrink: 0; }
+  .more-text { font-size: 17px; color: #4D9FEE; }
+  .end-tip { width: 100%; text-align: center; font-size: 16px; color: #6E6E73; margin-top: 10px; flex-shrink: 0; }
+  /* v1.16.278：底部留白 30 → 80 —— 让「加载更多」按钮**离开屏幕最底边**。
+     起因：实测按钮贴在底边时点击不生效（手环是弧边屏，最底部区域本就难触达；
+     且真机同位置需要更精准的按压）。加大尾部留白后按钮上移，显著好点。 */
+  .tail-space { width: 100%; height: 80px; flex-shrink: 0; }
+
+  /* ===== 胶囊 192x490：按比例放大（对齐 detail.ux 胶囊屏） ===== */
+  @media (shape: pill-shaped) {
+    .statusbar { height: 110px; padding-top: 34px; }
+    /* 滚动区高度 = 胶囊 766 − 页头 110 */
+    .result-scroll { height: 656px; }
+    .time { font-size: 26px; }
+    .app-title { font-size: 28px; }
+    .query-line { font-size: 28px; margin-top: 10px; }
+    .count-line { font-size: 22px; margin-top: 8px; margin-bottom: 14px; }
+    .result-item { border-radius: 20px; padding: 14px 18px; margin-bottom: 10px; }
+    .result-year { font-size: 26px; }
+    .result-title { font-size: 30px; }
+    .result-region { font-size: 21px; }
+    .empty-tip { font-size: 28px; margin-top: 60px; }
+    .more-btn { height: 88px; border-radius: 20px; margin-top: 12px; }
+    .more-text { font-size: 30px; }
+    .end-tip { font-size: 26px; margin-top: 16px; }
+
+  }
+  /* ================= v1.16.317 圆屏 466x466（Vela_Virtual_Device5） =================
+     逻辑画布 300x300（466x300/466），可见区 = 内切圆（圆心 150,150，R=150），四角完全不可见。
+     距顶/底 d 处可用全宽 = 2*sqrt(R^2-(R-d)^2)：d=20->150 | 30->180 | 40->204 | 50->224
+     | 60->240 | 70->254 | 80->265 | 150->300。
+     原则：不是等比缩小，而是把整块内容收进直径 300 的内切圆 —— 卡片宽度不超过 220，
+     顶部让出圆弧（y=0 处可用宽为 0），底部同理。
+     ⚠️ 圆屏 .statusbar 高度必须定值（本运行时 height:auto 在 flex 列里不可靠）。 */
+  @media (shape: circle) {
+    /* 页头：58 -> 44；滚动区 = 300-44 = 256 */
+    .statusbar { height: 44px; padding-top: 8px; }
+    .time { font-size: 13px; }
+    .app-title { font-size: 15px; margin-top: 1px; }
+    .result-scroll { height: 256px; }
+
+    /* 结果卡：94% (=282) 会顶到圆弧，改定宽 220 居中 */
+    .query-line { width: 220px; font-size: 14px; margin-top: 4px; }
+    .count-line { width: 220px; font-size: 12px; margin-top: 3px; margin-bottom: 6px; }
+    .result-item { width: 220px; margin-left: 0; border-radius: 14px; padding: 6px 10px; margin-bottom: 4px; }
+    .result-year { font-size: 14px; }
+    .result-title { font-size: 16px; }
+    .result-region { font-size: 12px; }
+    .empty-tip { font-size: 15px; margin-top: 24px; }
+    .more-btn { width: 220px; margin-left: 0; height: 40px; border-radius: 20px; margin-top: 4px; margin-bottom: 4px; }
+    .more-text { font-size: 15px; }
+    .end-tip { font-size: 13px; margin-top: 8px; }
+    .tail-space { height: 56px; }
+  }
+
+</style>
+
+<script>
+  import router from '@system.router'
+
+  export default {
+    computed: {
+      // 渐进显示：模板禁表达式，切片在此（与 dataset.ux 同做法）
+      visibleList() {
+        var n = this.visibleCount || 6
+        return this.displayList.slice(0, n)
+      }
+    },
+
+    private: {
+      time: '00:00',
+      isDestroyed: false,
+      query: '',
+      searched: false,
+      loading: false,
+      searchError: false,
+      allLoaded: false,
+      displayList: [],
+      visibleCount: 6,
+      currentPage: 1,
+      pageSize: 6,
+      totalCount: 0,
+      searchSeq: 0,
+      countText: '搜索中…',
+      moreText: '显示更多',
+      canMore: false,
+      // 搜索上下文（由主页在 push 前写入 global.searchResultsCtx）
+      resultCtx: null
+    },
+
+    onInit() {
+      var ctx = (typeof global !== 'undefined') ? global.searchResultsCtx : null
+      this.resultCtx = ctx || {}
+      this.query = (this.resultCtx && this.resultCtx.query) || ''
+      // 消费后即清（避免返回再进入时用到过期上下文）
+      try { if (typeof global !== 'undefined') global.searchResultsCtx = null } catch (e) {}
+    },
+
+    // DOM ready 后再取时间与发起搜索（onInit 阶段 DomPage 未 ready，异步回调会丢——项目已知坑）
+    onShow() {
+      this.isDestroyed = false
+      this.updateTime()
+      if (!this.searched && !this.loading) {
+        this.searched = true
+        this.loadPage(1, true)
+      }
+    },
+
+    onDestroy() {
+      this.isDestroyed = true
+    },
+
+    updateTime() {
+      var d = new Date()
+      var h = d.getHours()
+      var m = d.getMinutes()
+      // 避免 padStart（轻量运行时兼容风险）——手写补零
+      this.time = (h < 10 ? '0' + h : '' + h) + ':' + (m < 10 ? '0' + m : '' + m)
+    },
+
+    // 计数行与按钮文案统一在此刷新：明确告知「还有多少 / 是否还有更多未加载」
+    refreshTexts() {
+      var shown = Math.min(this.visibleCount || 6, this.displayList.length)
+      var moreLocal = this.displayList.length - shown
+      var t = '已显示 ' + shown + ' 条'
+      if (this.totalCount > this.displayList.length) t += ' / 共 ' + this.totalCount + ' 条'
+      if (moreLocal > 0) t += '（下方还有 ' + moreLocal + ' 条）'
+      else if (!this.allLoaded) t += '（还有更多未加载）'
+      this.countText = t
+      if (moreLocal > 0) this.moreText = '显示更多（还有 ' + moreLocal + ' 条）'
+      else if (!this.allLoaded) this.moreText = '加载更多'
+      else this.moreText = ''
+      this.canMore = (!this.allLoaded) || moreLocal > 0
+    },
+
+    async loadPage(page, force) {
+      if (this.isDestroyed) return
+      if (!force && (this.loading || this.allLoaded)) return
+      var q = (this.query || '').trim()
+      if (!q) return
+      this.loading = true
+      this.searchError = false
+      var seq = ++this.searchSeq
+      var self = this
+      var c = this.resultCtx || {}
+      try {
+        // ⚠️ 超时保险（同首页 loadPage）：@system.file.readText 回调可能丢失 →
+        // searchAllAsync 永久挂起 → loading 恒 true，界面卡在"搜索中"。10s 兜底。
+        // ★ v1.16.387：同首页，超时定时器随请求结束清掉，否则每次翻页都留一个悬空定时器。
+        var _stTimer = null
+        var result = await Promise.race([
+          global.searchHistory(q, {
+            category: c.category,
+            region: c.region,
+            page: page,
+            pageSize: this.pageSize,
+            datasetId: c.datasetId,
+            groupId: c.groupId,
+            // ★ v1.16.374：累积前缀模式 —— 每次拿到「第 0 条到 page*pageSize」的完整前缀，
+            //   页面直接**整表替换**而不再 concat。
+            //   旧实现（页码切片 + concat 追加）在引擎双重切片下会越翻越少，
+            //   页码超过集数后拿回空数组 → 「点更多没反应」。
+            cumulative: true
+          }),
+          new Promise(function(resolve) {
+            _stTimer = setTimeout(function() { resolve({ results: [], total: 0, timedOut: true }) }, 10000)
+          })
+        ])
+        if (_stTimer) { clearTimeout(_stTimer); _stTimer = null }
+        if (seq !== this.searchSeq || this.isDestroyed) return   // 已被新请求取代
+        if (result && result.timedOut) {
+          this.searchError = true
+          this.loading = false
+          this.refreshTexts()
+          return
+        }
+        var items = (result && result.results) || []
+        var formatted = items.map(function(item) {
+          var title = item.title || '未知条目'
+          if (title.indexOf(',') !== -1) title = title.split(',')[0].trim()
+          else if (title.indexOf('，') !== -1) title = title.split('，')[0].trim()
+          return {
+            // 跨集全局 id（详情页 decodeGlobalId 需要）——与 dataset.ux 同处理
+            id: (item.globalId !== undefined ? item.globalId : item.id),
+            yearDisplay: item.yearDisplay || item.region || '',
+            title: title,
+            region: item.region || '',
+            yearClass: item.yearClass || 'result-year',
+            titleClass: item.titleClass || 'result-title',
+            catClass: item.catClass || 'result-region'
+          }
+        })
+        // ★ v1.16.374：cumulative 模式下 formatted 已是「前 page*pageSize 条」的完整前缀，
+        //   故**整表替换**（不能 concat，否则会重复拼接）。
+        //   仍保留“不做滚动窗口”语义：列表只增不减。
+        this.displayList = formatted
+        this.currentPage = page
+        this.totalCount = (result && result.total) || this.displayList.length
+        if (result && result.allLoaded) this.allLoaded = true
+        this.loading = false
+        // 新一批加载完 → 顺手把本地窗口撑到新内容（否则还要再点一次才看到）
+        if (this.visibleCount < this.displayList.length) {
+          this.visibleCount = this.displayList.length
+        }
+        this.refreshTexts()
+      } catch (e) {
+        if (seq !== this.searchSeq || this.isDestroyed) return
+        this.loading = false
+        this.searchError = true
+        this.refreshTexts()
+      }
+    },
+
+    // 显示更多：**先展开本地已取到的**（每次 +6），本地展完才去拉下一页
+    // —— 这样连点几次基本不触发新搜索，是"不卡"的关键（照抄 dataset.ux 的做法）
+    showMore() {
+      if (this.isDestroyed || this.loading) return
+      var shown = Math.min(this.visibleCount || 6, this.displayList.length)
+      if (shown < this.displayList.length) {
+        this.visibleCount = shown + this.pageSize
+        this.refreshTexts()
+        return
+      }
+      if (!this.allLoaded) this.loadPage(this.currentPage + 1)
+      else this.refreshTexts()
+    },
+
+    gotoDetail(id) {
+      if (this.isDestroyed) return
+      if (this.$app.$def.isNavigating) return
+      if (typeof global !== 'undefined') {
+        global.selectedEventId = id
+        if (typeof global.addRuntimeLog === 'function') {
+          global.addRuntimeLog('从结果页打开详情: ID=' + id, 'info')
+        }
+      }
+      router.push({ uri: '/pages/detail' })
+    },
+
+    // 右滑返回（本页是 push 进来的，router.back() 回主页搜索态）
+    onSwipe(eve) {
+      if (eve && (eve.direction === 'left' || eve.direction === 'right')) {
+        router.back()
+      }
+    }
+  }
+</script>

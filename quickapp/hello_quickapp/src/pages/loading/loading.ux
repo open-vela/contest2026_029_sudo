@@ -5,7 +5,7 @@
       <div class="center-box" if="{{status === 'loading'}}">
         <text class="main-title">正在加载数据…</text>
         <div class="progress-bar">
-          <div class="progress-fill" style="width: {{progressPercent}}%;"></div>
+          <div class="{{progressCls}}"></div>
         </div>
         <text class="progress-text">{{progressPercent}}%</text>
         <text class="msg-text">{{message}}</text>
@@ -43,6 +43,27 @@
   .main-title { font-size: 28px; color: #FFFFFF; font-weight: 600; text-align: center; }
   .progress-bar { width: 200px; height: 8px; border-radius: 4px; background-color: #333333; margin-top: 24px; margin-bottom: 16px; overflow: hidden; }
   .progress-fill { height: 100%; background-color: #4D9FEE; border-radius: 4px; }
+.p0 { width: 0%; }
+.p5 { width: 5%; }
+.p10 { width: 10%; }
+.p15 { width: 15%; }
+.p20 { width: 20%; }
+.p25 { width: 25%; }
+.p30 { width: 30%; }
+.p35 { width: 35%; }
+.p40 { width: 40%; }
+.p45 { width: 45%; }
+.p50 { width: 50%; }
+.p55 { width: 55%; }
+.p60 { width: 60%; }
+.p65 { width: 65%; }
+.p70 { width: 70%; }
+.p75 { width: 75%; }
+.p80 { width: 80%; }
+.p85 { width: 85%; }
+.p90 { width: 90%; }
+.p95 { width: 95%; }
+.p100 { width: 100%; }
   .progress-text { font-size: 20px; color: #FFFFFF; font-weight: 600; margin-bottom: 6px; }
   .msg-text { font-size: 20px; color: #757575; text-align: center; }
 
@@ -60,12 +81,33 @@
     .back-btn { width: 80%; height: 136px; border-radius: 68px; margin-top: 50px; }
     .back-btn-text { font-size: 36px; }
   }
+  /* ================= v1.16.317 圆屏 466x466（Vela_Virtual_Device5） =================
+     逻辑画布 300x300（466x300/466），可见区 = 内切圆（圆心 150,150，R=150），四角完全不可见。
+     距顶/底 d 处可用全宽 = 2*sqrt(R^2-(R-d)^2)：d=20->150 | 30->180 | 40->204 | 50->224
+     | 60->240 | 70->254 | 80->265 | 150->300。
+     原则：不是等比缩小，而是把整块内容收进直径 300 的内切圆 —— 卡片宽度不超过 220，
+     顶部让出圆弧（y=0 处可用宽为 0），底部同理。
+     ⚠️ 圆屏 .statusbar 高度必须定值（本运行时 height:auto 在 flex 列里不可靠）。 */
+  @media (shape: circle) {
+    /* 加载页整屏居中，圆屏只需收紧尺寸（进度条 200 -> 180，四角无内容） */
+    .main-title { font-size: 18px; }
+    .progress-bar { width: 180px; height: 6px; border-radius: 3px; margin-top: 16px; margin-bottom: 10px; }
+    .progress-fill { border-radius: 3px; }
+    .progress-text { font-size: 14px; margin-bottom: 4px; }
+    .msg-text { font-size: 14px; }
+    .back-btn { width: 180px; height: 44px; border-radius: 22px; margin-top: 24px; }
+    .back-btn-text { font-size: 17px; }
+  }
+
 </style>
 
 <script>
   import router from '@system.router'
-  import { getSearchEngine } from '../../SearchEngine/SearchEngine.js'
-  import { warmupAllCaches, warmupSingle } from '../../SearchEngine/DatasetManager.js'
+  // ★★★ v1.16.412（宝宝 2026-11-02 定案「所有页面都优化」）：本页原先直接 import
+  //   SearchEngine.js(64KB) + DatasetManager.js(34KB)，构建器不做 tree-shaking，
+  //   于是 loading.jsc 36,479B 里背了整份引擎源码闭包 —— 而本页只用 4 个函数。
+  //   改为走 global（app.ux onCreate 已挂载，引擎早已初始化完毕），副本消失，
+  //   且用的仍是同一个模块实例（缓存状态完全共享，不存在双实例问题）。
 
   export default {
     private: {
@@ -81,6 +123,16 @@
       startTime: 0,
       isFastCache: false
     },
+
+  // ★ v1.16.350（S5 OOM 六步之④）：原模板 progress-fill 挂动态 style `width: {{progressPercent}}%`，
+  //   每次进度回调都改内联样式（踩「动态 style 绑定」雷区，AI_CONTEXT #69 记手环 9 崩机级）。
+  //   改为 5% 阶梯的静态类名 .p0~.p100，模板只做纯变量插值（同 v1.16.48 范式）。
+  progressCls() {
+    var p = Math.round((this.progressPercent || 0) / 5) * 5
+    if (p < 0) p = 0
+    if (p > 100) p = 100
+    return "progress-fill p" + p
+  },
 
     onInit(query) {
       this.fromSettings = !!(query && query.source === 'settings')
@@ -117,8 +169,27 @@
       var self = this
       if (self.isDestroyed) return
       if (self.btMode) return self.startBtLoad()
+      // v1.16.204：被首页"兜底"送来时先快速探测缓存（2.5s 超时按未建处理，保守重建）。
+      // 已建 → 直接成功返回，避免兜底变成每次启动都白跑一遍完整初始化。
       try {
-        var engine = getSearchEngine()
+        // v1.16.207：窗口 2.5s→6s，且失败后重试一次（手环 storage 回调慢/偶发丢失）
+        // ★ v1.16.385：重试条件从 `probe !== true` 收紧为 `probe === 'timeout'`。
+        //   isCacheBuilt() 返回 **false 是明确结论**（缓存确实没建、或版本号不匹配），
+        //   不是「没探出来」。原条件把两者混在一起，首次安装（必然 false）
+        //   会白跑第二遍完整探测。
+        // ★ v1.16.387：外层的 Promise.race 整个删掉 —— isCacheBuilt() 内部自带
+        //   6000ms 硬超时（DatasetManager.js 的 hwTimer），**保证 6 秒内必有结果**，
+        //   外层再套一个等长的 race 纯属重复，还会多留一个从不清理的悬空定时器。
+        var probe = await global.isCacheBuilt()
+        if (probe === true) {
+          self.message = '命中缓存，快速加载'
+          console.log('[DS] 加载页：缓存已建，直接返回主界面')
+          self.onSuccess()
+          return
+        }
+      } catch (e) {}
+      try {
+        var engine = global.getSearchEngine()
         // 历史集完整初始化占进度前 70%
         // v1.16.120：init 加 60s 超时兜底（审查报告 #5）—— readText 回调丢失是本项目
         // 记录过的雷（#18/#84），搜索路径早有 10s race 兜底，唯独 init 没有：一旦挂起，
@@ -145,7 +216,7 @@
           // map+chunk 全部建好 storage 缓存——此前它们懒创建，总搜索第一次要同时
           // 冷启动 5 个集（读块文件+写缓存）= 搜索非常慢的主因。预热后搜索直读缓存。
           self.message = '预加载资料…'
-          await warmupAllCaches(function(p, msg) {
+          await global.warmupAllCaches(function(p, msg) {
             self.onProgress(70 + Math.round((p || 0) * 0.3), msg)
           })
           if (self.isDestroyed) return
@@ -164,7 +235,7 @@
       var self = this
       try {
         self.message = '加载蓝牙资料…'
-        await warmupSingle(self.btMode.dsId, function(p, msg) {
+        await global.warmupSingle(self.btMode.dsId, function(p, msg) {
           self.onProgress(p || 0, msg)
         })
         if (self.isDestroyed) return

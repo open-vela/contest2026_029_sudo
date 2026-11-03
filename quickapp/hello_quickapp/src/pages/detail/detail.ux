@@ -1,11 +1,15 @@
 <template>
   <div class="page-container">
     <div class="page" @swipe="onSwipe">
+      <!-- v1.16.267 页头固定：原在 scroll 内部，内容一长页面名会被卡片顶掉；
+           现移出滚动容器做固定页头（滚动区高度 = 屏高 − 页头，显式高度而非 flex:1） -->
+      <div class="statusbar">
+        <div class="sb-block">
+          <text class="time">{{time}}</text>
+          <text class="app-title">详情</text>
+        </div>
+      </div>
       <scroll class="detail-scroll" scroll-y="true">
-        <div class="top-spacer"></div>
-
-        <!-- 页头标题（对齐 favorites.ux header 结构） -->
-        <div class="header"><text class="header-title">详情</text></div>
 
         <!-- ⚠️ v1.16.84 全部卡片 if→show（节点常驻 DOM，只切 display）：
              原写法 loading→loaded 时「移除 loading 卡 + 插入 4 张卡」多节点翻转，
@@ -19,25 +23,26 @@
           <text class="loading-text">加载中...</text>
         </div>
 
-        <!-- 条目标题（历史/资料集共用 detailTitle；数据层兜底保证非空） -->
-        <div class="header-card" show="{{!loading}}">
+        <!-- v1.16.287（主人反馈「详情内容密度比较低」）：**头部三卡合一**。
+             原结构：标题卡(1行) + 年份地区卡(2行) + 关键词卡(标题行+标签行) = **三张卡**，
+             每卡各带上下内距与卡间距，合计约 316 逻辑 px —— 占掉胶囊屏可视区(656)的近一半，
+             而其中真正的内容只有"标题 + 年份地区 + 几个标签"，**信息密度极低**。
+             现合并为**一张头卡**：标题(大字) → 年份·地区(同行小字) → 关键词标签(同行)，
+             预计省下约 164 逻辑 px，且视觉层级更紧凑（官方列表也是"一张卡承载一组信息"）。
+             沿用 v1.16.84 的 show 常驻策略（不插拔节点，避免渲染乱序）。 -->
+        <div class="head-card" show="{{!loading}}">
           <text class="detail-title">{{detailTitle}}</text>
-        </div>
-
-        <!-- 年份和地区 -->
-        <div class="header-card" show="{{!loading}}">
-          <text class="detail-year">{{yearDisplay}}</text>
-          <text class="detail-region">{{displayRegion}}</text>
-        </div>
-
-        <!-- 关键词 -->
-        <div class="section-card" show="{{!loading && keywordList.length > 0}}">
-          <text class="section-title">关键词</text>
-          <div class="keywords-row">
+          <text class="detail-meta">{{metaLine}}</text>
+          <div class="keywords-row" if="{{keywordList.length > 0}}">
             <div class="keyword-tag" for="{{keywordList}}">
               <text class="keyword-text">{{$item}}</text>
             </div>
           </div>
+        </div>
+
+        <!-- 加载中（v1.16.119：本运行时 show=false 会「隐藏但保留占位」，改用 if 加载完即移除节点） -->
+        <div class="header-card" if="{{loading}}">
+          <text class="loading-text">加载中...</text>
         </div>
 
         <!-- 资料集动态详情字段（非历史集走这里，字段名/数量由集 meta 声明）
@@ -50,18 +55,18 @@
         </div>
       </div>
 
-
-      <!-- 收藏 -->
+      <!-- 底部动作行（v1.16.287 精炼）：**收藏 + 返回并排一行**，都改成图标胶囊。
+           原先是"收藏（全宽带文字）+ 返回（全宽带文字）"两行、各占 66~106 高，
+           在胶囊屏上就是两条横贯全屏的大色块 —— 占掉可视区 1/3 却只有两个动作。
+           现并排居中、紧凑胶囊、纯图标（官方设计里底部动作钮全是纯图标）。 -->
+      <div class="action-row">
         <div class="{{favBtnClass}}" @click="toggleFavorite">
-          <div class="{{favCircleClass}}"></div>
-          <text class="{{favTextClass}}">{{favText}}</text>
+          <image class="act-icon" src="{{favIconSrc}}"></image>
         </div>
-
-      <!-- 返回按钮：内容流内，置于收藏下方（不再悬浮遮挡） -->
-      <div class="back-bar" @click="goBack">
-        <text class="back-text">返 回</text>
+        <div class="back-pill" @click="goBack">
+          <image class="back-icon" src="/common/icons/back.png"></image>
+        </div>
       </div>
-
 
         <!-- 错误 -->
         <div class="header-card" if="{{errorMsg}}">
@@ -71,7 +76,6 @@
 
         <div class="bottom-spacer"></div>
       </scroll>
-
     </div>
   </div>
 </template>
@@ -80,84 +84,185 @@
   /* ===== 基础样式（矩形 rect，designWidth 300 基准；取值对齐 favorites.ux 深色体系） ===== */
   .page-container { width: 100%; height: 100%; background-color: #000000; }
   .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
-  .detail-scroll { width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 0 20px; }
+  /* v1.16.267：滚动区高度 = 方屏 429 − 页头 58（页头已移出 scroll 固定） */
+  .detail-scroll { width: 100%; height: 371px; flex-direction: column; align-items: center; padding: 0 20px; }
 
   /* v1.16.107 方屏密度强化（主人定案：一屏尽收） */
-  .top-spacer { width: 100%; height: 8px; flex-shrink: 0; }
-  .bottom-spacer { width: 100%; height: 30px; flex-shrink: 0; }
+  /* v1.16.288（主人反馈「返回/收藏按钮这样子会卡出屏幕」）：
+     **根因 = 滚到底时按钮落进胶囊屏的弧形收窄区**。
+     胶囊屏不是矩形：距屏底 d 处的可用宽 = 2×√(150²−(150−d)²)：
+       d=50→224 · d=75→257 · d=90→275 · d=110→289 · d=150→300
+     底部动作行两颗胶囊合计 **256 逻辑**（120+16+120，v1.16.288 已从 284 收窄），
+     原本 .bottom-spacer 仅 30 → 滚到底时 d≈30，该处可用宽只有 **180** → 两端各被弧线切掉 ✗
+     取 **110**：d≈110 时可用 289，比 256 多 33 余量 ✓（d≥75 即可满足，110 留安全边）。
+     注：这是「贴底大按钮必须避开弧线区」的通用约束，主界面双按钮同样适用（见 index.ux）。
+     ★ v1.16.453（宝宝：「资料详情页滑到底部会有比较多的空间，稍微减一点点」）：
+       110 → **88**。留白 110 比弧线安全线（d≥75，可用 257 vs 按钮 256）富余过多，
+       滑到底时按钮下方空出一大块。改 88 后 d=88 → 可用宽 2×√(150²−62²) ≈ **273**，
+       仍比按钮行 256 多 **17** 余量，不会重新踩回「按钮被弧线切掉」的老坑。 */
+  .bottom-spacer { width: 100%; height: 88px; flex-shrink: 0; }
 
-  .header { width: 90%; height: 40px; justify-content: center; align-items: center; margin-bottom: 8px; flex-shrink: 0; }
-  .header-title { font-size: 20px; font-weight: bold; color: #FFFFFF; text-align: center; }
+  /* v1.16.267 修复「卡片盖住页名」：页头仅 .sb-block（时间堆叠在标题上方），两行约需 38 逻辑 px，
+     原 height:36 − padding-top:10 = 26px 内容区装不下 → 溢出部分被下方卡片覆盖。
+     现提到 58px（内容区 48）；滚动区同步 429−58=371。同 ai-answer / favorites。 */
+  .statusbar { width: 100%; height: 58px; padding-top: 10px; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
+  .sb-block { flex-direction: column; align-items: center; }
+  .time { font-size: 16px; color: #757575; font-weight: 400; }
+  .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
+  
 
   /* 卡片：深灰圆角（对齐 favorites.ux .fav-item / confirm.ux .info-card） */
-  .header-card { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 10px 18px; margin-bottom: 8px; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .header-card { width: 100%; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  border-radius: 14px; padding: 10px 18px; margin-bottom: 8px; flex-direction: column; align-items: center; flex-shrink: 0; }
 
   .detail-title { font-size: 22px; font-weight: bold; color: #FFFFFF; text-align: center; }
 
   .detail-year { font-size: 24px; font-weight: bold; color: #4D9FEE; margin-bottom: 2px; text-align: center; }
   .detail-region { font-size: 17px; color: #757575; text-align: center; }
 
+  /* v1.16.287 头部合并卡：一张卡承载「标题 + 年份·地区 + 关键词」，取代原三张卡。
+     纵向排列、内容居中；内距压到 12/16（原三卡合计上下内距约 60）。 */
+  .head-card { width: 100%; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  border-radius: 14px; padding: 12px 16px; margin-bottom: 10px; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .detail-meta { font-size: 15px; color: #8E8E93; text-align: center; margin-top: 4px; }
+
   .ds-fields { width: 100%; flex-direction: column; align-items: center; flex-shrink: 0; }
-  .section-card { width: 100%; background-color: #1C1C1E; border-radius: 14px; padding: 10px 18px; margin-bottom: 8px; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .section-card { width: 100%; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  border-radius: 14px; padding: 10px 18px; margin-bottom: 8px; flex-direction: column; align-items: center; flex-shrink: 0; }
   .section-title { font-size: 18px; font-weight: bold; color: #4D9FEE; margin-bottom: 4px; }
   .section-content { font-size: 17px; line-height: 26px; color: #FFFFFF; }
 
   .keywords-row { flex-direction: row; flex-wrap: wrap; justify-content: center; }
-  .keyword-tag { min-height: 30px; border-radius: 0px; background-color: #2C2C2E; border-width: 1px; border-color: #3A3A3C; border-style: solid; padding: 3px 10px; justify-content: center; align-items: center; margin-right: 4px; margin-bottom: 4px; flex-shrink: 0; }
+  .keyword-tag { min-height: 30px; border-radius: 0px; background-color: #2C2C2E; border-width: 1px; border-color: rgba(255,255,255,0.10); border-style: solid; padding: 3px 10px; justify-content: center; align-items: center; margin-right: 4px; margin-bottom: 4px; flex-shrink: 0; }
   .keyword-text { font-size: 15px; color: #FFFFFF; }
 
   .loading-text { font-size: 26px; color: #757575; text-align: center; }
   .error-title { font-size: 30px; font-weight: bold; color: #EA4335; margin-bottom: 6px; text-align: center; }
 
-  /* v1.16.126（主人反馈「过大、样式不统一」）：与 section-card 逐项对齐 ——
-     圆角 18→14、内距 18/22→10/18、下距 12→8、圆圈 28→16、文字 26→17（原先方屏未随
-     v1.16.107 密度强化一起收，比同屏卡片大一圈）。边框去掉，收藏态纯用底色区分。 */
-  .favorite-btn { width: 100%; border-radius: 14px; padding: 10px 18px; margin-bottom: 8px; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
-  /* 收藏态由类切换（替代原动态 style）：默认=未收藏灰系，-on 后缀=已收藏金底黑字 */
-  .fav-btn-off { background-color: #1C1C1E; }
-  .fav-btn-on { background-color: #FFD700; }
+  /* v1.16.287 底部动作行：收藏 + 返回并排（原为两行全宽大色块，占地过多）。 */
+  .action-row { width: 100%; flex-direction: row; justify-content: center; align-items: center; margin-top: 4px; flex-shrink: 0; }
+  /* 收藏：与返回同尺寸同款的图标胶囊；已收藏态用主蓝底区分（沿用 v1.16.264 定案的蓝色体系）。
+     v1.16.288：加 2px 淡描边（主人要求「可以略微描边」）—— 用白色低透明度而非蓝色，
+     与卡片族同一套描边语言，不会重新变成主人不喜欢的"蓝毛边"。 */
+  .favorite-btn { width: 96px; height: 56px; border-radius: 28px; margin-right: 14px; border: 2px solid rgba(255,255,255,0.10); justify-content: center; align-items: center; flex-shrink: 0; }
+  /* 收藏态由类切换（替代原动态 style）：默认=未收藏深色玻璃，-on 后缀=主蓝底 */
+  .fav-btn-off { background-color: #16171A; }
+  .fav-btn-on { background-color: #2E6BF0; }
+  .act-icon { width: 26px; height: 26px; }
+  /* 旧收藏元素样式（圆圈 + 文字）保留以免历史引用报错，v1.16.287 起模板已不用 */
   .fav-circle { width: 16px; height: 16px; border-radius: 8px; margin-right: 8px; background-color: #BBBBBB; }
-  .fav-circle-on { background-color: #000000; }
+  .fav-circle-on { background-color: #FFFFFF; }
   .fav-text { font-size: 17px; font-weight: 600; color: #BBBBBB; }
-  .fav-text-on { color: #000000; }
+  .fav-text-on { color: #FFFFFF; }
 
-  /* 返回胶囊：对齐 confirm.ux .btn-secondary（深灰胶囊） */
-  /* 与卡片同宽同圆角，风格统一（原 70%/33px 与 section-card 不一致；深灰次要色保留以区分主次）*/
-  .back-bar { width: 100%; height: 44px; border-radius: 14px; background-color: #2C2C2E; justify-content: center; align-items: center; margin-top: 8px; flex-shrink: 0; }
-  .back-text { font-size: 18px; font-weight: bold; color: #FFFFFF; }
+  /* v1.16.287（主人反馈「返回按钮这样子有点不太适合，有毛边也不是很喜欢，能用图标就不要用文字」）：
+     **照官方小米手环9 设计套件改** —— 官方返回控件是「**深色椭圆胶囊 + ‹ 箭头**」，无文字、无描边。
+     原实现是全宽 100% 的**深蓝底 + 3px 蓝描边**（= 把"次要按钮语言"套在了一个纯导航控件上），
+     视觉上过于抢眼（比正文卡片还重）且蓝色描边即主人说的"毛边"。现改为：
+     · 宽度收成**紧凑胶囊**（不再全宽），居中放置，不再是"横向大长条"；
+     · 底色回归 `.header-card` 同款 `#16171A`（导航控件应与内容卡同族，不该用强调色）；
+     · **去掉 border**（消掉毛边）；图标用新生成的 back.png（chevron-left）。
+     胶囊屏同步收紧（高 106→76，与卡片节奏一致）。 */
+  .back-pill { width: 96px; height: 56px; border-radius: 28px; background-color: #16171A; border: 2px solid rgba(255,255,255,0.10); justify-content: center; align-items: center; margin-top: 10px; flex-shrink: 0; }
+  .back-icon { width: 30px; height: 30px; }
+  /* 旧的文字返回按钮（保留类名以防其它页面/历史引用，样式不再使用） */
+  .back-text { font-size: 22px; font-weight: 500; color: #FFFFFF; }
 
   /* ===== 圆屏 466：字号/卡片宽度/内边距按比例缩小（对齐 favorites.ux 圆屏） ===== */
     /* ===== 胶囊 192x490：按比例放大（对齐 favorites.ux / confirm.ux 胶囊屏） ===== */
   @media (shape: pill-shaped) {
-    .top-spacer { height: 30px; }
-    .header { height: 100px; margin-bottom: 20px; }
-    .header-title { font-size: 42px; }
-    .header-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
-    .detail-title { font-size: 40px; }
-    .detail-year { font-size: 44px; margin-bottom: 8px; }
-    .detail-region { font-size: 34px; }
-    .section-card { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
-    .section-title { font-size: 34px; margin-bottom: 14px; }
-    .section-content { font-size: 28px; line-height: 42px; }
-    .keyword-tag { min-height: 52px; border-radius: 26px; padding: 8px 20px; margin-right: 8px; margin-bottom: 8px; }
-    .keyword-text { font-size: 28px; }
+    .statusbar { height: 110px; padding-top: 34px; }
+    /* v1.16.267：滚动区高度 = 胶囊 766 − 页头 110 */
+    .detail-scroll { height: 656px; }
+    .time { font-size: 26px; }
+    .app-title { font-size: 28px; }
+    
+    /* v1.16.285（主人要求：「详情页字体相对减小，尽可能让一个屏幕显示更多内容」）：
+       字号与行高整体下调约 12~15%，卡片内距同步收紧。胶囊逻辑可视区 = 766−110 = 656，
+       改前正文 28px/行高 42 → 一屏约 15 行；改后 24px/行高 34 → 约 19 行，**信息量 +25%**。
+       标题类同步略收（40→36、44→38）保持层级但不再"一张卡占满一屏"。 */
+    .header-card { width: 90%; border-radius: 32px; padding: 18px 26px; margin-bottom: 10px; }
+    .detail-title { font-size: 36px; }
+    .detail-year { font-size: 38px; margin-bottom: 6px; }
+    .detail-region { font-size: 29px; }
+    .section-card { width: 90%; border-radius: 32px; padding: 18px 26px; margin-bottom: 10px; }
+    .section-title { font-size: 29px; margin-bottom: 10px; }
+    /* v1.16.321（主人反馈「小米手环详情界面资料卡片文字有点小了，稍微改大一点点」）：
+       v1.16.285 曾按主人要求把正文 28→24px「让一屏显示更多内容」，本轮反馈偏小，
+       往回补一半：24→26px（+8%），行高 34→37 保持原 1.42 行距比例。
+       只动**正文**这一档，标题 29px 不动；一屏行数 19 → 约 17.5，
+       仍明显多于 v1.16.285 之前的 28/42（15 行），属「稍微」范围。 */
+    .section-content { font-size: 26px; line-height: 37px; }
+    /* v1.16.210（真机实测）：本运行时**不支持 flex-wrap: nowrap**，胶囊屏窄宽度下
+       一个 4 字标签(≈152) 就占满内容区(≈165) → 必然一行一个、堆成竖排。
+       故不再试图改排列，改为**把标签做得像标签**：底色提亮 + 尺寸紧凑，竖排读起来是列表而非文字块。 */
+    .keyword-tag { min-height: 40px; border-radius: 20px; padding: 5px 16px; margin-right: 8px; margin-bottom: 6px; background-color: #2C2C2E; }
+    .keyword-text { font-size: 21px; }
     .loading-text { font-size: 30px; }
     .error-title { font-size: 42px; margin-bottom: 8px; }
-    /* 收藏卡与 section-card 完全对齐：原先无 pill 覆盖 → 落到基础值 86%/24px/12px，比同屏卡片小一整圈 */
-    .favorite-btn { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
-    /* v1.16.126：与胶囊 section-card 正文 28px 同级（原 34px 偏大），圆圈同步收一档 */
-    .fav-circle { width: 24px; height: 24px; border-radius: 12px; margin-right: 12px; }
-    .fav-text { font-size: 28px; }
-    .back-bar { width: 90%; height: 112px; border-radius: 32px; margin-top: 14px; }
-    .back-text { font-size: 35px; }
+    /* v1.16.287：头部合并卡 + 底部图标动作行（胶囊屏）—— 取代原三卡 + 两行全宽按钮。
+       head-card 内距 18/26、标题 36、元信息 24、标签沿用上方的 .keyword-tag 规则。 */
+    .head-card { width: 90%; border-radius: 32px; padding: 18px 26px; margin-bottom: 12px; }
+    .detail-meta { font-size: 24px; margin-top: 8px; }
+    /* v1.16.288：底部动作行 —— 原来 `width:90%`（= 260×90% = 234）而两颗胶囊
+       132+20+132 = **284** → **溢出 50**。这是「卡出屏幕」的另一半原因（不只是垂直留白）。
+       现改为 **100%** 让行宽取满内容区（260），并把胶囊收到 **120×72**：
+       120+16+120 = **256 ≤ 260** ✓ 恰好放得下，且远离胶囊屏弧线区。
+       描边 2px 同步（主人要求「可以略微描边」）。 */
+    .action-row { width: 100%; margin-top: 8px; }
+    .favorite-btn { width: 120px; height: 72px; border-radius: 36px; margin-right: 16px; border-width: 2px; }
+    .act-icon { width: 36px; height: 36px; }
+    .back-pill { width: 120px; height: 72px; border-radius: 36px; margin-top: 0; border-width: 2px; }
+    .back-icon { width: 40px; height: 40px; }
   }
+  /* ================= v1.16.317 圆屏 466x466（Vela_Virtual_Device5） =================
+     逻辑画布 300x300（466x300/466），可见区 = 内切圆（圆心 150,150，R=150），四角完全不可见。
+     距顶/底 d 处可用全宽 = 2*sqrt(R^2-(R-d)^2)：d=20->150 | 30->180 | 40->204 | 50->224
+     | 60->240 | 70->254 | 80->265 | 150->300。
+     原则：不是等比缩小，而是把整块内容收进直径 300 的内切圆 —— 卡片宽度不超过 220，
+     顶部让出圆弧（y=0 处可用宽为 0），底部同理。
+     ⚠️ 圆屏 .statusbar 高度必须定值（本运行时 height:auto 在 flex 列里不可靠）。 */
+  @media (shape: circle) {
+    /* 页头：58 -> 44（圆屏可视高只有 300，页头不能占 1/5）；滚动区 = 300-44 = 256 */
+    .statusbar { height: 44px; padding-top: 8px; }
+    .time { font-size: 13px; }
+    .app-title { font-size: 15px; margin-top: 1px; }
+    .detail-scroll { height: 256px; padding: 0 22px; }
+
+    /* 卡片：宽度 100% 在圆屏会顶到圆弧，改定宽 220 居中 */
+    .head-card { width: 220px; border-radius: 14px; padding: 8px 12px; margin-bottom: 6px; }
+    .header-card { width: 220px; border-radius: 14px; padding: 8px 12px; margin-bottom: 6px; }
+    .section-card { width: 220px; border-radius: 14px; padding: 8px 12px; margin-bottom: 6px; }
+    .ds-fields { width: 220px; }
+    .detail-title { font-size: 17px; }
+    .detail-meta { font-size: 12px; margin-top: 3px; }
+    .detail-year { font-size: 17px; margin-bottom: 1px; }
+    .detail-region { font-size: 13px; }
+    .section-title { font-size: 14px; margin-bottom: 3px; }
+    .section-content { font-size: 14px; line-height: 21px; }
+    .keyword-tag { min-height: 24px; padding: 2px 8px; margin-right: 4px; margin-bottom: 4px; }
+    .keyword-text { font-size: 12px; }
+    .loading-text { font-size: 18px; }
+    .error-title { font-size: 18px; margin-bottom: 4px; }
+
+    /* 底部动作行：两枚方圆片并排 = 76+12+76 = 164 < 220 */
+    .favorite-btn { width: 76px; height: 44px; border-radius: 22px; margin-right: 12px; border-width: 1px; }
+    .act-icon { width: 22px; height: 22px; }
+    .back-pill { width: 76px; height: 44px; border-radius: 22px; margin-top: 0; border-width: 1px; }
+    .back-icon { width: 26px; height: 26px; }
+    /* ★ v1.16.453（同上「滑到底部空间太多」）：100 → **78**。
+       圆屏按钮行两颗方圆片合计 164，d=78 处可用宽 2×√(150²−72²) ≈ **263**，
+       余量 99，远在弧线之外；100 的留白纯属多余空白。 */
+    .bottom-spacer { height: 78px; }
+  }
+
 </style>
 
 <script>
   import router from '@system.router'
   import prompt from '@system.prompt'
   import storage from '@system.storage'
-  import { getDetailByGlobalId, clearDetailCache } from '../../SearchEngine/DatasetDetail.js'
+  // ★ v1.16.396：删掉 DatasetDetail 的 import，改用 app.ux 挂的 global 版本。
+  //   构建器不做 tree-shaking：这一行会把 DatasetDetail(6KB) → DatasetManager(34KB)
+  //   → SearchEngine(64KB) 整条链内联进 detail.jsc（实测产物 46,194B），
+  //   而本页真正只用到「按全局 ID 取详情」这一个能力。
 
   // 洲代码 → 中文（本页 displayRegion 与 _getRegionName 共用；app.ux 的 global.searchHistory
   // 另有一份同源映射作用于搜索结果格式化，赛前不跨文件重构，改动需三处同步）
@@ -180,7 +285,9 @@
       isFavorited: false,
       detailFields: [],
       eventId: null,
-      detailTitle: ''
+      detailTitle: '',
+      // v1.16.264 统一：页头改为主页面同款状态栏（时间 + 页名）
+      time: '00:00'
     },
 
     computed: {
@@ -200,8 +307,21 @@
       favText() {
         return this.isFavorited ? '已收藏' : '收藏'
       },
+      // v1.16.287：收藏按钮图标化 —— 未收藏用白描边的 bookmark，已收藏沿用同一图标
+      // （底色变主蓝即状态区分，不再依赖文字；配 -- 主人「能用图标就不要用文字」）
+      favIconSrc() {
+        return '/common/icons/bookmark.png'
+      },
       displayRegion() {
         return REGION_MAP[this.region] || this.region || '未知'
+      },
+      // v1.16.287：头部三卡合一的「年份 · 地区」合并行（模板禁表达式，故在此拼好）。
+      // 两者可能有一个为空（非历史集无年份语义），逐种情况兜底，避免出现孤立的「·」。
+      metaLine() {
+        var y = this.yearDisplay || ''
+        var r = this.displayRegion || ''
+        if (y && r) return y + ' · ' + r
+        return y || r || ''
       }
     },
 
@@ -224,11 +344,17 @@
 
     // 退出详情页：清 detail 内存缓存（v1.16.61 主人指定：看完一页清一次，只留一个）
     onDestroy() {
-      clearDetailCache()
+      global.clearDetailCache()
+    },
+
+    updateTime() {
+      var n = new Date(); var h = n.getHours(); var m = n.getMinutes()
+      this.time = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m
     },
 
     // @system.file.readText 必须在 onShow 之后调用（onInit 时 DomPage 未 ready，回调丢失）——加载统一挂 onShow
     onShow() {
+      this.updateTime()
       if (this._loadStarted) return
       this._loadStarted = true
       this._loadDetail(this.eventId)
@@ -249,7 +375,19 @@
   // 历史集 globalId 编码天然兼容（dsId=0 时 id 不变）；引擎路径受益于 map LRU
   //（搜过的集 map 常驻内存 → 详情零文件读）与 detail 缓存（LRU=1，看完一页替换）
   try {
-    var detail = await getDetailByGlobalId(id)
+    var detail = await global.getDetailByGlobalId(id)
+    // v1.16.217（真机反馈「详情偶发全空：标题不显示、卡片内容全空」）：
+    // "有对象但全空"（无标题且无字段）视为一次**瞬时失败**——最可疑链路是 meta 读取偶发失败
+    // → detailChunkSize 落到默认值 → 分片号算错 → 读错文件（数据层已加诊断日志）。
+    // 处置：自动重试一次。⚠️ 重试前必须 global.clearDetailCache()，否则会命中同一份空缓存、重试无效。
+    if (detail && !detail.title && (!detail.details || !detail.details.length)) {
+      if (typeof global.addRuntimeLog === 'function') {
+        global.addRuntimeLog('[detail] 详情内容为空，清缓存后 800ms 重试', 'error')
+      }
+      global.clearDetailCache()
+      await new Promise(function(r) { setTimeout(r, 800) })
+      detail = await global.getDetailByGlobalId(id)
+    }
     if (detail) {
       this.detailTitle = detail.title || '未知条目'
       this.yearDisplay = detail.yearDisplay || ''

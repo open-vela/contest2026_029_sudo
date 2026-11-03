@@ -90,6 +90,15 @@ async function getDetailByGlobalId(gid) {
     var cols = rows[ri].split('|')
     if (parseInt(cols[0], 10) === d.localId) { line = cols; break }
   }
+  // v1.16.217（真机反馈「详情偶发全空」）：行找不到时记录诊断日志——最可疑链路是
+  // meta.json 读取偶发失败 → detailChunkSize 落到默认值 100（真实值可能为 10）→
+  // chunkId 算错 → 读错分片文件 → 行不存在 → 返回"全空但非 null"的对象 → 空卡片且不报错。
+  // 日志进 app_runtime_logs，下次复现即可定位。
+  if (!line && typeof global !== 'undefined' && typeof global.addRuntimeLog === 'function') {
+    global.addRuntimeLog('[detail] 行未找到: gid=' + gid + ' chunkId=' + chunkId +
+      ' chunkSize=' + meta.detailChunkSize + ' file=detail_' + chunkId + '.txt' +
+      ' rawLen=' + raw.length + ' mapDoc=' + (mapDoc ? '有' : '无'), 'error')
+  }
 
   var details = []
   if (line) {

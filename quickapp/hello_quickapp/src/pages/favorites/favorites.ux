@@ -1,9 +1,16 @@
 <template>
   <div class="page-container">
     <div class="page" @swipe="onSwipe">
+      <!-- v1.16.267 页头固定：原 .statusbar 在 scroll 内部，内容一长页面名会被卡片顶掉；
+           现移出滚动容器做成固定页头，卡片只在其下方滚动（滚动区高度 = 屏高 − 页头，
+           用显式高度而非 flex:1——项目铁律：flex:1 不可靠） -->
+      <div class="statusbar">
+        <div class="sb-block">
+          <text class="time">{{time}}</text>
+          <text class="app-title">我的收藏</text>
+        </div>
+      </div>
       <scroll class="scroll-list" scroll-y="true">
-        <div class="top-spacer"></div>
-        <div class="header"><text class="header-title">我的收藏</text></div>
 
         <!-- 空态：无收藏时显示（对齐 result.ux empty-tip 深灰居中） -->
         <text class="empty-tip" if="{{!loading && favorites.length === 0}}">暂无收藏 · 在详情页点击收藏添加</text>
@@ -28,34 +35,70 @@
   /* ===== 基础样式（矩形 rect，designWidth 300 基准） ===== */
   .page-container { width: 100%; height: 100%; background-color: #000000; }
   .page { width: 100%; height: 100%; flex-direction: column; align-items: center; }
-  .scroll-list { width: 100%; height: 100%; flex-direction: column; align-items: center; }
-  .top-spacer { width: 100%; height: 24px; flex-shrink: 0; }
+  /* v1.16.267：滚动区高度 = 方屏 429 − 页头 58（页头已移出 scroll 固定） */
+  .scroll-list { width: 100%; height: 371px; flex-direction: column; align-items: center; }
   .bottom-spacer { width: 100%; height: 60px; flex-shrink: 0; }
-  .header { width: 90%; height: 70px; justify-content: center; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
-  .header-title { font-size: 28px; font-weight: bold; color: #FFFFFF; text-align: center; }
+  /* v1.16.267 修复「卡片盖住页名」：页头仅 .sb-block（时间堆叠在标题上方），两行约需 38 逻辑 px，
+     原 height:36 − padding-top:10 = 26px 内容区装不下 → 溢出部分被下方卡片覆盖。
+     现提到 58px（内容区 48）；滚动区同步 429−58=371。同 ai-answer / detail。 */
+  .statusbar { width: 100%; height: 58px; padding-top: 10px; flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; }
+  .sb-block { flex-direction: column; align-items: center; }
+  .time { font-size: 16px; color: #757575; font-weight: 400; }
+  .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
+  
 
   .empty-tip { width: 100%; text-align: center; font-size: 18px; color: #757575; margin-top: 40px; }
 
   /* 收藏卡片：深色圆角（对齐 index.ux .sec2-card / settings.ux .setting-card），行内分信息区 + ✕ 按钮 */
-  .fav-item { width: 86%; background-color: #1C1C1E; border-radius: 18px; padding: 14px 22px; margin-bottom: 12px; flex-direction: row; align-items: center; flex-shrink: 0; }
+  .fav-item { width: 86%; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08);  border-radius: 18px; padding: 14px 22px; margin-bottom: 12px; flex-direction: row; align-items: center; flex-shrink: 0; }
   .fav-info { flex: 1; flex-direction: column; }
   .fav-title { font-size: 24px; color: #FFFFFF; font-weight: 600; }
   .fav-sub { font-size: 16px; color: #757575; margin-top: 4px; }
-  .fav-del { width: 44px; height: 44px; border-radius: 22px; background-color: #2C2C2E; color: #FFFFFF; text-align: center; font-size: 22px; line-height: 44px; margin-left: 12px; flex-shrink: 0; }
+  .fav-del { width: 44px; height: 44px; border-radius: 22px; background-color: #2C2C2E; border: 1px solid rgba(255,255,255,0.10); color: #FFFFFF; text-align: center; font-size: 22px; line-height: 44px; margin-left: 12px; flex-shrink: 0; }
 
   /* ===== 圆屏 466：字号/卡片宽度/内边距按比例缩小（对齐 settings.ux 圆屏） ===== */
     /* ===== 胶囊 192x490：按比例放大（对齐 settings.ux 胶囊屏） ===== */
   @media (shape: pill-shaped) {
-    .top-spacer { height: 30px; }
-    .header { height: 100px; margin-bottom: 20px; }
-    .header-title { font-size: 42px; }
-    .fav-item { width: 90%; border-radius: 32px; padding: 24px 28px; margin-bottom: 14px; }
-    .fav-title { font-size: 36px; }
-    .fav-sub { font-size: 28px; }
-    /* ✕ 从 76 缩到 56：少挤占标题文字宽度（标题已支持 3 行自适应） */
-    .fav-del { width: 56px; height: 56px; border-radius: 28px; font-size: 28px; line-height: 56px; margin-left: 14px; }
+    .statusbar { height: 110px; padding-top: 34px; }
+    /* v1.16.267：滚动区高度 = 胶囊 766 − 页头 110 */
+    .scroll-list { height: 656px; }
+    .time { font-size: 26px; }
+    .app-title { font-size: 28px; }
+    
+    /* v1.16.322 修「标题被挤成两行」：胶囊逻辑宽 300，卡片 90%=270，
+       减 padding 18×2=36、✕ 48+左距 12=60 → 标题可用宽 174。
+       中文全角字宽≈字号，故 .fav-title 28px 时 6 字=168 < 174 可单行（余 6），
+       5 字=140 更宽松。原 36px 时 5 字=180 必折、4 字=144 顶满折行。
+       为不挤压文字：padding 28→18、✕ 56→48、子行字号 28→24。 */
+    .fav-item { width: 90%; border-radius: 32px; padding: 24px 18px; margin-bottom: 14px; }
+    .fav-title { font-size: 28px; }
+    .fav-sub { font-size: 24px; }
+    .fav-del { width: 48px; height: 48px; border-radius: 24px; font-size: 26px; line-height: 48px; margin-left: 12px; border-width: 2px; }
     .empty-tip { font-size: 28px; margin-top: 60px; }
   }
+  /* ================= v1.16.317 圆屏 466x466（Vela_Virtual_Device5） =================
+     逻辑画布 300x300（466x300/466），可见区 = 内切圆（圆心 150,150，R=150），四角完全不可见。
+     距顶/底 d 处可用全宽 = 2*sqrt(R^2-(R-d)^2)：d=20->150 | 30->180 | 40->204 | 50->224
+     | 60->240 | 70->254 | 80->265 | 150->300。
+     原则：不是等比缩小，而是把整块内容收进直径 300 的内切圆 —— 卡片宽度不超过 220，
+     顶部让出圆弧（y=0 处可用宽为 0），底部同理。
+     ⚠️ 圆屏 .statusbar 高度必须定值（本运行时 height:auto 在 flex 列里不可靠）。 */
+  @media (shape: circle) {
+    /* 页头：58 -> 44；滚动区 = 300-44 = 256 */
+    .statusbar { height: 44px; padding-top: 8px; }
+    .time { font-size: 13px; }
+    .app-title { font-size: 15px; margin-top: 1px; }
+    .scroll-list { height: 256px; }
+
+    /* 收藏卡：86% (=258) 会顶到圆弧，改定宽 220 居中 */
+    .fav-item { width: 220px; border-radius: 14px; padding: 8px 12px; margin-bottom: 6px; }
+    .fav-title { font-size: 16px; }
+    .fav-sub { font-size: 12px; margin-top: 3px; }
+    .fav-del { width: 30px; height: 30px; border-radius: 15px; font-size: 15px; line-height: 30px; margin-left: 8px; }
+    .empty-tip { font-size: 14px; margin-top: 24px; }
+    .bottom-spacer { height: 56px; }
+  }
+
 </style>
 
 <script>
@@ -66,11 +109,19 @@
   export default {
     private: {
       favorites: [],
-      loading: true
+      loading: true,
+      // v1.16.264 统一：页头改为主页面同款状态栏（时间 + 页名）
+      time: '00:00'
+    },
+
+    updateTime() {
+      var n = new Date(); var h = n.getHours(); var m = n.getMinutes()
+      this.time = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m
     },
 
     // onShow 每次回到本页都刷新，保证详情页收藏/取消后列表同步
     onShow() {
+      this.updateTime()
       this.refreshFavorites()
     },
 
