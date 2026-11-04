@@ -118,13 +118,25 @@ quickapp/hello_quickapp/          # 快应用工程（映射到 packages/apps/co
 │   └── common/                   # 资源与资料数据
 │       ├── icons/ · logo.png
 │       └── datasets/             # 六大资料集（历史集位于 common 根，其余在 datasets/<集名>/）
-├── tools/                        # 数据生成脚本（Node，可复现全部资料）
-│   ├── build_datasets_batch.js   # 批量资料集生成（分组合并、按内容质量采样、索引构建）
-│   ├── build_poems_dataset.js    # 诗词集生成
-│   ├── rebuild_english_cet.js    # CET-4/6 词表生成
-│   └── slim_history.js           # 历史集精简与索引重建
+├── tools/                        # 资料集拆分/校验 CLI + 6 份集 spec（可复现分片与索引）
+│   ├── split_dataset.js          # 通用拆分 CLI（spec 驱动：分组合并 → 采样 → 分片 → 建倒排）
+│   ├── verify_dataset.js         # 七项结构校验（序号连续 / 帧大小 / 字段数 / 分词一致性 …）
+│   ├── bench_search.js           # 检索性能复现脚本（离线跑出各集命中与耗时）
+│   ├── lib/dataset_core.js       # 拆分核心库（与引擎侧分词、哈希逐字对齐）
+│   └── specs/*.json              # 六个资料集的拆分 spec（源文件、采样规则、字段序、图标）
 └── dist/
-    └── vela.Databank.debug.1.16.89.rpk   # 构建产物（可直接安装体验）
+    └── vela.Databank.release.1.16.468.rpk   # 构建产物（可直接安装体验）
+```
+
+```
+skills/                           # 开发手册（自建，组委会要求）
+├── vela-quickapp-handbook/
+│   ├── SKILL.md                  # 11 章：运行时铁律 / 多形态 / 触摸命中 / 性能 / 资料集 / 构建 / 模拟器 / PPT / 验证 / 速查 / 包体
+│   └── references/
+│       ├── pitfalls.md           # 完整坑清单 14 节（含 interconnect 收发、推包与验证专章）
+│       └── deploy-notes.md       # 构建 / 模拟器 / 真手环命令集
+└── vela-dataset-split/
+    └── SKILL.md                  # 资料集拆分与校验专题
 ```
 
 > 目录名沿用组委会模板的 `hello_quickapp`，以匹配 `contest2026_029_sudo.xml` 中既有的 `<linkfile>` 映射，无需改动 openvela 主工程。
@@ -144,7 +156,7 @@ npx aiot build       # 产物输出到 dist/
 ### 安装到 openvela 模拟器 / 手表
 
 ```bash
-adb push dist/vela.Databank.debug.1.16.89.rpk /data/local/tmp/app.rpk
+adb push dist/vela.Databank.release.1.16.468.rpk /data/local/tmp/app.rpk
 adb shell pm install /data/local/tmp/app.rpk
 adb shell am start vela.Databank
 ```
@@ -162,7 +174,20 @@ adb shell am start vela.Databank
 
 ### 重新生成资料数据（可选）
 
-`tools/` 下的脚本可从原始文本（5 列 / 6 列格式）重新生成全部资料集：分组合并、按内容质量采样、生成分片与哈希索引一次完成。调整资料集简介、标签、条目数都在这一层进行。
+`tools/` 提供 spec 驱动的资料集构建与校验：`split_dataset.js <spec>` 从原始文本（5 列 / 6 列格式）一次完成分组合并、按内容质量采样、生成分片与哈希索引；`verify_dataset.js <spec>` 做七项结构校验。调整资料集简介、标签、条目数都在 `tools/specs/*.json` 这一层进行，不用改代码。
+
+> 各集的原始源文本未随仓提供（体积原因），`specs/` 与 `lib/dataset_core.js` 完整保留了拆分规则，配上同格式源文本即可复现。六个 spec 所需的源文件：
+
+| 集 | 模式 | 所需源文件（相对 `sourcesBase`） |
+|---|---|---|
+| 历史 | `existing` | **无需源文本**——从仓内既有 `map_*` / `detail_*` 读回重建（可立即验证工具链） |
+| 英语 | `fresh` | `cet4_raw.txt`、`cet6_raw.txt` |
+| 诗词 | `fresh` | `资料/poems_10000条_cleaned (1).txt` |
+| 健康 | `fresh` | `资料提取/jiankang.txt`、`hufu.txt` |
+| 生活 | `fresh` | `资料提取/chufang.txt`、`jujia.txt` |
+| 学习 | `fresh` | `资料提取/xuexi.txt`、`shuma.txt` |
+
+> 想立即验证工具链：`node tools/split_dataset.js history --dry`（读回 850 条 → 重建 2 个 map 片 / 6 个 detail 片），以及 `node tools/verify_dataset.js check src/common/datasets/history`（七项结构校验）。
 
 ---
 
@@ -240,7 +265,7 @@ repo sync -c -j8
 | `src/SearchEngine/` | 5 个 `.js` / 2960 行 | 检索引擎(1683)、跨集调度(437)、助手链路(488)、蓝牙接收(226)、详情读取(126) |
 | `src/components/` | `InputMethod.ux` 871 行 | 内置输入法：中/英/数字三态 × 两种形态键盘 + 拼音候选面板 |
 | `src/common/datasets/` | 6 集 / 3.3 MB | 历史 850、诗词 800、英语 750、健康 1000、生活 1200、学习 800 |
-| `tools/` | 11 个脚本 / 约 1900 行 | 资料生产工具链：构建、分片、建倒排、英文索引专项、精简、七项质量校验 |
+| `tools/` | 3 个脚本 + 6 份 spec / 约 1200 行 | 资料集构建与校验：spec 驱动的分片、建倒排、七项结构校验；`bench_search.js` 可复现性能数据 |
 
 ### 10.2 检索引擎 `SearchEngine.js`（1683 行）
 
