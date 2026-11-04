@@ -575,7 +575,7 @@ for extra in ts[1:]:
 
 ## 参考文件
 
-- 项目内交接文档 `AI_CONTEXT.md`（含每条改动的版本号与实测记录）
-- 性能审查逐轮原文 `velaPro/_audit/round_log.md`、总账 `velaPro/_audit/perf_summary.md`
-- 触摸测绘脚本 `velaPro/_audit/kb_map.py`、`kb_grid.py`、`grid_overlay.py`
-- PPT 定点改写脚本 `ppt_deck/_edit_ai_pages_xml.py`（示范 8.1~8.3 的正确做法）
+- 本仓 `docs/`：数据格式规范、模块化规范、图标自定义架构与蓝牙协议设计
+- 本仓 `quickapp/hello_quickapp/tools/`：资料集拆分与校验脚本（`split_dataset.js` / `verify_dataset.js`）、各集 spec
+- 源码内注释：每条改动的版本号、现象与规避方式都写在被改的那行附近（`grep v1\.16` 可全局串联）
+- 第八章的 PPT 做法已给出可直接照做的命令行片段，无需依赖额外脚本

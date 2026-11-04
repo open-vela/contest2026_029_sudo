@@ -12,7 +12,7 @@ const MAP_CHUNK = 200;
 const DETAIL_CHUNK = 100;
 
 // 6 标签精简分组：每个标签产出 1 个资料集（组内多文件合并 + 均匀采样）
-// 主人要求：6 个标签、资料大幅削减至 4000~6000 条（原 21 集约 6500 条过于臃肿，
+// 设计要求：6 个标签、资料大幅削减至 4000~6000 条（原 21 集约 6500 条过于臃肿，
 // 跨 24 集聚合搜索导致处处出问题；集数=标签数后搜索只需遍历 6 个集）
 const GROUPS = [
   { dir: 'health', name: '健康', files: ['jiankang', 'hufu', 'xinli', 'jijiu', 'yundong'], target: 1000 },
@@ -94,7 +94,7 @@ function main() {
     }
     if (!records.length) { console.log('⚠️ 空组跳过:', grp.dir); continue; }
 
-    // 精简：按内容质量（字段总长度）降序取前 N —— 主人要求「长的/信息完整的优先」。
+    // 精简：按内容质量（字段总长度）降序取前 N —— 按要求：长的/信息完整的优先。
     // 不用均匀采样：那会把小主题整片砍掉，且重要与不重要的一视同仁地削。
     if (grp.target && records.length > grp.target) {
       const lenOf = r => (r.title || '').length + (r.keywords || '').length + (r.cause || '').length + (r.impact || '').length;
