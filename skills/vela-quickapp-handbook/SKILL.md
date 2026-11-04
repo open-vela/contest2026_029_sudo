@@ -18,6 +18,8 @@ description: openvela/Vela 手表快应用（.ux 单文件组件）开发实战�
 | 页面打开慢、搜索卡 | 四、性能优化方法论 |
 | 要搭离线数据集 | 五、离线资料集架构 |
 | 打包、装机、连模拟器 | 六、构建与部署、七、模拟器环境手册 |
+| 包体莫名变大、进页慢 | 十一、包体与启动 |
+| 没有设计资源，要自己出图标 | 五章 5.y |
 | 写答辩 PPT / 报告材料 | 八、PPT 与答辩材料工程 |
 | 声称「修好了」之前 | 九、验证纪律 |
 
@@ -58,6 +60,8 @@ description: openvela/Vela 手表快应用（.ux 单文件组件）开发实战�
 | 动态 `style` 绑定 | **崩机级**。手环 9 固件上 `style="height:{{x}}px"` 在值变化时会崩机或静默失效。**所有尺寸走 CSS 类**，需要变化时切类名 |
 | `if` vs `show` | **`if` 在条件翻真时会重新插入节点，位置不可靠**。同一个卡片先由 A 条件显示、后来又由 B 条件显示时，节点会被重建并可能跑到别的元素后面。需要「位置固定、只切可见性」时**用 `show`**；且同一卡片内**不要用两个互斥 `if` 分别渲染正文**，改成在 JS 侧合成一个字段、模板只绑一个节点 |
 | 页面对象的自定义属性 | **`export default` 里直接写的自定义属性（如 `DEMO_ENABLED: true`）在实例上读不到**（`this.DEMO_ENABLED === undefined`）。页面实例只保证 `private` 块里声明的字段可读写。需要页面级常量时放到 `<script>` 顶部的**模块作用域 `var`**，用裸标识符引用 |
+| `for` 内变量必须带 `$` | **写错不报错，整块静默不渲染**。`<div for="{{list}}" @click="pick(item.type)">{{item.label}}</div>` 构建通过、控制台无输出、按钮整块消失。必须写 `$item.type` / `$item.label`（`$` 是硬语法）。排查口诀：**模板里有 `for` 的地方，先检查每个变量引用有没有 `$` 前缀** |
+| `position:absolute` 必须显式 `width`/`height` | 宽度 `auto` 会算成 0 或撑满不可控 —— 元素表现为「消失」。`position:absolute; bottom:0` 必须补 `left:0; width:100%; height:<px>` |
 
 ---
 
@@ -307,6 +311,25 @@ Block/Map 常驻上限各收到 **1**。但原实现有个隐蔽性能坑：循�
 
 ---
 
+### 5.y 没有设计资源时怎么出 PNG 图标
+
+项目内 21 个图标全部是脚本生成的（无第三方设计文件）。两条路都验过：
+
+**A. Node 手写 PNG 编码器**（zlib deflate + CRC32，手拼 IHDR/IDAT/IEND 块，4× 超采样抗锯齿）。好处是零依赖，坏处是要自己处理两个坑：
+
+- **变量遮蔽**：外层 `const sx = width / base` 与内层采样循环 `for (let sx ...)` 同名 —— 绘制函数里 `distToSeg(x, y, g[0] * sx, ...)` 的 `sx` 被内层遮蔽，线段坐标乘上采样序号 0~3 → 每个采样点线段跳位 → alpha 恒低（如恒 21），图标淡成虚线。**内层循环变量换名（`sx2`）+ 坐标缩放提到循环外**。
+- **描边断裂**：用隐式方程距离带（`|v|/|∇v| < band`）画描边，在高曲率区（心形顶凹/底尖）距离近似失真、描边碎裂。**正确做法是双实心差集法**：环 = 外心实心 ∩ 内心补集，逐像素判「外心内 && 内心外」。坐标映射注意方向——画布点映射到内心坐标系应乘 `R/Ri`（放大），写反成 `Ri/R` 会导致「内心比外心大」、环恒为空。
+
+**B. `@resvg/resvg-js` 渲染 SVG**（`devDependencies` 里已有）。写 SVG 字符串 → `new Resvg(svg, { fitTo: { mode: 'width', value: 520 } }).render().asPng()`。适合「渐变+高光+描边」这类复杂面，因为本运行时不支持 CSS 渐变/阴影，但 `<image>` 能渲染带渐变的 PNG。
+
+**尺寸策略**（直接决定解码堆占用）：
+
+- 出**显示尺寸的 2× 源图**（26px 显示 → 52px 源），alpha 过渡带用 `pow(a/255, 1.8)` 收紧——兼顾曲线余量与缩放渗出。
+- 源图过小（26px 原生）曲线画不好、描边断裂；过大（128px 缩到 26px）缩小 5 倍丢点严重渗色。
+- **按每个使用处的实际显示宽度分别生成**（`heart_26` / `heart_47` …），grep 每个 `width` 取值逐一匹配；**没被引用的图标文件要删**（`grep -rl 文件名 src` 查引用计数）。
+
+---
+
 ## 六、构建与部署
 
 ### 6.1 构建
@@ -360,8 +383,8 @@ timeout 20 "$ADB" shell "cat /data/app/<包名>/manifest.json" | grep versionNam
 
 ```bash
 export MSYS2_ARG_CONV_EXCL="*"
-export ANDROID_AVD_HOME="C:/Users/Qt/.vela/vvd"
-cd "C:/Users/Qt/.vela/sdk/emulator/windows-x86_64"
+export ANDROID_AVD_HOME="$HOME/.vela/vvd"
+cd "$HOME/.vela/sdk/emulator/windows-x86_64"
 ./emulator.exe -vela -avd Vela_Virtual_Device5 -no-snapshot-load -grpc 8557
 ```
 
@@ -573,9 +596,45 @@ for extra in ts[1:]:
 
 ---
 
+## 十一、包体与启动：构建器不做 tree-shaking
+
+**这是最容易看走眼的一条：`rpk` 里没有独立模块文件。**
+
+```bash
+unzip -l dist/*.rpk | grep -E "\.jsc$"                          # 只有 pages/**/*.jsc 与 app.jsc
+unzip -l dist/*.rpk | grep -iE "SearchEngine|DatasetManager"     # 命中 0 条
+```
+
+同一个 `SearchEngine.js` 会被**内联进每一个引用它的页面**，在包里存在 N 份副本、互不共享。页面越多、引用越广，包体与启动解析耗时成倍膨胀。
+
+判定某个页面是否真背了引擎，**不要 grep 源码，要 grep 字节码的字符串表**：
+
+```bash
+unzip -p dist/*.rpk pages/index/index.jsc > /tmp/i.jsc
+strings /tmp/i.jsc | grep -c "_loadChunkFromFileText"   # 1=内联了 0=已剥离
+```
+
+⚠️ 别用 `getSearchEngine` / `maxLoadedChunks` 这类通用符号判定——它们在多处同名出现，会误报。要用**该模块独有的长字符串**（如 `search_engine_map__ds0v2_0`、`_loadChunkFromFileText`）。
+
+**真实账单**（本项目 v1.16.392 实测）：首页只调用 `isCacheBuilt` 6 次，却背了 **267,466 B** 源码闭包；设置页只为 `clearAllCaches` 一个函数背了 **41,472 B**。
+
+**根因不止「直接 import」——`require()` 同样被当静态依赖**：
+
+```
+index.ux → AssistantEngine.js → BtTransfer.js 里 require('./DatasetManager.js') → SearchEngine.js
+```
+
+删掉页面自己那行 `import` **不够**：中间任何一层模块里的相对 `require` 都会把整条链拖进来。改完发现体积没降，八成是还有别的模块在 require。
+
+**正确做法**：把「叶子能力」统一挂到 `global`（`global.getSearchEngine()` 之类），让中间层不再有指向引擎的静态引用。同理，页面之间不要用 `import` 共享数据——模块实例按页面作用域隔离，用 `global` 做单点。
+
+---
+
 ## 参考文件
 
 - 本仓 `docs/`：数据格式规范、模块化规范、图标自定义架构与蓝牙协议设计
 - 本仓 `quickapp/hello_quickapp/tools/`：资料集拆分与校验脚本（`split_dataset.js` / `verify_dataset.js`）、各集 spec
 - 源码内注释：每条改动的版本号、现象与规避方式都写在被改的那行附近（`grep v1\.16` 可全局串联）
+- `references/pitfalls.md` — 完整坑清单，14 节，含真实报错文本与命令。**§13 = interconnect 收发专章**（同步 send 被吞、对象/字符串跨机型差异、排查顺序、接收器只初始化一次/重绑）；**§14 = 推包与验证陷阱**（`App.installed` 回执、WiFi vs 蓝牙判据、旧时段日志、广播延迟派发、进程被杀）
+- `references/deploy-notes.md` — 构建 / 模拟器 / 真手环全部命令集与故障处置
 - 第八章的 PPT 做法已给出可直接照做的命令行片段，无需依赖额外脚本
