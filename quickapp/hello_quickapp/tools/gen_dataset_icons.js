@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// gen_dataset_icons.js —— 资料集图形图标生成（v1.16.42 主人要求：图标不用文字）
+// gen_dataset_icons.js —— 资料集图形图标生成（v1.16.42 设计要求：图标不用文字）
 // 用法: node tools/gen_dataset_icons.js
 // 产出: src/common/datasets/{poems,english,health,life,study,bt}/icon.png（128x128，圆底+白色线条图形——v1.16.48 从 256 缩至 128：显示尺寸 33~55px，减小滚动重绘解码开销）
 // 历史集沿用 /common/logo.png + icons/history.png（书本图形，本就是图形化），不在本脚本范围

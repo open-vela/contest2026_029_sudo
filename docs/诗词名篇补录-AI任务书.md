@@ -56,7 +56,7 @@ ID|标题|作者|朝代|出处|原文|译文|（第8字段）
 `tools/build_poems_dataset.js` 中：
 
 ```js
-// 精简：按正文长度降序取前 800（主人要求「长的/信息完整的优先」）
+// 精简：按正文长度降序取前 800（按要求：长的/信息完整的优先）
 const POEMS_TARGET = 550;
 if (records.length > POEMS_TARGET) {
   records.sort((a, b) => ((b.content || '').length) - ((a.content || '').length));

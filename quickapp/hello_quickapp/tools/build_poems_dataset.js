@@ -76,7 +76,7 @@ function main() {
   const regionIndex = {};
   dynasties.forEach((d, i) => { regionIndex[d] = i; });
 
-  // 精简：按正文长度降序取前 800（主人要求「长的/信息完整的优先」）
+  // 精简：按正文长度降序取前 800（按要求：长的/信息完整的优先）
   const POEMS_TARGET = 550;
   if (records.length > POEMS_TARGET) {
     records.sort((a, b) => ((b.content || '').length) - ((a.content || '').length));
