@@ -5,7 +5,7 @@
 import { SearchEngine, CACHE_VERSION } from './SearchEngine.js'
 
 // 资料集注册清单（内置集；蓝牙动态集由手机端下发清单后追加到 DYNAMIC_DATASETS）
-// 6 标签 = 6 数据集（主人定的精简架构：集数=标签数，搜索只需遍历 6 个集，
+// 6 标签 = 6 数据集（用户定的精简架构：集数=标签数，搜索只需遍历 6 个集，
 // 不再是原先 24 集跨集聚合——那套导致搜索慢、缓存大、清缓存耗时、命中率低）
 var DATASETS = [
   { id: 0, folder: 'datasets/history/', name: '历史', tag: '历史', count: 850, icon: '/common/datasets/history/icon.png',
@@ -14,7 +14,7 @@ var DATASETS = [
             { label: '非洲', value: 'africa' }, { label: '其他', value: 'other' },
             { label: '南美洲', value: 'south_america' }, { label: '北美洲', value: 'north_america' } ] },
   { id: 1, folder: 'datasets/poems/', name: '诗词', tag: '诗词', count: 721, icon: '/common/datasets/poems/icon.png',
-    desc: '中国古诗词名篇，含朝代、作者与全文',
+    desc: '中国古诗词名篇，含朝代、用户反馈与全文',
     tags: [ { label: '诗', value: '诗' }, { label: '词', value: '词' }, { label: '先秦', value: '先秦' },
             { label: '魏晋', value: '魏晋' }, { label: '唐朝', value: '唐朝' }, { label: '五代', value: '五代' },
             { label: '宋朝', value: '宋朝' }, { label: '元朝', value: '元朝' }, { label: '清朝', value: '清朝' } ] },
@@ -124,7 +124,7 @@ function registerDynamicDataset(opt) {
   // 刷新首页入口清单（审查修复）：global 清单只在 app onCreate 生成一次，
   // 不刷新则传输完成后首页分类行看不到新集入口（index onInit 会重读 global）
   //
-  // ★★★ v1.16.454 真根因（2026-11-04 宝宝报「传不了图标，主页形成不了入口，
+  // ★★★ v1.16.454 真根因（2026-11-04 用户反馈报「传不了图标，主页形成不了入口，
   //   里面原本可以用于筛选的字段都没用，也无法测试」）：
   //   首页图标行读的是 `getGroupEntries()`，而它**只遍历静态常量 GROUP_MAP**。
   //   动态注册的资料集只 push 进了 DATASETS，**从没进过 GROUP_MAP**
@@ -182,9 +182,6 @@ function decodeGlobalId(gid) {
 
 // 异步聚合（跨集分页语义 = 全局第 N 页：各集拉 1..page 页，按注册表顺序稳定排序后切片）
 async function searchAllAsync(query, options) {
-  // v1.16.178（大赛自查要求：性能数据须有可核对佐证）：记录本次跨集检索的真实耗时，
-  // 由页面显示在结果计数旁 —— 使「热缓存 66~138ms」这类声明可由界面直接观察与截图复现。
-  var _t0 = Date.now()
   options = options || {}
   var pageSize = options.pageSize || 20
   var page = options.page || 1
@@ -202,7 +199,7 @@ async function searchAllAsync(query, options) {
   var total = 0
   var initFailed = false
 
-  // v1.16.136（主人定案）：集遍历顺序按**查询词散列出的起点轮转** ——
+  // v1.16.136（设计定案）：集遍历顺序按**查询词散列出的起点轮转** ——
   // 避免所有查询都从同一个集开始（历史集最靠前且 850 条，容易长期霸占首批结果）；
   // 用查询词做种子而非真随机 → 同一查询每次结果稳定可复现（演示可重复）。
   var order = DATASETS.slice()
@@ -211,7 +208,7 @@ async function searchAllAsync(query, options) {
   var _rot = order.length ? (_seed % order.length) : 0
   if (_rot > 0) order = order.slice(_rot).concat(order.slice(0, _rot))
 
-  // v1.16.137（主人定案）：总搜索改为「顺序逐集累加、够数即停」——
+  // v1.16.137（设计定案）：总搜索改为「顺序逐集累加、够数即停」——
   // 原来 6 个集全部并行发起，峰值十几个 map（各约 600 行）同时 JSON.parse，是卡顿主因。
   // 现在逐个集搜索、累计卡片数够 target 就 break（后面的集本轮不搜）；用户点「显示更多」
   // → 页码 +1 → target 增大 → 自然从上次停下的集继续（前面的集命中 _searchState 缓存，很快）。
@@ -220,7 +217,7 @@ async function searchAllAsync(query, options) {
   var searchedAll = true        // 是否把所有集都搜过（未搜完 → allLoaded 必为 false）
   var eachAllLoaded = true
   var accumulated = 0
-  // v1.16.146（主人选 A）：探索上限放宽为**不限制**（= order.length）。
+  // v1.16.146（选择 A）：探索上限放宽为**不限制**（= order.length）。
   // 原 MAX_PROBE=4 但资料集共 6 个 —— 后 2 个永远搜不到；且点「更多」时 target 递增而探索上限
   // 不变，4 个集凑不够 target 时 slice 会取到空区间 = 「点更多没反应」。
   // 该上限当初是为治「没有停止过」加的，而真根因（触底自动翻页）已于 v1.16.141 修复，故放宽。
@@ -228,7 +225,7 @@ async function searchAllAsync(query, options) {
   var probed = 0
 
   for (var i = 0; i < order.length; i++) {
-    if (accumulated >= target) { searchedAll = false; break }   // 够数即停（主人核心要求）
+    if (accumulated >= target) { searchedAll = false; break }   // 够数即停（核心要求）
     if (probed >= MAX_PROBE) { searchedAll = false; break }     // 探索上限（v1.16.141）
     var ds = order[i]
     if (onlyDsId !== null && ds.id !== onlyDsId) continue
@@ -307,7 +304,7 @@ async function searchAllAsync(query, options) {
   var allLoaded = searchedAll && eachAllLoaded
 
 
-  // v1.16.142（主人定案）：按**资料标题字数升序**（原为「各集第 1 条 → 各集第 2 条」的交错排序）。
+  // v1.16.142（设计定案）：按**资料标题字数升序**（原为「各集第 1 条 → 各集第 2 条」的交错排序）。
   // 腕上屏幕窄，短标题一行放得下、长标题要折行 —— 短在前视觉更整齐、扫读更快。
   // 同字数时按集序稳定排列（避免同分记录顺序抖动）；排序在切片前做，且每次调用都从头重排，
   // 所以「显示更多」新增批次会与已有批次一起参与全局排序，不会局部乱序。
@@ -318,7 +315,7 @@ async function searchAllAsync(query, options) {
     return a._dsOrder - b._dsOrder
   })
 
-  // v1.16.275（主人定案）：**标题命中优先 + 两类「均匀」交替**。
+  // v1.16.275（设计定案）：**标题命中优先 + 两类「均匀」交替**。
   // 判据：标题里直接含查询词（不区分大小写）→ 「标题命中」；标题不含却仍被搜出 → 归「关键字/正文命中」
   //      （索引里标题与关键字字段都入了桶，所以"标题不含"就等于"来自关键字字段"，无需改数据即可判定）。
   // 排列：标题命中[0] → 其它[0] → 标题命中[1] → 其它[1] … 交替 ——
@@ -409,15 +406,15 @@ async function clearAllCaches() {
   return { datasets: DATASETS.length, cleared: ok, keys: keys }
 }
 
-// 全量预热（v1.16.43 主人定案，v1.16.44 流式化 + 无条件幂等）：
+// 全量预热（v1.16.43 设计定案，v1.16.44 流式化 + 无条件幂等）：
 // 把全部资料集的索引（map+chunk）建好 storage 缓存——此前资料 5 集引擎懒创建
 //（首次搜到该集才读块文件+写缓存），总搜索第一次要同时冷启动 5 个集 = 慢的根因。
-// ⚠️ 流式约束（主人强调）：手环内存小，禁止 6 集索引同时驻留内存——
+// ⚠️ 流式约束（设计约束）：手环内存小，禁止 6 集索引同时驻留内存——
 // 串行逐集建立，每集建完【立即丢弃该集引擎实例】（内存池随实例释放）再建下一集，
 // 只保留 storage 持久缓存；下次搜索 ensureEngine 重建实例，从缓存直读（快）。
 // 单集 20s 上限，失败/超时跳过——搜索路径懒加载天然兜底。
 // 幂等：每次启动都可安全重跑——已有缓存的集快速读入即弃（内存池重建后随实例释放），
-// 缺失的自动补建（自愈，无需任何检查——主人定案：正常情况缓存不会消失）。
+// 缺失的自动补建（自愈，无需任何检查——设计定案：正常情况缓存不会消失）。
 
 async function warmupOne(ds, onProgress, keepAlive) {
   var eng = ensureEngine(ds)
@@ -476,7 +473,7 @@ async function warmupAllCaches(onProgress, keepAlive) {
       try { onProgress(Math.round(done / DATASETS.length * 100), '预加载资料 · ' + ds.name) } catch (e) {}
     }
   }
-  // v1.16.66 首次加载判断（主人定案）：预热完成写标记——下次启动 isCacheBuilt() 命中
+  // v1.16.66 首次加载判断（设计定案）：预热完成写标记——下次启动 isCacheBuilt() 命中
   // 直接进主界面；中断/失败（标记没写）→ 下次启动自动重走 loading 重跑（幂等自愈）
   // v1.16.124 审查建议#4：done 计的是「尝试数」，原代码无条件写标记 —— 6 集全部超时/失败时
   // 也会标记「已建」，下次启动直接进主界面失去自愈机会、首搜全冷。改为至少一集成功才写。
@@ -492,16 +489,16 @@ async function warmupAllCaches(onProgress, keepAlive) {
 }
 
 
-// 缓存是否已建（首次加载判断，v1.16.66 主人定案）：标记值==当前数据版本
+// 缓存是否已建（首次加载判断，v1.16.66 设计定案）：标记值==当前数据版本
 // v1.16.202：标记可能陈旧（手环卸载重装不清 storage）→ 标记命中后再探真实缓存键。
 // v1.16.214（真机实测修复）：**上一版探错了键** ✗ —— ensureEngine 会给缓存键加数据集后缀
 //   （`cloned.mapCache.keyPrefix += '_ds' + ds.id`，见本文件 ensureEngine），
 //   故历史集（数据集 0）的真实键是 `search_engine_map__ds0v2_0`（注意 map 后是**双下划线**：
 //   原前缀 `search_engine_map_` 再拼 `_ds0`），而旧代码探的是 `search_engine_map_v2_0` →
-//   永远探不到 → 每次都判「未建」→ **每次进入都重建缓存**（主人实测：第一次建好了，
+//   永远探不到 → 每次都判「未建」→ **每次进入都重建缓存**（实测：第一次建好了，
 //   第二次进入又进加载页）。现改为正确键，并加 chunk 键兜底（warmupOne 两者都会写）。
 //
-// ⚠️⚠️ v1.16.291 真机首装「从不建缓存」修复（主人 2026-10-17 真机反馈）：
+// ⚠️⚠️ v1.16.291 真机首装「从不建缓存」修复（用户 2026-10-17 真机反馈）：
 //   **本函数此前完全依赖 storage.get 的 success/fail 回调来 resolve，而真机这两个回调
 //   都可能丢失**（项目多处实测，见 loading.ux v1.16.207「手环 storage 回调慢/偶发丢失」）。
 //   回调一旦丢失 → 本 Promise **永不 settle** → 调用方的 .then 永不执行

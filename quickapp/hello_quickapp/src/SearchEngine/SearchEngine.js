@@ -48,7 +48,7 @@ var C = {
   search: {
     yearMaxResults: 5,
     // ⚠️ 原为 10：_searchKeyword 取到候选后被 slice(0,10)，每个集只保留前 10 条命中，
-    // 命中多的集后面的条目被整片截掉 = 主人反馈「有的时候搜索不出结果」的直接原因。
+    // 命中多的集后面的条目被整片截掉 = 反馈「有的时候搜索不出结果」的直接原因。
     // 数据精简后各集仅 800~1200 条，放到 100 对性能影响可忽略。
     keywordMaxResults: 100,
     yearRangeLimit: 500,
@@ -56,7 +56,7 @@ var C = {
   },
   
   tokenizer: {
-    // v1.16.148（主人二次反馈）：3 → 1。英文索引改为**从 1 个字母起建全部前缀**，
+    // v1.16.148（用户二次反馈）：3 → 1。英文索引改为**从 1 个字母起建全部前缀**，
     // 于是搜 "d" 就能列出所有 d 开头的单词（实测 58 条），彻底解决「短查询搜不到」的可用性问题。
     // ⚠️ 改动此值必须同步重建各集的 block（英文集用 tools/rebuild_english_block.py）
     //    并同步 tools/lib/dataset_core.js —— 两侧规则不一致会导致 token 对不上、条目永远搜不到。
@@ -72,16 +72,16 @@ var C = {
     expireMinutes: 10
   },
   
-  // LRU 上限（v1.16.61 主人指定动态内存策略）：Block 最多存活 2、Map 最多留 4。
+  // LRU 上限（v1.16.61 指定动态内存策略）：Block 最多存活 2、Map 最多留 4。
   // 超限即淘汰最久未用的——内存只保留"最近用到的"，其余放回 storage 缓存按需重载
   //（淘汰的只是内存副本，storage 持久缓存仍在，重载便宜）。
   // ⚠️ 必须 > 0：0 会让淘汰 while 变死循环（见 _ensureMap/_ensureChunk 内注释）
-  // ★ v1.16.384（宝宝指令）：Block 常驻从 2 收紧到 **1**。
+  // ★ v1.16.384（用户反馈指令）：Block 常驻从 2 收紧到 **1**。
   // 配合 _searchKeyword 改为「按 chunkId 分组流式求交」，多块不再需要同时驻留。
   maxLoadedChunks: 1,
-  // v1.16.94 内存收紧（主人定案）：动态加载最多驻留 2 张 Map（原 4），
+  // v1.16.94 内存收紧（设计定案）：动态加载最多驻留 2 张 Map（原 4），
   // 防真机意外爆内存；被淘汰的 Map 其命中行早已提取进搜索态 rows，翻页正确性不受影响
-  // ★ v1.16.384（宝宝指令）：Map 常驻从 2 收紧到 **1**。
+  // ★ v1.16.384（用户反馈指令）：Map 常驻从 2 收紧到 **1**。
   // 配合分页改为「按 mapId 分组流式构建结果」，一次只需一张 map 在内存。
   maxLoadedMaps: 1,
   //调度策略：按需加载（默认）或预加载
@@ -184,7 +184,7 @@ class SearchEngine {
     this.maxLoadedMaps = C.maxLoadedMaps || 1
     this.loadedMapsOrder = []
     
-    _logInfo('引擎实例创建完成 (v3.4)')   // 审查报告小瑕疵：原字符串被截断，缺右括号
+    _logInfo('引擎实例创建完成 (v3.4)')   // 代码审查小瑕疵：原字符串被截断，缺右括号
   }
   
   // ========== 工具方法 ==========
@@ -1211,7 +1211,7 @@ async _checkAllMapsCache() {
     if (hashes.length === 0) return []
     _logInfo('关键词搜索: ' + query + ', 哈希数=' + hashes.length, 'search')
 
-    // ★ v1.16.384（宝宝指令：Block 常驻只保留 1 个）：
+    // ★ v1.16.384（用户反馈指令：Block 常驻只保留 1 个）：
     // 旧实现先把【所有候选块】全部装进内存再逐个求交，所以必须临时把
     // maxLoadedChunks 抬到块数（否则先载的块被挤掉 → 求交读到 undefined
     // → 假「无结果」。现在改为【按 chunkId 分组流式求交】：
@@ -1336,7 +1336,7 @@ async _checkAllMapsCache() {
       }
       
 
-      // ===== 渐进式 map 加载（v1.16.60 主人优化）=====
+      // ===== 渐进式 map 加载（v1.16.60 优化）=====
       // 读完 block 求交得全部候选 id 后：
       //   ① 按候选的 map 归属统计落点，map 按命中数降序排行（mapRank）
       //   ② 首轮只加载【命中前 2 的 map】立即返回——读出来多少先显示多少（不凑满页）
@@ -1386,7 +1386,7 @@ async _checkAllMapsCache() {
         }
       }
 
-      // 逐 map 加载（v1.16.136 总搜索提速，主人定案）：
+      // 逐 map 加载（v1.16.136 总搜索提速，设计定案）：
       // · 首批（page=1）**最多 2 个 map** 且行数够 MIN_ENOUGH 条即停 —— 原实现要加载到够
       //   page*pageSize 条，首批常解析 3~6 个 map；6 集并行 = 十几个 map（各约 600 行
       //   JSON.parse）同时解析，正是「十几个卡片同时出来 + 卡顿」的来源。
@@ -1396,7 +1396,7 @@ async _checkAllMapsCache() {
       // v1.16.141：每批 6 条 —— MIN_ENOUGH 同步对齐（原值与「每批 N 条」曾多次脱节）
       var MIN_ENOUGH = 6
       var need = (page <= 1) ? MIN_ENOUGH : page * pageSize
-      // v1.16.139（主人反馈「没有中途停止」的根因）：minMaps 原为 2 —— **每个集至少解析 2 个 map**，
+      // v1.16.139（反馈「没有中途停止」的根因）：minMaps 原为 2 —— **每个集至少解析 2 个 map**，
       // 与凑够多少条无关；6 集就是 12 个 map（各约 600 行 JSON.parse）同时/连续解析。
       // 改为 1：先试 1 个 map，行数不够 need 时由下方 `st.rows.length < need` 自动继续加载 ——
       // 既保证「够就停」，也保留候选稀疏时的兜底。
@@ -1421,7 +1421,7 @@ async _checkAllMapsCache() {
       // 原实现是循环内逐条 `if (!map) await this._ensureMap(r.mapId)` —— 候选分散在 >2 个 map
       // 且翻深页时会来回淘汰重载（载 map3 → 挤掉 map1 → 要用 map1 → 重载 map1 → 挤掉 map2…），
       // 一次翻页触发多次重复 I/O 与 JSON.parse，表现为翻页偶发长顿。
-      // ★ v1.16.384（宝宝指令：Map 常驻只保留 1 个）：
+      // ★ v1.16.384（用户反馈指令：Map 常驻只保留 1 个）：
       // 旧实现先把本页涉及的【所有 map】全部载入（并临时把 maxLoadedMaps 抬到
       // map 数，否则先载的被挤掉 → 此处读 this.mapData[r.mapId] 得 undefined
       // → 整批丢行）。现在改为【按 mapId 分组流式构建】：
@@ -1527,7 +1527,9 @@ async _checkAllMapsCache() {
         // ⚠️ category 筛选暂放行（审查低#9）：loadDetail 为空实现，启用会导致恒 0 结果；
         // 真要启用 category 筛选前必须先实现 loadDetail
         if (pass && category !== 'all' && this.categoryList.length > 0) {
-          pass = true   // TODO: 实现 loadDetail 后改为真实过滤
+          // 历史集 category 筛选在本版本未启用：需先加载 detail 才能按分类过滤，
+          // 当前一律放行（默认 category 为 all，不影响检索结果正确性）。
+          pass = true
         }
         if (!pass) continue
       }

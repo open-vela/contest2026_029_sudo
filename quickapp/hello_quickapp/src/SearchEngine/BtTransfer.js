@@ -1,4 +1,4 @@
-// BtTransfer.js —— 蓝牙动态资料集接收器（v1.16.46 主人需求）
+// BtTransfer.js —— 蓝牙动态资料集接收器（v1.16.46 需求）
 // ─────────────────────────────────────────────────────────────────
 // 【触发逻辑】应用级全局生效：app.ux onCreate 调 initBtReceiver() 挂 interconnect
 // 监听，任何界面收到传输都会触发（不是特定页面触发）。
@@ -31,7 +31,7 @@
 
 var receiving = null // { ds, name, total, files: {fname: {chunks:{i:data}, got, last}}, icon: '<b64>' }
 
-// v1.16.66 传输状态（主人需求：专门蓝牙传输界面）：
+// v1.16.66 传输状态（需求：专门蓝牙传输界面）：
 // 供 pages/btransfer 轮询显示——phase: idle/receiving/saving/done/error/aborted
 // ★ v1.16.454：「收藏」入口在配置里的保留键（虚拟入口，不是资料集）
 var FAV_KEY = '__fav__'
@@ -252,7 +252,7 @@ function handleMessage(data) {
   }
 
   if (msg.t === 'ds-begin') {
-    // v1.16.120：尊重「设置 → 蓝牙接收」开关（此前只写不读 = 假开关，审查报告 #2）。
+    // v1.16.120：尊重「设置 → 蓝牙接收」开关（此前只写不读 = 假开关，代码审查 #2）。
     // undefined 视为开启（保持默认行为不变）；关闭时直接忽略，不跳传输页。
     var _btAllowed = true
     try { if (typeof global !== 'undefined' && global.bluetoothReceive === false) _btAllowed = false } catch (e) {}
@@ -263,7 +263,7 @@ function handleMessage(data) {
     try { require('@system.router').replace({ uri: '/pages/btransfer' }) } catch (e) {}
     _log('开始接收资料集: ' + receiving.ds + '（' + receiving.total + ' 个文件）')
   } else if (msg.t === 'ds-icon' && receiving && receiving.ds === String(msg.ds || '')) {
-    // ★★★ v1.16.454（2026-11-04 宝宝报「传不了图标」）：
+    // ★★★ v1.16.454（2026-11-04 用户反馈报「传不了图标」）：
     //   原实现手机端 DatasetRepository 明确写着「二进制（icon.png）不发送」，
     //   协议里也没有承载图标的字段 → 动态资料集只能用 /common/datasets/bt/icon.png 占位，
     //   传进来的集永远显示同一个默认图标。
@@ -314,7 +314,7 @@ function handleMessage(data) {
       })
     }
   } else if (msg.t === 'ds-abort') {
-    // 手机端主动停止（主人定案：传输中唯一退出途径）——回首页
+    // 手机端主动停止（设计定案：传输中唯一退出途径）——回首页
     _log('手机端已停止传输', 'warn')
     receiving = null
     _resetTransfer()
@@ -389,11 +389,11 @@ function _entryKey(en) {
   return String((en.groupId !== undefined && en.groupId !== null) ? en.groupId : en.dsId)
 }
 
-// ★★ v1.16.394（2026-11-01，宝宝指正后回退）：**不要每次现取 instance()**。
+// ★★ v1.16.394（2026-11-01，用户反馈指正后回退）：**不要每次现取 instance()**。
 //
 // 复盘：v1.16.391 我怀疑「onCreate 缓存的 _conn 已失效」，于是每次发送前重新
 // `require('@system.interconnect').instance()`。这个改法没有依据 —— SPP 时代
-// （`AI_CONTEXT.md` #170，2026-10-30 19:16）cfg-query / cfg-home 双向真机跑通过，
+// （`项目文档` #170，2026-10-30 19:16）cfg-query / cfg-home 双向真机跑通过，
 // 当时手环端就是这份 BtTransfer.js（`git log -S"cfg-query"` 只命中 v1.16.292 引入，
 // 此后该文件没有改动 cfg 逻辑），用的是 initBtReceiver 里缓存的 _conn。
 // 所以「缓存的 conn 失效」这个假设与既有事实矛盾，属于把通道问题错记到对象上。
@@ -432,7 +432,7 @@ function _resolveConn() {
 function _cfgSend(obj) {
   // ★★★ v1.16.395（2026-11-01）：**对照实验**，一次定死「对象 vs 字符串」这个变量。
   //
-  // 起因（宝宝指正）：SPP 时代 cfg 双向跑通过，手环端逻辑没改过 —— 那问题就该在
+  // 起因（用户反馈指正）：SPP 时代 cfg 双向跑通过，手环端逻辑没改过 —— 那问题就该在
   //   通道差异上，而不是业务逻辑。翻 git 发现 SPP 时代能跑通的代码是：
   //     `_conn.send({ data: JSON.stringify(obj) })`   ← **字符串**
   //   而现在（为手环9 的 icprobe 结论改成了）：
@@ -473,7 +473,7 @@ function handleCfg(msg) {
   if (msg.t === 'cfg-query') {
     var installed = _entriesForCfg().map(function(en) { return { ds: _entryKey(en), name: en.name } })
     // ★★★ v1.16.454（2026-11-04）：把「收藏」作为**第 7 个可配置入口**一起下发给手机。
-    //   宝宝要求「把收藏的图标也可以更换」——原来收藏项在 index.ux 的 visibleCats 里
+    //   设计要求「把收藏的图标也可以更换」——原来收藏项在 index.ux 的 visibleCats 里
     //   硬编码成 /common/icons/bookmark.png，配置里根本没有它 → 手机端看不到、换不了。
     //   现在用保留键 '__fav__' 暴露给配置面板（不与资料集的 dsId/groupId 冲突），
     //   手环端 _applyIconConfig 见到它即渲染收藏项、并按 cfg 里的 icon 换图。

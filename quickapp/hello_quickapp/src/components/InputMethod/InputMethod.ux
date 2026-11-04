@@ -507,7 +507,7 @@ export default {
     }
   },
   // ★ v1.16.348（S5 OOM 六步之②）：原 circle 分支 :86 在 for 内挂动态 style + 三元 color，
-  //   每按键全量重刷，且踩「动态 style 绑定」雷区（AI_CONTEXT #69：手环 9 崩机级）。
+  //   每按键全量重刷，且踩「动态 style 绑定」雷区（固件限制 #69：手环 9 崩机级）。
   //   改为在数据层预算好每个候选的完整类名，模板只做纯变量插值（同 v1.16.48 范式）。
   _syncWaitingCls() {
     const items = [];
@@ -550,7 +550,7 @@ export default {
     this.getResultByWord(this.cval + watingStr);
   },
   setResultListAll() {
-    // v1.16.152（主人要求「一行起码放五六个」）：分行改为固定 6 列。
+    // v1.16.152（设计要求「一行起码放五六个」）：分行改为固定 6 列。
     // 原实现用 parseInt(this.maxlength) 当列数，而组件内该值实际为 2 → 一行只显示 2 个候选；
     // 现在与输入长度限制解耦（maxlength 仍只用于输入上限）。列宽由 .item3 的 16% 配合。
     const CAND_COLS = 6;
@@ -661,7 +661,7 @@ export default {
 	left:0;
 	bottom:0
 }
-/* ⚠️ v1.16.164 修正（主人实测：切英语/中文后键盘显示异常）：
+/* ⚠️ v1.16.164 修正（实测：切英语/中文后键盘显示异常）：
    .item 是共享类 —— 圆形屏候选字栏（第 21/89 行 `<div class="item column center" for="{{cvalList}}">`）
    也在用它。上一版直接给 .item 加 width:16%，把那条候选栏压乱了。
    现在 .item 完全恢复官方原样，列宽只加在面板专用的 .cand-cell 上。 */

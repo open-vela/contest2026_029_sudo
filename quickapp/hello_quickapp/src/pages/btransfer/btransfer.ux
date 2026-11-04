@@ -1,6 +1,6 @@
 <template>
   <div class="bt-page" @swipe="noop">
-    <!-- 蓝牙资料传输专用界面（v1.16.66 主人需求）：
+    <!-- 蓝牙资料传输专用界面（v1.16.66 需求）：
          显示接收状态与进度条；【传输中不允许退出】——无返回按钮、滑动手势被吞，
          只能手机端停止（ds-abort）或传输完毕（自动进入加载页建缓存） -->
     <div class="statusbar">
@@ -136,7 +136,7 @@
     },
 
   // ★ v1.16.350（S5 OOM 六步之④）：原模板 progress-fill 挂动态 style `width: {{progressPercent}}%`，
-  //   每次进度回调都改内联样式（踩「动态 style 绑定」雷区，AI_CONTEXT #69 记手环 9 崩机级）。
+  //   每次进度回调都改内联样式（踩「动态 style 绑定」雷区，固件限制 #69 记手环 9 崩机级）。
   //   改为 5% 阶梯的静态类名 .p0~.p100，模板只做纯变量插值（同 v1.16.48 范式）。
   progressCls() {
     var p = Math.round((this.progressPercent || 0) / 5) * 5

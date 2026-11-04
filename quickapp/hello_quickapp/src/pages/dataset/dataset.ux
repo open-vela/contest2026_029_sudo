@@ -1,7 +1,7 @@
 <import name="input-method" src="../../components/InputMethod/InputMethod.ux"></import>
 
 <template>
-  <!-- 资料详情页（v1.16.67 独立成页；v1.16.72 主人定案：页内搜索——不跳回首页，
+  <!-- 资料详情页（v1.16.67 独立成页；v1.16.72 设计定案：页内搜索——不跳回首页，
        搜索逻辑按主界面简化实现；含语音搜索按钮；AI 搜索仅保留在主界面） -->
   <div class="ds-page" @swipe="onSwipe">
     <scroll class="ds-scroll" scroll-y="{{!voiceActive}}">
@@ -55,14 +55,14 @@
           </div>
         </scroll>
 
-        <!-- 语音搜索按钮（主人定案：本页保留语音；AI 搜索仅主界面） -->
-        <!-- v1.16.87：提示移到语音按钮上方（主人定案）；按钮整体缩小 -->
+        <!-- 语音搜索按钮（设计定案：本页保留语音；AI 搜索仅主界面） -->
+        <!-- v1.16.87：提示移到语音按钮上方（设计定案）；按钮整体缩小 -->
         <!-- v1.16.264 统一：外包 .btn-glow 柔光晕（与首页主按钮同款；box-shadow 在本运行时不可用，
-             只能靠同心层叠 + rgba 递减 alpha —— 见 AI_CONTEXT §8.42 CSS 探针） -->
+             只能靠同心层叠 + rgba 递减 alpha —— 见 项目文档 §8.42 CSS 探针） -->
         <text class="ds-hint">左滑返回 · 点标签筛选</text>
         <!-- v1.16.304 统一：与首页入口按钮**同一张 PNG 素材、同一逻辑尺寸**（v1.16.303 起首页为
              胶囊 + 深紫底浅蓝声波 + 纯白麦克风），并补上首页那层 .btn-glow-in 内层柔光。
-             原「语音搜索」文字标签一并去掉（图标本身已是麦克风语义，且宝宝偏好符号化按钮）。 -->
+             原「语音搜索」文字标签一并去掉（图标本身已是麦克风语义，且设计偏好符号化按钮）。 -->
         <div class="btn-glow">
           <div class="btn-glow-in">
             <div class="voice-btn" @click="startVoiceSearch">
@@ -101,7 +101,7 @@
       <div class="voice-panel" if="{{voiceActive}}">
         <!-- v1.16.134：内容区固定高度 —— 已连接/未连接内容行数不同，靠固定高度保证取消按钮位置不漂移 -->
         <div class="voice-info">
-          <!-- ★★★ v1.16.361（宝宝定案）：「把原本那个语音输入蓝牙未在线的状态给删除
+          <!-- ★★★ v1.16.361（设计定案）：「把原本那个语音输入蓝牙未在线的状态给删除
                （就只留弹窗，不能在语音输入时提示蓝牙未连接）」。
                原先这里有三行 `if="{{!bluetoothConnected}}"` 的断开图标 /「蓝牙未连接」/
                「仅作为模拟参考」。本页 startVoiceSearch() 已改为与首页 startVoiceAsk()
@@ -149,7 +149,7 @@
               showKeyboard / searchActive 都是 false，组件根本不实例化，代价为零。
               键盘只在「首次弹出」那一刻付建树成本，与进页无关。 -->
 
-    <!-- v1.16.212（主人反馈「键盘打开仍然比较慢」）：条件从 showKeyboard 改为
+    <!-- v1.16.212（反馈「键盘打开仍然比较慢」）：条件从 showKeyboard 改为
          「showKeyboard || searchActive」——原写法在键盘收起时**销毁组件**，
          于是每次打开都要重建整棵键盘树（手环上约 1 秒）。组件自带 hide 属性负责视觉隐藏，
          故在搜索态期间保持挂载：同一次搜索内反复开合键盘＝瞬时；
@@ -166,7 +166,7 @@
       </div>
     </div>
 
-    <!-- ★★★ v1.16.361（宝宝要求「UI 必须跟主界面完全一样……只留弹窗」）：
+    <!-- ★★★ v1.16.361（设计要求「UI 必须跟主界面完全一样……只留弹窗」）：
          本页原先没有任何弹窗，蓝牙未连接直接显示在聆听面板里。现在与首页 index.ux
          完全对齐：入口用弹窗拦截，面板里只剩波形 + 取消。
          ⚠️ 必须在 .ds-page 根层级 + DOM 最末尾：本项目轻量运行时 z-index 不赢得命中测试，
@@ -198,7 +198,7 @@
   .app-title { font-size: 18px; color: #FFFFFF; font-weight: 500; margin-top: 3px; }
 
   /* v1.16.103 方屏密度增大（与首页同步）：搜索框 258×56→240×50 */
-  /* v1.16.264 统一：margin-top 14→4（主人反馈的「搜索框位置偏差」= 方屏比首页低 10 单位） */
+  /* v1.16.264 统一：margin-top 14→4（反馈的「搜索框位置偏差」= 方屏比首页低 10 单位） */
   .search-box { width: 260px; height: 56px; border-radius: 28px; background-color: #16171A; border: 2px solid rgba(255,255,255,0.10); flex-direction: row; justify-content: flex-start; align-items: center; padding-left: 16px; margin-top: 4px; flex-shrink: 0; }
   .search-box-icon { width: 22px; height: 22px; }
   .search-placeholder { font-size: 20px; color: #757575; flex: 1; margin-left: 10px; text-align: left; }
@@ -211,7 +211,7 @@
   .searchbox-typed { padding-left: 6px; }
 
   /* 非搜索态包裹层：显式纵向 + 居中（无 class div 默认 row，见模板注释） */
-  /* v1.16.288（主人反馈「按钮会卡出屏幕」）：胶囊屏底部是 R=150 的半圆收窄区，
+  /* v1.16.288（反馈「按钮会卡出屏幕」）：胶囊屏底部是 R=150 的半圆收窄区，
      距屏底 d 处可用宽 = 2×√(150²−(150−d)²)。语音按钮含柔光总宽 230，
      原下沿 d≈56（该处可用仅 234，余量 4）→ 视觉上就贴着弧线。
      按公式需 d≥54，这里留到 d≈90 更稳妥；用按钮下方留白把它顶上来。 */
@@ -230,7 +230,7 @@
   .ds-meta { width: 158px; font-size: 13px; color: #6E7681; text-align: left; margin-top: 8px; }
   .ds-tags-scroll { width: 100%; height: 46px; flex-shrink: 0; margin-top: 10px; }
   .ds-tags { flex-direction: row; padding: 0 14px; align-items: center; }
-  /* v1.16.143（主人要求）：选中态改为**蓝色描边** —— 原为整块蓝底（.ds-tag-on 只改 background）。
+  /* v1.16.143（设计要求）：选中态改为**蓝色描边** —— 原为整块蓝底（.ds-tag-on 只改 background）。
      未选中也给同宽描边（透明色）避免选中时尺寸跳动；选中态：深底 + 蓝描边 + 蓝字。 */
   .ds-tag { height: 40px; border-radius: 20px; background-color: #16171A; border-style: solid; border-width: 1px; border-color: rgba(255,255,255,0.10); justify-content: center; align-items: center; padding: 0 16px; margin-right: 8px; flex-shrink: 0; }
   .ds-tag-on { background-color: #16171A; border-color: #4D9FEE; }
@@ -260,7 +260,7 @@
   .ds-result { width: 100%; flex-direction: column; align-items: center; }
   .result-count { width: 100%; text-align: center; font-size: 16px; color: #757575; margin-top: 10px; flex-shrink: 0; }
   /* v1.16.103：一屏 4 条（与首页同步） */
-  /* v1.16.275（主人要求「卡片出个小描边」）：1px 极淡描边，与首页 result-item / ai-card 同手法 */
+  /* v1.16.275（设计要求「卡片出个小描边」）：1px 极淡描边，与首页 result-item / ai-card 同手法 */
   .result-item { width: 94%; margin-left: 3%; border-radius: 12px; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08); padding: 5px 11px; margin-bottom: 3px; flex-direction: column; flex-shrink: 0; }
   .result-year { font-size: 16px; font-weight: bold; color: #4D9FEE; margin-bottom: 1px; }
   .result-title { font-size: 17px; color: #FFFFFF; margin-bottom: 1px; }
@@ -273,8 +273,8 @@
   .more-btn { width: 94%; margin-left: 3%; height: 64px; border-radius: 14px; background-color: #16171A; border: 1px solid rgba(255,255,255,0.08); justify-content: center; align-items: center; margin-top: 4px; margin-bottom: 8px; flex-shrink: 0; }
   .more-text { font-size: 22px; color: #4D9FEE; }
 
-  /* v1.16.134（主人要求）：与主界面一致 —— 面板撑满剩余高度，取消按钮 margin-top:auto 贴底 */
-  /* v1.16.134（主人要求）：取消按钮贴屏幕底部。面板在 scroll 内容流内，flex:1 撑不开 →
+  /* v1.16.134（设计要求）：与主界面一致 —— 面板撑满剩余高度，取消按钮 margin-top:auto 贴底 */
+  /* v1.16.134（设计要求）：取消按钮贴屏幕底部。面板在 scroll 内容流内，flex:1 撑不开 →
      用固定高度 + 取消按钮 margin-top:auto（容器有确定高度后 auto 才有依据） */
   /* v1.16.134：space-between —— 内容贴顶、取消按钮贴底（不用 flex:1 / auto margin，本运行时实测无效） */
   .voice-panel { width: 100%; height: 326px; flex-direction: column; justify-content: space-between; align-items: center; padding-top: 30px; padding-bottom: 24px; flex-shrink: 0; }
@@ -292,12 +292,12 @@
   .h2 { height: 16px; }
   .h3 { height: 24px; }
   .h4 { height: 34px; }
-  /* v1.16.285（主人反馈「取消按钮感觉有点丑」）：与 index.ux 同步改**次要按钮语言**
+  /* v1.16.285（反馈「取消按钮感觉有点丑」）：与 index.ux 同步改**次要按钮语言**
      —— 深蓝底 #10224E + 蓝描边，取代原来的中性灰 #2C2C2E（全应用最后一处灰块遗留）。 */
   .voice-cancel { width: 136px; height: 66px; border-radius: 33px; background-color: #10224E; border: 3px solid rgba(77,159,238,0.45); justify-content: center; align-items: center; flex-shrink: 0; }
   .voice-cancel-text { font-size: 24px; color: #FFFFFF; }
 
-  /* ★★★ v1.16.361（宝宝要求「UI 必须跟主界面完全一样」）：入口提示弹窗。
+  /* ★★★ v1.16.361（设计要求「UI 必须跟主界面完全一样」）：入口提示弹窗。
      与 index.ux:504-509 逐值一致，三形态覆盖见各 @media 块。
      absolute 铺满 + flex 居中，不依赖 flex:1（项目铁律 #2）。 */
   .tip-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 30; justify-content: center; align-items: center; }
@@ -337,8 +337,8 @@
     .voice-text { font-size: 36px; margin-left: 16px; }
     .searchbox-voice { height: 130px; }
     /* 胶囊屏维持居中布局：卡片回纵向、左列回横向（与 v1.16.80 观感一致） */
-    /* v1.16.173（主人实测：语音搜索按钮仍卡出屏）压缩垂直预算 ~44 单位 */
-    /* v1.16.285（主人反馈两点）：①「语音搜索按钮会卡出显示区域」②「中间介绍卡离上方搜索框
+    /* v1.16.173（实测：语音搜索按钮仍卡出屏）压缩垂直预算 ~44 单位 */
+    /* v1.16.285（反馈两点）：①「语音搜索按钮会卡出显示区域」②「中间介绍卡离上方搜索框
        和下方筛选卡片都偏远，希望贴紧些」——两者是同一处病根：margin-top 过大。
        改前垂直预算（胶囊逻辑高 766）：状态栏 110 + 搜索框(32+92)=124 + 介绍卡(56+~200)=256
        + 标签(62+70)=132 + 提示 44 + 按钮区(20+10+106)=136 = 802 → **溢出 36**，按钮被挤出屏。
@@ -350,7 +350,7 @@
     .ds-icon { width: 38px; height: 38px; }
     .ds-name { font-size: 36px; margin-top: 0; margin-left: 10px; }
     .ds-desc { width: 92%; font-size: 22px; line-height: 32px; text-align: center; }
-    /* v1.16.288（主人反馈「按钮会卡出屏幕」）：胶囊屏底部是 R=150 半圆收窄区，
+    /* v1.16.288（反馈「按钮会卡出屏幕」）：胶囊屏底部是 R=150 半圆收窄区，
        距屏底 d 处可用宽 = 2×√(150²−(150−d)²)。语音按钮含柔光总宽 230，
        原下沿 d≈56（该处可用仅 234，余量 4）→ 看着就贴着弧线。
        **不加底部留白**（内容已 726/766，再加会溢出），改为**压缩上方间距**让整块上移：
@@ -360,7 +360,7 @@
     .ds-tags-scroll { height: 70px; margin-top: 14px; }
     .ds-tag { height: 58px; border-radius: 29px; padding: 0 24px; margin-right: 12px; }
     .ds-tag-text { font-size: 28px; }
-    /* v1.16.205（主人要求）：语音按钮下推贴近屏底，与上方卡片拉开距离，页面更简洁 */
+    /* v1.16.205（设计要求）：语音按钮下推贴近屏底，与上方卡片拉开距离，页面更简洁 */
     /* v1.16.264 统一：与首页胶囊主按钮 .search-btn 同尺寸（220×106 圆角 53） */
     /* v1.16.304 统一：胶囊屏对齐首页 .search-btn（184x130 圆角 65） */
     .voice-btn { width: 184px; height: 130px; border-radius: 65px; }
@@ -450,7 +450,7 @@
     .ds-hint { font-size: 12px; margin-top: 2px; margin-bottom: 0; }
     .voice-btn { width: 156px; height: 42px; border-radius: 21px; }
     .voice-btn-icon { width: 156px; height: 42px; }
-    /* ★ ★ v1.16.364（宝宝要求「搜索按钮位置必须跟主界面完全一样」）：
+    /* ★ ★ v1.16.364（设计要求「搜索按钮位置必须跟主界面完全一样」）：
        实测（圆屏模拟器 466px，逻辑比 1.5533）：
          首页按钮顶部 358 phys = 230.5 逻辑；本页原本 312 phys = 200.9 逻辑 → 差 29.6。
        把 margin-top 2 → 32 补上这 30px，按钮落到 230.5，与首页逐像素同高。 */
@@ -510,7 +510,7 @@
 
 <script>
 // ══════════════════════════════════════════════════════════════════════════
-// 语音搜索演示模式（v1.16.459 · 2026-11-04 宝宝定案）
+// 语音搜索演示模式（v1.16.459 · 2026-11-04 设计定案）
 //
 //   为什么走硬编码：S5 的 @system.record 引擎帧率被钉死在 ~2900 采样/秒
 //   （声明 16000），采集率只有 18~22%，长句必然残缺；且同一轮结束后引擎释放
@@ -623,7 +623,7 @@ var DEMO_ENABLED = true
         return this.showKeyboard ? 'kb-wrap' : 'kb-wrap kb-off'
       },
       searchBoxClass() {
-        // ★ v1.16.354（交接单 §3.4）：改为返回**完整类名**（含 search-box 基类），模板纯变量插值。
+        // ★ v1.16.354（设计规范 §3.4）：改为返回**完整类名**（含 search-box 基类），模板纯变量插值。
         // 原实现模板写 `class="search-box {{searchBoxClass}}"` = 拼接表达式，已消除。
         var c = 'search-box'
         if (this.voiceActive) c = 'search-box searchbox-voice'
@@ -664,7 +664,7 @@ var DEMO_ENABLED = true
             self.screentype = shape === 'circle' ? 'circle' : (shape === 'pill-shaped' ? 'pill-shaped' : 'rect')
             self.showAppTitle = (shape === 'pill-shaped') || (shape === 'circle')
             self.showRectTitle = !self.showAppTitle
-            // 条数信息仅 PRO 方屏/圆屏展示（胶囊屏主人定案不改）
+            // 条数信息仅 PRO 方屏/圆屏展示（胶囊屏设计定案不改）
             self.isNotPill = (shape !== 'pill-shaped')
           },
           fail: function() {}
@@ -723,7 +723,7 @@ var DEMO_ENABLED = true
         this.showKeyboard = false
         this.finishInput()
       } else {
-        // v1.16.156（主人实测卡死修复）：这里原本还有 `this.searchActive = true` ——
+        // v1.16.156（实测卡死修复）：这里原本还有 `this.searchActive = true` ——
         // 它会把 ds-block（含横向滚动的标签行）整棵销毁换成 ds-result，紧接着 60ms 后
         // 又创建 800 行的键盘组件。两个大 DOM 变更挨在一起时运行时会卡死
         // （实测：滑动标签行 → 点标签 → 点搜索框 → 画面永久静止 38s 不动）。
@@ -735,14 +735,14 @@ var DEMO_ENABLED = true
     openKeyboard() {
       var self = this
       // v1.16.81：150→60ms——延迟只为让搜索态先落一帧；键盘组件已是 if 按需创建，
-      // 150ms 让主人感知到「点搜索栏有延迟」（实测反馈）
+      // 150ms 让用户感知到「点搜索栏有延迟」（实测反馈）
       setTimeout(function() { if (!self.isDestroyed) self.showKeyboard = true }, 60)
     },
 
     onInput(evt) {
       var content = evt.detail.content
       if (content === undefined || content === null) return
-      // v1.16.290（主人反馈「打字输入框里不会显示字，只有点击搜索时才突然出现」）：
+      // v1.16.290（反馈「打字输入框里不会显示字，只有点击搜索时才突然出现」）：
       // **本页漏掉了主页 v1.16.228 的「方法 A'·回显优化」，还在用被否决的方法 A** ——
       // 方法 A 把内容写进**非响应式** this._pendingQuery（打字零翻转），代价就是
       // 模板里 `if="{{searchQuery}}"` 的显示节点**打字期间恒不成立** → 字不显示；
@@ -767,7 +767,7 @@ var DEMO_ENABLED = true
       this.displayList = []
       this.searched = false
       this.loading = false
-      // 清空后自动退回资料信息态（主人「搜索栏为空自动回」的同款语义；本页的「回」
+      // 清空后自动退回资料信息态（用户「搜索栏为空自动回」的同款语义；本页的「回」
       // 是回资料信息态而非主界面 —— 复用 finishInput 空词分支的既有语义）
       var self = this
       if (this.emptyExitTimer) clearTimeout(this.emptyExitTimer)
@@ -876,7 +876,7 @@ var DEMO_ENABLED = true
     // 声波动画（v1.16.140，模拟）：**拿不到真实音量** —— 手环侧音频经 interconnect 送手机 App
     // 做 ASR，快应用侧无任何音频数据（v1.16.57 曾因「无真实音量数据源，凑数渲染」删过同款代码）。
     // 故按随机高度档位轮换模拟，并由「仅作为模拟参考」提示字如实告知。
-    // 主人若要真实随声波动：需手机端在回包时附带音量序列，届时把 waveBars 改为按该序列取档即可。
+    // 用户若要真实随声波动：需手机端在回包时附带音量序列，届时把 waveBars 改为按该序列取档即可。
     startWave() {
       var self = this
       this.stopWave()
@@ -901,7 +901,7 @@ var DEMO_ENABLED = true
       if (this.waveTimer) { clearInterval(this.waveTimer); this.waveTimer = null }
     },
 
-    // ★★★ v1.16.361（宝宝要求「UI 必须跟主界面完全一样……只留弹窗」）：
+    // ★★★ v1.16.361（设计要求「UI 必须跟主界面完全一样……只留弹窗」）：
     //   本页入口逻辑重写为**逐行对齐 index.ux 的 startVoiceAsk()**（三态拦截）：
     //     ① 已明确断开（_alive === false）→ 点击同一帧直接弹窗，不等超时；
     //     ② 从未探活过 → 先弹「正在连接…」（点击必须有即时反馈），异步 probe 后继续；
@@ -919,7 +919,7 @@ var DEMO_ENABLED = true
       this.voiceTipShow = false
     },
 
-    // ★★★ v1.16.455（2026-11-04 宝宝定案）：本页语音同样走**本地硬编码演示**，
+    // ★★★ v1.16.455（2026-11-04 设计定案）：本页语音同样走**本地硬编码演示**，
     //   与 index.ux 的 DEMO_QUERIES / _demoVoiceStart 逐行同构（两页体验必须一致）。
     //   真链路（手表录音 + 手机 ASR）已证明采集率只有 18~22%，长句必残，短期无解。
     // ★ 三个词都经过实际检索验证能命中真实条目（2026-11-04 实测）：

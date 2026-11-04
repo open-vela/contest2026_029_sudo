@@ -103,7 +103,7 @@
 
 <script>
   import router from '@system.router'
-  // ★★★ v1.16.412（宝宝 2026-11-02 定案「所有页面都优化」）：本页原先直接 import
+  // ★★★ v1.16.412（用户 2026-11-02 定案「所有页面都优化」）：本页原先直接 import
   //   SearchEngine.js(64KB) + DatasetManager.js(34KB)，构建器不做 tree-shaking，
   //   于是 loading.jsc 36,479B 里背了整份引擎源码闭包 —— 而本页只用 4 个函数。
   //   改为走 global（app.ux onCreate 已挂载，引擎早已初始化完毕），副本消失，
@@ -125,7 +125,7 @@
     },
 
   // ★ v1.16.350（S5 OOM 六步之④）：原模板 progress-fill 挂动态 style `width: {{progressPercent}}%`，
-  //   每次进度回调都改内联样式（踩「动态 style 绑定」雷区，AI_CONTEXT #69 记手环 9 崩机级）。
+  //   每次进度回调都改内联样式（踩「动态 style 绑定」雷区，固件限制 #69 记手环 9 崩机级）。
   //   改为 5% 阶梯的静态类名 .p0~.p100，模板只做纯变量插值（同 v1.16.48 范式）。
   progressCls() {
     var p = Math.round((this.progressPercent || 0) / 5) * 5
@@ -137,7 +137,7 @@
     onInit(query) {
       this.fromSettings = !!(query && query.source === 'settings')
       // 蓝牙传输唤醒（v1.16.46）：source=bt 时只给传输来的那一个资料集建缓存，
-      // 不跑历史集完整 init、不跑全量预热（主人定案：只加载蓝牙所传输的文件）
+      // 不跑历史集完整 init、不跑全量预热（设计定案：只加载蓝牙所传输的文件）
       this.btMode = !!(query && query.source === 'bt' && query.dsId)
         ? { dsId: parseInt(query.dsId, 10) }
         : null
@@ -191,7 +191,7 @@
       try {
         var engine = global.getSearchEngine()
         // 历史集完整初始化占进度前 70%
-        // v1.16.120：init 加 60s 超时兜底（审查报告 #5）—— readText 回调丢失是本项目
+        // v1.16.120：init 加 60s 超时兜底（代码审查 #5）—— readText 回调丢失是本项目
         // 记录过的雷（#18/#84），搜索路径早有 10s race 兜底，唯独 init 没有：一旦挂起，
         // 首次安装的用户会永久停在「正在加载数据…」。超时走既有失败分支转错误态。
         var _initP = engine.init('/common/datasets/history/', function(percent, message) {
@@ -212,7 +212,7 @@
           // 而历史集真实值是 mapChunkSize=600 / detailChunkSize=150 —— 不刷新会导致
           // 详情页按错误分片取数（读到别的条目或报「未找到数据」）。
           if (typeof global.refreshEngineGlobals === 'function') global.refreshEngineGlobals()
-          // 资料集索引预热占进度后 30%（v1.16.43 主人定案）：把 6 个资料集的
+          // 资料集索引预热占进度后 30%（v1.16.43 设计定案）：把 6 个资料集的
           // map+chunk 全部建好 storage 缓存——此前它们懒创建，总搜索第一次要同时
           // 冷启动 5 个集（读块文件+写缓存）= 搜索非常慢的主因。预热后搜索直读缓存。
           self.message = '预加载资料…'

@@ -112,7 +112,7 @@ import { getAssistant } from './SearchEngine/AssistantEngine.js'
   // 页面（loading）在 init 成功 / 懒初始化完成后调用它。
   global.refreshEngineGlobals = function() { mountToGlobal() }
 
-  // v1.16.276（主人定案）：**删除 `global.warmupBackground`（后台预热）**。
+  // v1.16.276（设计定案）：**删除 `global.warmupBackground`（后台预热）**。
   // 判定依据（两条独立证据）：
   // ① 真机教训（见 index.ux onShow 的 v1.16.196 注释）：已建缓存时做后台预热会在真机上
   //    「几十秒冻结」——因此首页早已**不再调用**它，此函数长期是死代码；
@@ -298,7 +298,7 @@ import { getAssistant } from './SearchEngine/AssistantEngine.js'
       }
       // 资料详情视图数据源（index 页不直接 import 库模块——webpack 双路径双实例坑）
       global.getDatasetInfo = getDatasetInfo
-      // ★★★ v1.16.388（宝宝定案）：把 isCacheBuilt / clearAllCaches 也挂到 global。
+      // ★★★ v1.16.388（设计定案）：把 isCacheBuilt / clearAllCaches 也挂到 global。
       //
       // 背景（包内实证）：这个构建器**不做 tree-shaking**，页面里 `import { 某个函数 }`
       // 会把整条依赖链内联进该页面的 .jsc，包内没有任何独立模块文件
@@ -374,7 +374,7 @@ import { getAssistant } from './SearchEngine/AssistantEngine.js'
 
       // 2. 读回「设置 → 蓝牙接收」开关（v1.16.120）
       //    此前 confirm.ux 只写 global.bluetoothReceive + storage，全工程零读取点，
-      //    重启即失效且 BtTransfer 无条件接收 = 假开关（审查报告 #2）。undefined 视为开启。
+      //    重启即失效且 BtTransfer 无条件接收 = 假开关（代码审查 #2）。undefined 视为开启。
       //    注：原 loadSettingsAsync（5 个设置在工程内零读取点，每次启动白读 5 次 storage）已删。
       try {
         require('@system.storage').get({
