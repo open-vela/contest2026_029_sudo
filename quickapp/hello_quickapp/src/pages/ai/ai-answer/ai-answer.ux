@@ -17,7 +17,7 @@
 
         <!-- ===== 状态卡（单节点三态，v1.16.125）=====
              原实现用布尔字段作判据、初值 false → 错误卡（红字「回答丢失」）首帧即渲染，
-             onShow 读到 global.aiResult 后才隐藏 = 主人看到的「进入页面先闪一下红色」。
+             onShow 读到 global.aiResult 后才隐藏 = 用户看到的「进入页面先闪一下红色」。
              现 phase 三态：loading 灰字「加载中…」/ error 红字 / ok 时类切换为高度归零。
              只用一个节点 + 类切换 —— 不插拔节点（铁律 #4），也不留占位（本运行时 show=false 仍占位） -->
         <div class="{{stateCardClass}}">
@@ -44,7 +44,7 @@
           <text class="section-body">{{$item.body}}</text>
         </div>
         <!-- 尾注（免责声明等）：v1.16.129 改类控制 —— show=false 在本运行时仍占位，
-             无尾注/无来源时会在「卡片详情」与「重新提问」之间留出大片空白（主人反馈） -->
+             无尾注/无来源时会在「卡片详情」与「重新提问」之间留出大片空白（反馈） -->
         <text class="{{noteClass}}">{{cardNote}}</text>
 
         <!-- 来源条目卡列表：点击进词条详情 -->
@@ -56,15 +56,15 @@
           </div>
         </div>
 
-        <!-- 底部双按钮（v1.16.155 主人定案）：
+        <!-- 底部双按钮（v1.16.155 设计定案）：
              左「重新提问」→ 返回主界面后立刻重开麦克风，直接接着问，不用再点一次麦克风；
              右「直接返回」→ 返回并关掉 AI 面板，真正回到主界面。
              两个动作经 global.aiReturnAction 桥接给主界面 onShow 执行（页面模块实例按页面作用域隔离，
              不能直接调主界面的方法） -->
-        <!-- v1.16.269 改纯图标按钮（主人要求「按钮以符号尽量代替文字提示」+ 官方小米手环9设计套件规范：
+        <!-- v1.16.269 改纯图标按钮（设计要求「按钮以符号尽量代替文字提示」+ 官方小米手环9设计套件规范：
              官方 8 个界面的底部动作钮全部为纯图标 —— 蓝胶囊+刷新↻ / 蓝胶囊+对勾✓ / 红胶囊+垃圾桶🗑，
              无一带文字）。原「重新提问/直接返回」为 4 字 × 36px = 144px，而胶囊屏按钮仅 48%×90% ≈ 112px
-             → 文字折行顶出按钮（主人真机截图实锤）。现：重新提问=循环箭头（同官方 refresh 符号），
+             → 文字折行顶出按钮（用户真机截图实锤）。现：重新提问=循环箭头（同官方 refresh 符号），
              直接返回=房子（回主界面）。图标为 96px 透明底白描边，与既有 icons/*.png 同风格 -->
         <div class="btn-row">
           <div class="retry-btn" @click="goAskAgain">
@@ -88,7 +88,7 @@
   /* v1.16.267：滚动区高度 = 方屏 429 − 页头 58（页头已移出 scroll 固定） */
   .answer-scroll { width: 100%; height: 371px; flex-direction: column; align-items: center; padding: 0 20px; }
 
-  /* v1.16.107 方屏密度强化（主人定案：回答尽量一屏尽收） */
+  /* v1.16.107 方屏密度强化（设计定案：回答尽量一屏尽收） */
   .bottom-spacer { width: 100%; height: 30px; flex-shrink: 0; }
 
   /* v1.16.267 修复「卡片盖住页名」：本页页头只有 .sb-block（时间**堆叠在**标题上方），
@@ -140,7 +140,7 @@
      重新提问 = 主操作蓝色描边式强调；直接返回 = 深灰次要色 */
   .btn-row { width: 100%; flex-direction: row; justify-content: center; margin-top: 8px; flex-shrink: 0; }
   /* v1.16.274：两钮**加大间距**（原来 48%+48% 紧贴、中间毫无空隙）+ **改善长宽比**
-     （原来 125×44 = 2.84，主人反馈「细长长的」）。现 46% 宽 + 12 间距 + 68 高 = 宽高比 1.81。
+     （原来 125×44 = 2.84，反馈「细长长的」）。现 46% 宽 + 12 间距 + 68 高 = 宽高比 1.81。
      间距挂在左钮 margin-right 上（挂在按钮自身、且父级是普通流式行，不会产生幽灵底色）。 */
   .retry-btn { width: 46%; height: 68px; border-radius: 34px; background-color: #2E6BF0; justify-content: center; align-items: center; flex-shrink: 0; margin-right: 12px; }
   .home-btn { width: 46%; height: 68px; border-radius: 34px; background-color: #10224E; border: 2px solid rgba(77,159,238,0.45); justify-content: center; align-items: center; flex-shrink: 0; }
@@ -160,7 +160,7 @@
     .time { font-size: 26px; }
     .app-title { font-size: 28px; }
     
-    /* v1.16.285（主人要求：「AI 搜索答案页字体相对减小，尽可能让一个屏幕显示更多内容」）：
+    /* v1.16.285（设计要求：「AI 搜索答案页字体相对减小，尽可能让一个屏幕显示更多内容」）：
        与 detail.ux 同策略 —— 正文字号与行高下调约 12~15%、卡片内距收紧。
        改前正文 28px/行高 42~44 → 一屏约 15 行；改后 24px/行高 34 → 约 19 行。 */
     .q-review { width: 90%; border-radius: 32px; padding: 16px 24px; margin-bottom: 10px; }
@@ -187,7 +187,7 @@
        现 46% + 14px 间距（46+46 占 92%，余 8% 由间距与居中吃掉） */
     .retry-btn { width: 46%; height: 106px; border-radius: 53px; margin-right: 14px; }
     .home-btn { width: 46%; height: 106px; border-radius: 53px; border: 3px solid rgba(77,159,238,0.45); }
-    /* v1.16.269：纯图标（原 36px 文字在 48%≈112px 宽按钮内折行顶出，主人真机截图实锤）。
+    /* v1.16.269：纯图标（原 36px 文字在 48%≈112px 宽按钮内折行顶出，用户真机截图实锤）。
        尺寸按官方套件实测比例定：官方底部动作钮 583x412px、其内 refresh 图标 176x176px
        → 图标高占按钮高 42.7%。本页按钮高 106 → 目标字形约 45 逻辑；
        图标 SVG 画布 256 中字形占约 160（填充率 62.5%）→ 需 CSS/素材尺寸 ≈ 72 */
@@ -264,7 +264,7 @@
 
     private: {
       // v1.16.125 三态：loading（初值→显示「加载中…」）/ ok（有回答）/ error（红字提示）
-      // 原布尔判据初值 false 会让错误卡首帧即渲染 = 主人看到的「先闪一下红色」
+      // 原布尔判据初值 false 会让错误卡首帧即渲染 = 用户看到的「先闪一下红色」
       phase: 'loading',
       errTimer: null,
       isDestroyed: false,
